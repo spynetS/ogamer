@@ -1,5 +1,7 @@
 package renderer;
 
+// TODO make better command that is more generic i guess?
+// TODO add more commands
 RenderCommandType :: enum {
     CMD_CLEAR,
     CMD_TRIANGLE,
