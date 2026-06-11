@@ -2,8 +2,12 @@ package core;
 
 import rl "vendor:raylib"
 
-init_window :: proc() {
-
-    rl.InitWindow(800,400,"WINDOW");
+Game :: struct {
     
+}
+
+
+init_game :: proc() -> ^Game {
+    game := new(Game);
+    return game;
 }
