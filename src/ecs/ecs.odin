@@ -1,44 +1,42 @@
 package ecs;
 
-import "core:fmt"
+import stor "./storage"
+import core "./ecs_core"
 
 
-Entity :: u32;
-Vector2 :: [2]f32;
-
-ComponentStorage :: struct($T: typeid) {
-    sparse: map[Entity]int,
-    dense:  [dynamic]T,
-    entities: [dynamic]Entity,
+// Holds storages for 
+Storages :: struct {
+    storages: map[typeid]rawptr, // rawptr -> ^ComponentStorage(T)
 }
 
-init_storage :: proc($T: typeid, capacity: int) -> ^ComponentStorage(T) {
-    storage := new(ComponentStorage(T))
-    storage^ = ComponentStorage(T){
-        sparse   = make(map[Entity]int),
-        // dense    = make([]T, 0),
-        // entities = make([]Entity, 0),
-    }
-    return storage
-}
-add_component :: proc(storage: ^ComponentStorage($T), e: Entity, value: T) {
-    fmt.println(value)
-    storage.sparse[e] = len(storage.dense)
-    append(&storage.dense, value)
-    append(&storage.entities, e)
+delete_storages :: proc(storages: ^Storages) {
+    //delete_storage(storages.transform_storage);
 }
 
-get_component :: proc(storage : ^ComponentStorage($T), e: Entity) -> ^T { 
-    index, ok := storage.sparse[e]
+add_storage :: proc(s: ^Storages, $T: typeid) {
+    id := typeid_of(T)
+    storage := stor.init_storage(T, 1024);
+    s.storages[id] = storage
+}
+
+get_storage :: proc(s: ^Storages, $T: typeid) -> ^stor.ComponentStorage(T) {
+    id := typeid_of(T)
+    ptr, ok := s.storages[id]
     if !ok {
-        return nil
+        return stor.init_storage(T, 1024);
     }
-    return &storage.dense[index]
+    return cast(^stor.ComponentStorage(T))ptr
 }
 
 
-delete_storage :: proc(storage : ^ComponentStorage($T)) {
-    delete(storage.dense);
-    delete(storage.entities);
-    delete(storage.sparse);
+add_component :: proc(s: ^Storages, entity: core.Entity, component: $T) -> T {
+    storage := get_storage(s,T);
+    stor.add_component(storage, entity, component);
+    return component
 }
+
+get_component :: proc(s: ^Storages, entity: core.Entity, $T: typeid) -> ^T {
+    storage := get_storage(s,T);
+    return stor.get_component(storage, entity);
+}
+

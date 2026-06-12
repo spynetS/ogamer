@@ -1,4 +1,7 @@
-package ecs;
+package ecs_core;
+
+Entity :: u32;
+Vector2 :: [2]f32;
 
 Transform :: struct {
     pos  : Vector2,
