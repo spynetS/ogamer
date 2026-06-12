@@ -5,22 +5,20 @@ import ec "./ecs_core"
 import rn "../renderer"
 
 
-render_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer) {
+render_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
     render_storage, ok := get_storage(ecs, ec.RectangleRenderable);
     if !ok do return;
-    for entity in render_storage.sparse{
+    for entity, idx in render_storage.sparse{
         
-        render := render_storage.dense[entity];
+        render := render_storage.dense[idx];
         trans, _ := get_component(ecs, entity, ec.Transform);
         
-        cmd : rn.Triangle = {trans.pos, {trans.pos.x,trans.pos.y+trans.size.y}, trans.pos+trans.size, render.color};
-        append(&renderer.commands, cmd);
-        cmd = {{trans.pos.x+trans.size.x, trans.pos.y},trans.pos,trans.pos+trans.size, render.color};
+        cmd : rn.Rectangle = {trans.pos,trans.size, render.color};
         append(&renderer.commands, cmd);
     }
 }
 
-physics_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer) {
+physics_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
     physics_storage, ok := get_storage(ecs, ec.PhysicsBody);
     if !ok do return;
     for entity, idx in physics_storage.sparse{
@@ -28,8 +26,19 @@ physics_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer) {
         phy := &physics_storage.dense[idx];
         trans, _ := get_component(ecs, entity, ec.Transform);
 
-        phy.vel += phy.acc * 0.016;
+        phy.vel += phy.acc * dt;
         trans.pos += phy.vel;
+    }
+
+}
+
+script_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
+    script_storage, ok := get_storage(ecs, Script);
+    if !ok do return;
+    for entity, idx in script_storage.sparse{
+        
+        script := &script_storage.dense[idx];
+        script.on_update(ecs, entity, dt);
     }
 
 }

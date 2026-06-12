@@ -1,5 +1,6 @@
 package ecs_core;
 
+
 Entity :: u32;
 Vector2 :: [2]f32;
 

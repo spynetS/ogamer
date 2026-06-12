@@ -23,8 +23,9 @@ main_loop :: proc (game: ^Game) {
         append(&game.renderer.commands, begin);
         append(&game.renderer.commands, cmd);
 
-        ecs.render_system(&game.ecs, game.renderer);  
-        ecs.physics_system(&game.ecs, game.renderer);  
+        //ecs.render_system(&game.ecs, game.renderer, 0.016);  
+        ecs.physics_system(&game.ecs, game.renderer, 0.016);  
+        ecs.script_system(&game.ecs, game.renderer, 0.016);  
         
         append(&game.renderer.commands, end);
         rn.execute(game.renderer);
@@ -38,9 +39,11 @@ init_game :: proc() -> ^Game {
     renderer := new(rn.Renderer);
     game.renderer = renderer;
     
+    ecs.add_storage(&game.ecs, ecs.Script);
     ecs.add_storage(&game.ecs, ec.Transform);
     ecs.add_storage(&game.ecs, ec.PhysicsBody);
     ecs.add_storage(&game.ecs, ec.RectangleRenderable);
+
 
     init :rn.InitWindow = {800,500,"BLA"};
     append(&game.renderer.commands, init);

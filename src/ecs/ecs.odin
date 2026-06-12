@@ -9,6 +9,12 @@ ECS :: struct {
     storages: map[typeid]rawptr, // rawptr -> ^ComponentStorage(T)
 }
 
+// TODO change this to more
+Script :: struct {
+    on_update: proc(ecs: ^ECS, entity: core.Entity, dt: f32),
+}
+
+
 delete_storage :: proc(storages: ^ECS, $T: typeid) {
     storage, ok := get_storage(storages, T);
     if ok {

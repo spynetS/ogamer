@@ -10,10 +10,12 @@ RenderCommand :: union {
     EndDraw,
     Clear,
     Triangle,
+    Rectangle,
 }
 
 InitWindow :: struct { width, height: int, title: string }
 Clear      :: struct { color: [4]u8 }
+Rectangle  :: struct { pos, size: [2]f32, color: [4]u8 }
 Triangle   :: struct { v1, v2, v3: [2]f32, color: [4]u8 }
 BeginDraw  :: struct {}
 EndDraw    :: struct {}
