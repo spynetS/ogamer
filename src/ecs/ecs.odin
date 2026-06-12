@@ -16,7 +16,7 @@ Script :: struct {
 
 
 delete_storage :: proc(storages: ^ECS, $T: typeid) {
-    storage, ok := get_storage(storages, T);
+    storage, ok := get_storage(storages, T)
     if ok {
         stor.delete_storage(storage);
     }

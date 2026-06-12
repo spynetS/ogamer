@@ -13,6 +13,7 @@ main :: proc() {
     defer core.free_game(game);
 
     ecs.add_component(&game.ecs,0, ec.Transform({{100,100}, {100,100}, {0,0}}));
+    ecs.add_component(&game.ecs,0, ec.PhysicsBody({{0,0},{0,980}}));
     ecs.add_component(&game.ecs,0, ec.RectangleRenderable({rn.get_color(0x181818ff)}));
 
     core.main_loop(game);
