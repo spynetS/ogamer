@@ -1,16 +1,5 @@
 package renderer;
 
-import rl "vendor:raylib"
-
-
-start_draw :: proc() {
-    rl.BeginDrawing();
-}
-
-end_draw :: proc() {
-    rl.EndDrawing();
-}
-
 get_color :: proc(c:u32) -> [4]u8 {
     return [4]u8{
         u8((c >> 24) & 0xFF),
