@@ -46,6 +46,12 @@ add_component :: proc(s: ^ECS, entity: core.Entity, component: $T) -> bool {
     return true
 }
 
+has_component :: proc(s: ^ECS, entity: core.Entity, $T: typeid) -> (int, bool) {
+    storage, ok := get_storage(s,T);
+    if !ok do return nil, false
+    return stor.has_component(storage, entity);
+}
+
 get_component :: proc(s: ^ECS, entity: core.Entity, $T: typeid) -> (^T, bool) {
     storage, ok := get_storage(s,T);
     if !ok do return nil, false

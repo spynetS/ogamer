@@ -23,7 +23,7 @@ main_loop :: proc (game: ^Game) {
         append(&game.renderer.commands, begin);
         append(&game.renderer.commands, cmd);
 
-        //ecs.render_system(&game.ecs, game.renderer, 0.016);  
+        ecs.render_system(&game.ecs, game.renderer, 0.016);  
         ecs.physics_system(&game.ecs, game.renderer, 0.016);  
         ecs.script_system(&game.ecs, game.renderer, 0.016);  
         
