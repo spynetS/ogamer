@@ -1,30 +1,26 @@
 package renderer;
 
-// TODO make better command that is more generic i guess?
-// TODO add more commands
-RenderCommandType :: enum {
-    CMD_CLEAR,
-    CMD_TRIANGLE,
+// Renderer works by having a bunch of rendering commands that
+// the underlaying graphics arcitecture implements by having 
+// an execute function that executes all the commands
 
-};
-
-Triangle :: struct { v1,v2,v3: [2]f32 };
-
-RenderCommand :: struct {
-    type: RenderCommandType,
-    clear : [4]u8,
-    triangle: Triangle
+RenderCommand :: union {
+    InitWindow,
+    BeginDraw,
+    EndDraw,
+    Clear,
+    Triangle,
 }
+
+InitWindow :: struct { width, height: int, title: string }
+Clear      :: struct { color: [4]u8 }
+Triangle   :: struct { v1, v2, v3: [2]f32, color: [4]u8 }
+BeginDraw  :: struct {}
+EndDraw    :: struct {}
+
 
 Renderer :: struct {
     commands: [dynamic]RenderCommand,
 }
 
 
-create_cmd :: proc(type: RenderCommandType, clear: [4]u8, triangle: Triangle) -> ^RenderCommand {
-    cmd := new(RenderCommand);
-    cmd.type = type;
-    cmd.clear = clear;
-    cmd.triangle = triangle;
-    return cmd;
-}

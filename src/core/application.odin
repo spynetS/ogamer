@@ -12,44 +12,50 @@ Game :: struct {
 }
 
 main_loop :: proc (game: ^Game) {
+    begin :rn.BeginDraw = {};
+    end :rn.EndDraw = {};
+    cmd : rn.Clear = {rn.get_color(0x181818ff)};
+
     for !rl.WindowShouldClose() {
-        rl.BeginDrawing();
-        // create a clear render command
-        cmd : rn.RenderCommand = {
-            rn.RenderCommandType.CMD_CLEAR,
-            {0,0,0,0},
-            {{0,0},{0,0},{0,0}}
-        };
+        append(&game.renderer.commands, begin);
         append(&game.renderer.commands, cmd);
         
-        ts := ecs.get_storage(&game.storages, ec.Transform)
-        for entity in ts.entities {
-            trans : ^ec.Transform = ecs.get_component(&game.storages, entity,ec.Transform);
-            rn.draw_rectangle(game.renderer, trans.pos, trans.size, rn.get_color(0xff0000ff));
+        ts, ok := ecs.get_storage(&game.storages, ec.Transform)
+        if ok{
+            for entity in ts.entities {
+                trans : ^ec.Transform = ecs.get_component(&game.storages, entity,ec.Transform);
+                trans.pos.x += 1
+                rn.draw_rectangle(game.renderer, trans.pos, trans.size, rn.get_color(0xff0000ff));
+            }
         }
-
-        // execute all render commands
+        append(&game.renderer.commands, end);
         rn.execute(game.renderer);
-        rl.EndDrawing();
     }
 }
 
 init_game :: proc() -> ^Game {
     game := new(Game);
     game.should_run = true;
-    rl.InitWindow(800,400,"Game");
     
     renderer := new(rn.Renderer);
     game.renderer = renderer;
     
     ecs.add_storage(&game.storages, ec.Transform);
 
+    init :rn.InitWindow = {800,500,"BLA"};
+    append(&game.renderer.commands, init);
+    rn.execute(game.renderer);
+
+
+
     return game;
 }
 
 free_game :: proc(game: ^Game) {
-    free(game.renderer.commands);
+    delete(game.renderer.commands);
     free(game.renderer);
-    ecs.delete_storages(&game.storages);
+    ecs.delete_storage(&game.storages, ec.Transform);
+    delete(game.storages.storages);
+
     free(game);
 }

@@ -14,7 +14,6 @@ init_storage :: proc($T: typeid, capacity: int) -> ^ComponentStorage(T) {
         sparse   = make(map[core.Entity]int),
     }
     return storage
-
 }
 
 add_component :: proc(storage: ^ComponentStorage($T), e:core. Entity, value: T) {

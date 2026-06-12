@@ -22,15 +22,9 @@ get_color :: proc(c:u32) -> [4]u8 {
 
 draw_rectangle :: proc(renderer: ^Renderer, pos, size: [2]f32, color: [4]u8) {
     
-    cmd : RenderCommand={}
-    cmd.type = RenderCommandType.CMD_TRIANGLE
-    cmd.clear = color
-    cmd.triangle = {pos,{pos.x,pos.y+size.y},pos+size}
+    cmd : Triangle = {pos, {pos.x,pos.y+size.y}, pos+size, color};
     append(&renderer.commands, cmd);
-
-    cmd.type = RenderCommandType.CMD_TRIANGLE
-    cmd.clear = color
-    cmd.triangle = {{pos.x+size.x, pos.y},pos,pos+size}
+    cmd = {{pos.x+size.x, pos.y},pos,pos+size, color};
     append(&renderer.commands, cmd);
 }
 
