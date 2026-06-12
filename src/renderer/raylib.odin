@@ -8,7 +8,7 @@ execute :: proc(renderer: ^Renderer) {
     for command in renderer.commands {
         switch v in command {
         case InitWindow:
-            //rl.SetTargetFPS(60)
+            rl.SetTargetFPS(144)
             rl.InitWindow(800,400,"Hello World");
         case BeginDraw:
             rl.BeginDrawing();
