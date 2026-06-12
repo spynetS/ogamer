@@ -9,5 +9,13 @@ Transform :: struct {
     rot  : Vector2
 }
 
+RectangleRenderable :: struct {
+    color : [4]u8
+}
 
+
+PhysicsBody :: struct {
+    vel  : Vector2,
+    acc  : Vector2
+}
 

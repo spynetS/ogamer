@@ -19,12 +19,12 @@ add_component :: proc(storage: ^ComponentStorage($T), e:core. Entity, value: T) 
     append(&storage.entities, e)
 }
 
-get_component :: proc(storage : ^ComponentStorage($T), e:core. Entity) -> ^T { 
+get_component :: proc(storage : ^ComponentStorage($T), e:core. Entity) -> (^T, bool) { 
     index, ok := storage.sparse[e]
     if !ok {
-        return nil
+        return nil, false
     }
-    return &storage.dense[index]
+    return &storage.dense[index], true
 }
 
 

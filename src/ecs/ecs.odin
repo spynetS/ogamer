@@ -4,25 +4,25 @@ import stor "./storage"
 import core "./ecs_core"
 
 
-// Holds storages for 
-Storages :: struct {
+
+ECS :: struct {
     storages: map[typeid]rawptr, // rawptr -> ^ComponentStorage(T)
 }
 
-delete_storage :: proc(storages: ^Storages, $T: typeid) {
+delete_storage :: proc(storages: ^ECS, $T: typeid) {
     storage, ok := get_storage(storages, T);
     if ok {
         stor.delete_storage(storage);
     }
 }
 
-add_storage :: proc(s: ^Storages, $T: typeid) {
+add_storage :: proc(s: ^ECS, $T: typeid) {
     id := typeid_of(T)
     storage := stor.init_storage(T, 1024);
     s.storages[id] = cast(rawptr)storage
 }
 
-get_storage :: proc(s: ^Storages, $T: typeid) -> (^stor.ComponentStorage(T), bool) {
+get_storage :: proc(s: ^ECS, $T: typeid) -> (^stor.ComponentStorage(T), bool) {
     id := typeid_of(T)
     ptr, ok := s.storages[id]
 
@@ -30,7 +30,8 @@ get_storage :: proc(s: ^Storages, $T: typeid) -> (^stor.ComponentStorage(T), boo
 }
 
 
-add_component :: proc(s: ^Storages, entity: core.Entity, component: $T) -> bool {
+add_component :: proc(s: ^ECS, entity: core.Entity, component: $T) -> bool {
+    
     storage, ok := get_storage(s,T);
     if !ok {
         return false
@@ -39,8 +40,9 @@ add_component :: proc(s: ^Storages, entity: core.Entity, component: $T) -> bool 
     return true
 }
 
-get_component :: proc(s: ^Storages, entity: core.Entity, $T: typeid) -> ^T {
+get_component :: proc(s: ^ECS, entity: core.Entity, $T: typeid) -> (^T, bool) {
     storage, ok := get_storage(s,T);
+    if !ok do return nil, false
     return stor.get_component(storage, entity);
 }
 
