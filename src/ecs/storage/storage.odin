@@ -10,9 +10,6 @@ ComponentStorage :: struct($T: typeid) {
 
 init_storage :: proc($T: typeid, capacity: int) -> ^ComponentStorage(T) {
     storage := new(ComponentStorage(T))
-    storage^ = ComponentStorage(T){
-        sparse   = make(map[core.Entity]int),
-    }
     return storage
 }
 
@@ -35,4 +32,5 @@ delete_storage :: proc(storage : ^ComponentStorage($T)) {
     delete(storage.dense);
     delete(storage.entities);
     delete(storage.sparse);
+    free(storage);
 }

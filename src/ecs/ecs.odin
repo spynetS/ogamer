@@ -30,10 +30,13 @@ get_storage :: proc(s: ^Storages, $T: typeid) -> (^stor.ComponentStorage(T), boo
 }
 
 
-add_component :: proc(s: ^Storages, entity: core.Entity, component: $T) -> T {
+add_component :: proc(s: ^Storages, entity: core.Entity, component: $T) -> bool {
     storage, ok := get_storage(s,T);
-    stor.add_component(storage, entity, component);
-    return component
+    if !ok {
+        return false
+    }
+    stor.add_component(storage, entity, component); 
+    return true
 }
 
 get_component :: proc(s: ^Storages, entity: core.Entity, $T: typeid) -> ^T {
