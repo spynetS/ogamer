@@ -40,10 +40,10 @@ init_game :: proc() -> ^Game {
     game.renderer = renderer;
 
     // Initiation storages for the components
-    ecs.add_storage(&game.ecs, ecs.Script);
-    ecs.add_storage(&game.ecs, ec.Transform);
-    ecs.add_storage(&game.ecs, ec.PhysicsBody);
-    ecs.add_storage(&game.ecs, ec.RectangleRenderable);
+    ecs.add_storage(&game.ecs, ^ecs.Script);
+    ecs.add_storage(&game.ecs, ^ec.Transform);
+    ecs.add_storage(&game.ecs, ^ec.PhysicsBody);
+    ecs.add_storage(&game.ecs, ^ec.RectangleRenderable);
 
     // init rendering window
     init :rn.InitWindow = {800,500,"BLA"};

@@ -8,17 +8,17 @@ import rl "vendor:raylib/rlgl"
 
 
 render_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
-    render_storage, ok := get_storage(ecs, ec.RectangleRenderable);
+    render_storage, ok := get_storage(ecs, ^ec.RectangleRenderable);
     if !ok do return;
-    trans, ok2 := get_storage(ecs, ec.Transform)
+    trans, ok2 := get_storage(ecs, ^ec.Transform)
     if !ok2 do return
     for i in 0..<len(render_storage.dense) {
         entity := render_storage.entities[i]
         t_idx, has_t := storage.has_component(trans, entity)
         if !has_t do continue
         
-        t := &trans.dense[trans.sparse[int(entity)]]
-        r := &render_storage.dense[i]
+        t := trans.dense[trans.sparse[int(entity)]]
+        r := render_storage.dense[i]
         cmd : rn.Rectangle = {t.pos,t.size, r.color};
         append(&renderer.commands, cmd);
     }
@@ -26,17 +26,17 @@ render_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
 
 
 physics_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
-    phys, ok := get_storage(ecs, ec.PhysicsBody)
+    phys, ok := get_storage(ecs, ^ec.PhysicsBody)
     if !ok do return
-    trans, ok2 := get_storage(ecs, ec.Transform)
+    trans, ok2 := get_storage(ecs, ^ec.Transform)
     if !ok2 do return
 
     for i in 0..<len(phys.dense) {
         entity := phys.entities[i]
         t_idx, has_t := storage.has_component(trans, entity)
         if !has_t do continue
-        t := &trans.dense[trans.sparse[int(entity)]]
-        p := &phys.dense[i]
+        t := trans.dense[trans.sparse[int(entity)]]
+        p := phys.dense[i]
 
         p.vel += p.acc * dt
         t.pos += p.vel * dt
