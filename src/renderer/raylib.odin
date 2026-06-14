@@ -27,14 +27,9 @@ execute :: proc(renderer: ^Renderer) {
                 rl.EndDrawing();
             case Clear:
                 rl.ClearBackground(rl.RAYWHITE);
-            case Triangle :
-                rl.DrawTriangle(v.v1,
-                                v.v2,
-                                v.v3,
-                                rl.Color(v.color));
             case Rectangle:
-                rl.DrawRectangle(i32(v.pos.x),
-                                 i32(v.pos.y),
+                rl.DrawRectangle(i32(v.pos.x-v.size.x/2),
+                                 i32(v.pos.y-v.size.y/2),
                                  i32(v.size.x),
                                  i32(v.size.y),
                                  rl.Color(v.color));
@@ -50,7 +45,7 @@ execute :: proc(renderer: ^Renderer) {
                 
                 
                 source : rl.Rectangle = {0,0, cast(f32)sprite.width, cast(f32)sprite.height}
-                dest : rl.Rectangle = {v.pos.x,v.pos.y, v.size.x, v.size.y}
+                dest : rl.Rectangle = {v.pos.x-v.size.x/2,v.pos.y-v.size.y/2, v.size.x, v.size.y}
                 origin : rl.Vector2 = {0,0};
                 rl.DrawTexturePro(
                     sprite,

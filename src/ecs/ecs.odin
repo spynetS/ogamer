@@ -1,7 +1,7 @@
 package ecs;
 
 import stor "./storage"
-
+import "core:fmt"
 
 
 ECS :: struct {
@@ -58,6 +58,7 @@ get_component :: proc(s: ^ECS, entity: Entity, $T: typeid) -> (^T, bool) {
     storage, ok := get_storage(s,^T);
     if !ok do return nil, false
     comp, ok2 := stor.get_component(storage, entity);
-    return comp^, ok2
+    if !ok2 do return nil, false
+    return comp, true
 }
 

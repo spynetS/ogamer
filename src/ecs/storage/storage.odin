@@ -1,6 +1,8 @@
 package storage;
 
 import "core:mem"
+import "core:fmt"
+
 Entity :: u32;
 
 /*
@@ -37,10 +39,11 @@ add_component :: proc(storage: ^ComponentStorage($T), e:Entity, component: T) ->
     return copy_component;
 }
 
-get_component :: proc(storage : ^ComponentStorage($T), e: Entity) -> (^T, bool) { 
+get_component :: proc(storage : ^ComponentStorage($T), e: Entity) -> (T, bool) { 
     id := int(e)
     if id >= len(storage.sparse) || storage.sparse[id] == NO_ENTITY do return nil, false
-    return &storage.dense[storage.sparse[id]], true
+    //fmt.println(storage.sparse[id])
+    return storage.dense[storage.sparse[id]], true
 }
 
 has_component :: proc(s: ^ComponentStorage($T), entity: Entity) -> (int, bool) {

@@ -39,11 +39,31 @@ sprite_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Render
         
         cmd := rn.Sprite({t.pos, t.size, sprite.file_path})
         append(&renderer.commands, cmd);
-
-
     }
 }
 
+parent_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+    parent_storage, ok := get_storage(ecs, ^Parent);
+    if !ok do return;
+    t_storage, ok2 := get_storage(ecs, ^Transform)
+    if !ok2 do return
+
+    for i in 0..<len(parent_storage.dense) {
+        entity := parent_storage.entities[i]
+        t_idx, has_t := storage.has_component(t_storage, entity)
+        if !has_t do continue
+        
+        child_t := t_storage.dense[t_storage.sparse[int(entity)]]
+        parent := parent_storage.dense[i]
+        parent_t := t_storage.dense[t_storage.sparse[int(parent.entity)]]
+
+        child_t.pos = parent_t.pos + (child_t.local_pos * parent_t.size/100) // divide by 100 because default size is 100?
+        child_t.size = parent_t.size + child_t.local_size
+
+        // cmd : rn.Rectangle = {child_t.pos+{200,0},child_t.size, rn.get_color(0xff0000ff)};
+        // append(&renderer.commands, cmd);
+    }
+}
 
 physics_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     phys, ok := get_storage(ecs, ^PhysicsBody)

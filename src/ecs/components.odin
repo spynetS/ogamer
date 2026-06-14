@@ -5,9 +5,15 @@ Entity :: u32;
 Vector2 :: [2]f32;
 
 Transform :: struct {
-    pos  : Vector2,
-    size : Vector2,
-    rot  : Vector2
+    pos        : Vector2,
+    local_pos  : Vector2,
+    size       : Vector2,
+    local_size : Vector2,
+    rot        : Vector2
+}
+
+Parent :: struct {
+    entity: Entity
 }
 
 RectangleRenderable :: struct {
