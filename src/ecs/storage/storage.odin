@@ -1,6 +1,14 @@
 package storage;
 
 import core  "../ecs_core"
+import "core:mem"
+
+/*
+ComponentStorage HANDLES MEMORY BY IT SELF for each component
+The user should pass a pointer to a component but theft
+component storage will copy that memory!
+*/
+
 
 ComponentStorage :: struct($T: typeid) {
     sparse: [dynamic]int,
@@ -21,7 +29,10 @@ add_component :: proc(storage: ^ComponentStorage($T), e:core. Entity, component:
         append(&storage.sparse, NO_ENTITY)
     }
     storage.sparse[id] = len(storage.dense)
-    append(&storage.dense, component)
+ 
+    copy_component := new_clone(component^)
+    
+    append(&storage.dense, copy_component)
     append(&storage.entities, e)
 }
 
@@ -37,6 +48,9 @@ has_component :: proc(s: ^ComponentStorage($T), entity: core.Entity) -> (int, bo
 }
 
 delete_storage :: proc(storage : ^ComponentStorage($T)) {
+    for comp in storage.dense {
+        free(comp)
+    }
     delete(storage.dense);
     delete(storage.entities);
     delete(storage.sparse);

@@ -14,11 +14,8 @@ get_gameobject :: proc(ecs_: ^ecs.ECS, entity: ec.Entity) -> (^GameObject, bool)
 
     trans, ok := ecs.get_component(ecs_, entity, ec.Transform);
     if !ok {
-        trans = new(ec.Transform)
-        trans.pos = {100,100};
-        trans.size = {100,100};
-        trans.rot = {0,0};
-        ecs.add_component(ecs_, entity, trans);
+        trans = &ec.Transform {{100,100}, {100,100}, {0,0}}
+        ecs.add_component(ecs_, entity, trans^);
     }
 
     game_object.transform = trans;

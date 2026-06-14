@@ -56,7 +56,10 @@ init_game :: proc() -> ^Game {
 free_game :: proc(game: ^Game) {
     delete(game.renderer.commands);
     free(game.renderer);
-    ecs.delete_storage(&game.ecs, ec.Transform);
+    ecs.delete_storage(&game.ecs, ^ecs.Script);
+    ecs.delete_storage(&game.ecs, ^ec.Transform);
+    ecs.delete_storage(&game.ecs, ^ec.PhysicsBody);
+    ecs.delete_storage(&game.ecs, ^ec.RectangleRenderable);
     delete(game.ecs.storages);
     free(game);
 }
