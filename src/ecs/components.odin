@@ -9,7 +9,7 @@ Transform :: struct {
     local_pos  : Vector2,
     size       : Vector2,
     local_size : Vector2,
-    rot        : Vector2
+    rot        : f32
 }
 
 Parent :: struct {

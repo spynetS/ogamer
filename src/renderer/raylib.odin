@@ -19,7 +19,7 @@ execute :: proc(renderer: ^Renderer) {
             switch v in command {
             case InitWindow:
                 rl.SetTargetFPS(144)
-                rl.InitWindow(800,400,"Hello World");
+                rl.InitWindow(1240,720,"Hello World");
             case BeginDraw:
                 rl.BeginDrawing();
                 rl.DrawText(fmt.ctprintf("FPS: %d", rl.GetFPS()), 10, 10, 20, rl.BLACK)
@@ -28,13 +28,19 @@ execute :: proc(renderer: ^Renderer) {
             case Clear:
                 rl.ClearBackground(rl.RAYWHITE);
             case Rectangle:
-                rl.DrawRectangle(i32(v.pos.x-v.size.x/2),
-                                 i32(v.pos.y-v.size.y/2),
-                                 i32(v.size.x),
-                                 i32(v.size.y),
-                                 rl.Color(v.color));
+                rec : rl.Rectangle = {v.pos.x,v.pos.y, v.size.x, v.size.y}
+                origin : rl.Vector2 = {
+                    v.size.x / 2,
+                    v.size.y / 2
+                };
+                rl.DrawRectanglePro(
+                    rec,
+                    origin,
+                    v.rot,
+                    rl.Color(v.color)
+                );
             case Sprite:
-
+                // tecture cacheing
                 sprite, got := texture_cache[v.file_path]
                 if !got {
                     file_path := strings.clone_to_cstring(v.file_path)
@@ -45,14 +51,19 @@ execute :: proc(renderer: ^Renderer) {
                 
                 
                 source : rl.Rectangle = {0,0, cast(f32)sprite.width, cast(f32)sprite.height}
-                dest : rl.Rectangle = {v.pos.x-v.size.x/2,v.pos.y-v.size.y/2, v.size.x, v.size.y}
-                origin : rl.Vector2 = {0,0};
+                dest : rl.Rectangle = {v.pos.x,v.pos.y, v.size.x, v.size.y}
+
+                origin : rl.Vector2 = {
+                    v.size.x / 2,
+                    v.size.y / 2
+                };
+
                 rl.DrawTexturePro(
                     sprite,
                     source,
                     dest,
                     origin,
-                    0,
+                    v.rot,
                     rl.Color(get_color(0xffffffff))
                 )
             }

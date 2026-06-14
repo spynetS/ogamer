@@ -21,7 +21,7 @@ new_gameobject :: proc(ecs_: ^ecs.ECS) -> (^GameObject, bool) {
 
     game_object.entity = entity
     game_object.ecs = ecs_
-    game_object.transform, _ = ecs.add_component(ecs_, entity, ecs.Transform {{100,100}, {0,0}, {100,100}, {0,0}, {0,0}});
+    game_object.transform, _ = ecs.add_component(ecs_, entity, ecs.Transform {{100,100}, {0,0}, {100,100}, {0,0}, 0});
     return game_object, true
 }
 
@@ -30,7 +30,7 @@ get_gameobject :: proc(ecs_: ^ecs.ECS, entity: ecs.Entity) -> (^GameObject, bool
 
     trans, ok := ecs.get_component(ecs_, entity, ecs.Transform);
     if !ok {
-        trans, _ = ecs.add_component(ecs_, entity, ecs.Transform {{100,100}, {0,0}, {100,100}, {0,0}, {0,0}});
+        trans, _ = ecs.add_component(ecs_, entity, ecs.Transform {{100,100}, {0,0}, {100,100}, {0,0}, 0});
     }
 
     parent, got_parent := ecs.get_component(ecs_, entity, ecs.Parent);

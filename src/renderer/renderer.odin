@@ -17,8 +17,8 @@ RenderCommand :: union {
 
 InitWindow :: struct { width, height: int, title: string }
 Clear      :: struct { color: [4]u8 }
-Rectangle  :: struct { pos, size: [2]f32, color: [4]u8 }
-Sprite  :: struct { pos, size: [2]f32, file_path: string }
+Rectangle  :: struct { pos, size: [2]f32, rot: f32, color: [4]u8 }
+Sprite  :: struct { pos, size: [2]f32,rot: f32, file_path: string }
 BeginDraw  :: struct {}
 EndDraw    :: struct {}
 
