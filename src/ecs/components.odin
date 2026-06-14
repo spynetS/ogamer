@@ -20,3 +20,6 @@ PhysicsBody :: struct {
     acc  : Vector2
 }
 
+SpriteRenderable :: struct {
+    file_path : string
+}

@@ -4,9 +4,10 @@ import "core:fmt"
 import storage "./storage"
 import rn "../renderer"
 import rl "vendor:raylib/rlgl"
+import io "../io/"
 
 
-render_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
+render_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     render_storage, ok := get_storage(ecs, ^RectangleRenderable);
     if !ok do return;
     trans, ok2 := get_storage(ecs, ^Transform)
@@ -23,8 +24,28 @@ render_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
     }
 }
 
+sprite_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+    sprite_storage, ok := get_storage(ecs, ^SpriteRenderable);
+    if !ok do return;
+    trans, ok2 := get_storage(ecs, ^Transform)
+    if !ok2 do return
+    for i in 0..<len(sprite_storage.dense) {
+        entity := sprite_storage.entities[i]
+        t_idx, has_t := storage.has_component(trans, entity)
+        if !has_t do continue
+        
+        t := trans.dense[trans.sparse[int(entity)]]
+        sprite := sprite_storage.dense[i]
+        
+        cmd := rn.Sprite({t.pos, t.size, sprite.file_path})
+        append(&renderer.commands, cmd);
 
-physics_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
+
+    }
+}
+
+
+physics_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     phys, ok := get_storage(ecs, ^PhysicsBody)
     if !ok do return
     trans, ok2 := get_storage(ecs, ^Transform)
@@ -42,7 +63,7 @@ physics_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
     }
 }
 
-script_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
+script_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     script_storage, ok := get_storage(ecs, ^Script);
     if !ok do return;
     for i in 0..<len(script_storage.dense) {
