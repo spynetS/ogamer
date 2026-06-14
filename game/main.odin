@@ -4,7 +4,6 @@ import "core:fmt"
 import "../src/core"
 import "../src/ecs"
 import sc "../src/scripting"
-import ec "../src/ecs/ecs_core"
 import rn "../src/renderer"
 
 
@@ -17,10 +16,10 @@ main :: proc() {
     defer free(go);
     
     if ok {
-        sc.add_component(go, ec.RectangleRenderable({rn.get_color(0x181818ff)}))
-        sc.add_component(go, ec.PhysicsBody({{0,0},{0,98}}))
+        sc.add_component(go, ecs.RectangleRenderable({rn.get_color(0x181818ff)}))
+        sc.add_component(go, ecs.PhysicsBody({{0,0},{0,98}}))
         sc.add_component(go, ecs.Script({
-            on_update = proc(ecs: ^ecs.ECS, entity: ec.Entity, dt:f32) {
+            on_update = proc(ecs: ^ecs.ECS, entity: u32, dt:f32) {
                 go, _ := sc.get_gameobject(ecs, entity)
                 go.transform.pos.x += 1;
             }

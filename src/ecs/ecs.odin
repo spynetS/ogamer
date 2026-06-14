@@ -1,7 +1,6 @@
 package ecs;
 
 import stor "./storage"
-import core "./ecs_core"
 
 
 
@@ -11,7 +10,7 @@ ECS :: struct {
 
 // TODO change this to more
 Script :: struct {
-    on_update: proc(ecs: ^ECS, entity: core.Entity, dt: f32),
+    on_update: proc(ecs: ^ECS, entity: Entity, dt: f32),
 }
 
 
@@ -39,7 +38,7 @@ get_storage :: proc(s: ^ECS, $T: typeid) -> (^stor.ComponentStorage(T), bool) {
 /**
 It will copy the memory and allocate new for the component!
 */
-add_component :: proc(s: ^ECS, entity: core.Entity, component: $T) -> (^T, bool) {
+add_component :: proc(s: ^ECS, entity: Entity, component: $T) -> (^T, bool) {
     
     storage, ok := get_storage(s,^T);
     if !ok {
@@ -49,13 +48,13 @@ add_component :: proc(s: ^ECS, entity: core.Entity, component: $T) -> (^T, bool)
     return stor.add_component(storage, entity, &component), true; 
 }
 
-has_component :: proc(s: ^ECS, entity: core.Entity, $T: typeid) -> (int, bool) {
+has_component :: proc(s: ^ECS, entity: Entity, $T: typeid) -> (int, bool) {
     storage, ok := get_storage(s,T);
     if !ok do return nil, false
     return stor.has_component(storage, entity);
 }
 
-get_component :: proc(s: ^ECS, entity: core.Entity, $T: typeid) -> (^T, bool) {
+get_component :: proc(s: ^ECS, entity: Entity, $T: typeid) -> (^T, bool) {
     storage, ok := get_storage(s,^T);
     if !ok do return nil, false
     comp, ok2 := stor.get_component(storage, entity);

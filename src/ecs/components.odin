@@ -1,4 +1,4 @@
-package ecs_core;
+package ecs;
 
 
 Entity :: u32;

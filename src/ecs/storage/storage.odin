@@ -1,7 +1,7 @@
 package storage;
 
-import core  "../ecs_core"
 import "core:mem"
+Entity :: u32;
 
 /*
 ComponentStorage HANDLES MEMORY BY IT SELF for each component
@@ -13,7 +13,7 @@ component storage will copy that memory!
 ComponentStorage :: struct($T: typeid) {
     sparse: [dynamic]int,
     dense:  [dynamic]T,
-    entities: [dynamic]core.Entity,
+    entities: [dynamic]Entity,
 }
 
 NO_ENTITY :: -1
@@ -23,7 +23,7 @@ init_storage :: proc($T: typeid, capacity: int) -> ^ComponentStorage(T) {
     return storage
 }
 
-add_component :: proc(storage: ^ComponentStorage($T), e:core.Entity, component: T) -> T{
+add_component :: proc(storage: ^ComponentStorage($T), e:Entity, component: T) -> T{
     id := int(e)
     for id >= len(storage.sparse) {
         append(&storage.sparse, NO_ENTITY)
@@ -37,13 +37,13 @@ add_component :: proc(storage: ^ComponentStorage($T), e:core.Entity, component: 
     return copy_component;
 }
 
-get_component :: proc(storage : ^ComponentStorage($T), e:core. Entity) -> (^T, bool) { 
+get_component :: proc(storage : ^ComponentStorage($T), e: Entity) -> (^T, bool) { 
     id := int(e)
     if id >= len(storage.sparse) || storage.sparse[id] == NO_ENTITY do return nil, false
     return &storage.dense[storage.sparse[id]], true
 }
 
-has_component :: proc(s: ^ComponentStorage($T), entity: core.Entity) -> (int, bool) {
+has_component :: proc(s: ^ComponentStorage($T), entity: Entity) -> (int, bool) {
     id := int(entity)
     return s.sparse[id], id < len(s.sparse) && s.sparse[id] != NO_ENTITY
 }

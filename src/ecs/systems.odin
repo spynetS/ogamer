@@ -1,16 +1,15 @@
 package ecs;
 
 import "core:fmt"
-import ec "./ecs_core"
 import storage "./storage"
 import rn "../renderer"
 import rl "vendor:raylib/rlgl"
 
 
 render_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
-    render_storage, ok := get_storage(ecs, ^ec.RectangleRenderable);
+    render_storage, ok := get_storage(ecs, ^RectangleRenderable);
     if !ok do return;
-    trans, ok2 := get_storage(ecs, ^ec.Transform)
+    trans, ok2 := get_storage(ecs, ^Transform)
     if !ok2 do return
     for i in 0..<len(render_storage.dense) {
         entity := render_storage.entities[i]
@@ -26,9 +25,9 @@ render_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
 
 
 physics_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
-    phys, ok := get_storage(ecs, ^ec.PhysicsBody)
+    phys, ok := get_storage(ecs, ^PhysicsBody)
     if !ok do return
-    trans, ok2 := get_storage(ecs, ^ec.Transform)
+    trans, ok2 := get_storage(ecs, ^Transform)
     if !ok2 do return
 
     for i in 0..<len(phys.dense) {

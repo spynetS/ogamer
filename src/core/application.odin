@@ -3,7 +3,6 @@ package core;
 import rl "vendor:raylib"
 import rn "../renderer"
 import "../ecs"
-import ec "../ecs/ecs_core"
 
 Game :: struct {
     should_run: bool,
@@ -41,9 +40,9 @@ init_game :: proc() -> ^Game {
 
     // Initiation storages for the components
     ecs.add_storage(&game.ecs, ^ecs.Script);
-    ecs.add_storage(&game.ecs, ^ec.Transform);
-    ecs.add_storage(&game.ecs, ^ec.PhysicsBody);
-    ecs.add_storage(&game.ecs, ^ec.RectangleRenderable);
+    ecs.add_storage(&game.ecs, ^ecs.Transform);
+    ecs.add_storage(&game.ecs, ^ecs.PhysicsBody);
+    ecs.add_storage(&game.ecs, ^ecs.RectangleRenderable);
 
     // init rendering window
     init :rn.InitWindow = {800,500,"BLA"};
@@ -57,9 +56,9 @@ free_game :: proc(game: ^Game) {
     delete(game.renderer.commands);
     free(game.renderer);
     ecs.delete_storage(&game.ecs, ^ecs.Script);
-    ecs.delete_storage(&game.ecs, ^ec.Transform);
-    ecs.delete_storage(&game.ecs, ^ec.PhysicsBody);
-    ecs.delete_storage(&game.ecs, ^ec.RectangleRenderable);
+    ecs.delete_storage(&game.ecs, ^ecs.Transform);
+    ecs.delete_storage(&game.ecs, ^ecs.PhysicsBody);
+    ecs.delete_storage(&game.ecs, ^ecs.RectangleRenderable);
     delete(game.ecs.storages);
     free(game);
 }

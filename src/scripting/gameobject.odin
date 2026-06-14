@@ -2,35 +2,34 @@ package scripting;
 
 import "core:fmt"
 
-import ec "../ecs/ecs_core/"
 import stor "../ecs/storage/"
 import "../ecs"
 
 GameObject :: struct {
-    entity: ec.Entity,
-    transform: ^ec.Transform, // ecs should handle the transform memory
+    entity: ecs.Entity,
+    transform: ^ecs.Transform, // ecs should handle the transform memory
     ecs: ^ecs.ECS,
 }
 
 new_gameobject :: proc(ecs_: ^ecs.ECS) -> (^GameObject, bool) {
     game_object := new(GameObject)
-    storage, ok := ecs.get_storage(ecs_, ^ec.Transform)
+    storage, ok := ecs.get_storage(ecs_, ^ecs.Transform)
 
-    entity := ec.Entity(len(storage.entities))
+    entity := ecs.Entity(len(storage.entities))
     append(&storage.entities, entity)
 
     game_object.entity = entity
     game_object.ecs = ecs_
-    game_object.transform, _ = ecs.add_component(ecs_, entity, ec.Transform {{100,100}, {100,100}, {0,0}});
+    game_object.transform, _ = ecs.add_component(ecs_, entity, ecs.Transform {{100,100}, {100,100}, {0,0}});
     return game_object, true
 }
 
-get_gameobject :: proc(ecs_: ^ecs.ECS, entity: ec.Entity) -> (^GameObject, bool) {
+get_gameobject :: proc(ecs_: ^ecs.ECS, entity: ecs.Entity) -> (^GameObject, bool) {
     game_object := new(GameObject)
 
-    trans, ok := ecs.get_component(ecs_, entity, ec.Transform);
+    trans, ok := ecs.get_component(ecs_, entity, ecs.Transform);
     if !ok {
-        trans, _ = ecs.add_component(ecs_, entity, ec.Transform {{100,100}, {100,100}, {0,0}});
+        trans, _ = ecs.add_component(ecs_, entity, ecs.Transform {{100,100}, {100,100}, {0,0}});
     }
 
     game_object.transform = trans;
