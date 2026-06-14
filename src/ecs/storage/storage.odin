@@ -23,7 +23,7 @@ init_storage :: proc($T: typeid, capacity: int) -> ^ComponentStorage(T) {
     return storage
 }
 
-add_component :: proc(storage: ^ComponentStorage($T), e:core. Entity, component: T) {
+add_component :: proc(storage: ^ComponentStorage($T), e:core.Entity, component: T) -> T{
     id := int(e)
     for id >= len(storage.sparse) {
         append(&storage.sparse, NO_ENTITY)
@@ -34,6 +34,7 @@ add_component :: proc(storage: ^ComponentStorage($T), e:core. Entity, component:
     
     append(&storage.dense, copy_component)
     append(&storage.entities, e)
+    return copy_component;
 }
 
 get_component :: proc(storage : ^ComponentStorage($T), e:core. Entity) -> (^T, bool) { 

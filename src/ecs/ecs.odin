@@ -39,15 +39,14 @@ get_storage :: proc(s: ^ECS, $T: typeid) -> (^stor.ComponentStorage(T), bool) {
 /**
 It will copy the memory and allocate new for the component!
 */
-add_component :: proc(s: ^ECS, entity: core.Entity, component: $T) -> bool {
+add_component :: proc(s: ^ECS, entity: core.Entity, component: $T) -> (^T, bool) {
     
     storage, ok := get_storage(s,^T);
     if !ok {
-        return false
+        return nil, false
     }
     component := component; // do this so we can pass the adress
-    stor.add_component(storage, entity, &component); 
-    return true
+    return stor.add_component(storage, entity, &component), true; 
 }
 
 has_component :: proc(s: ^ECS, entity: core.Entity, $T: typeid) -> (int, bool) {
@@ -57,8 +56,9 @@ has_component :: proc(s: ^ECS, entity: core.Entity, $T: typeid) -> (int, bool) {
 }
 
 get_component :: proc(s: ^ECS, entity: core.Entity, $T: typeid) -> (^T, bool) {
-    storage, ok := get_storage(s,T);
+    storage, ok := get_storage(s,^T);
     if !ok do return nil, false
-    return stor.get_component(storage, entity);
+    comp, ok2 := stor.get_component(storage, entity);
+    return comp^, ok2
 }
 

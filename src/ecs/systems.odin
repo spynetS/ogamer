@@ -44,11 +44,11 @@ physics_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
 }
 
 script_system :: proc(ecs: ^ECS, renderer: ^rn.Renderer, dt: f32) {
-    script_storage, ok := get_storage(ecs, Script);
+    script_storage, ok := get_storage(ecs, ^Script);
     if !ok do return;
-    for entity, idx in script_storage.sparse{
-        
-        script := &script_storage.dense[idx];
+    for i in 0..<len(script_storage.dense) {
+        entity := script_storage.entities[i]
+        script := script_storage.dense[i];
         script.on_update(ecs, u32(entity), dt);
     }
 

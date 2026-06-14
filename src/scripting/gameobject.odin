@@ -1,6 +1,9 @@
 package scripting;
 
+import "core:fmt"
+
 import ec "../ecs/ecs_core/"
+import stor "../ecs/storage/"
 import "../ecs"
 
 GameObject :: struct {
@@ -9,13 +12,25 @@ GameObject :: struct {
     ecs: ^ecs.ECS,
 }
 
+new_gameobject :: proc(ecs_: ^ecs.ECS) -> (^GameObject, bool) {
+    game_object := new(GameObject)
+    storage, ok := ecs.get_storage(ecs_, ^ec.Transform)
+
+    entity := ec.Entity(len(storage.entities))
+    append(&storage.entities, entity)
+
+    game_object.entity = entity
+    game_object.ecs = ecs_
+    game_object.transform, _ = ecs.add_component(ecs_, entity, ec.Transform {{100,100}, {100,100}, {0,0}});
+    return game_object, true
+}
+
 get_gameobject :: proc(ecs_: ^ecs.ECS, entity: ec.Entity) -> (^GameObject, bool) {
     game_object := new(GameObject)
 
     trans, ok := ecs.get_component(ecs_, entity, ec.Transform);
     if !ok {
-        trans = &ec.Transform {{100,100}, {100,100}, {0,0}}
-        ecs.add_component(ecs_, entity, trans^);
+        trans, _ = ecs.add_component(ecs_, entity, ec.Transform {{100,100}, {100,100}, {0,0}});
     }
 
     game_object.transform = trans;
@@ -29,8 +44,8 @@ get_gameobject :: proc(ecs_: ^ecs.ECS, entity: ec.Entity) -> (^GameObject, bool)
 add_component :: proc(game_object: ^GameObject, component: $T) {
     ecs.add_component(game_object.ecs, game_object.entity, component);
 }
+
 /** this procedure does not free the components atteched to the entity */
-// TODO free theise entites
 free_gameobject :: proc(game_object: ^GameObject) {
     free(game_object);
 }
