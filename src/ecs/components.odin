@@ -4,6 +4,12 @@ package ecs;
 Entity :: u32;
 Vector2 :: [2]f32;
 
+BodyType :: enum {
+    staticBody = 0,
+	  kinematicBody = 1,
+	  dynamicBody = 2,
+}
+
 Transform :: struct {
     pos        : Vector2,
     local_pos  : Vector2,
@@ -21,9 +27,14 @@ RectangleRenderable :: struct {
 }
 
 
-PhysicsBody :: struct {
+RigidBody :: struct {
     vel  : Vector2,
-    acc  : Vector2
+    acc  : Vector2,
+    type : BodyType
+}
+
+SquareCollider :: struct {
+    size : Vector2
 }
 
 SpriteRenderable :: struct {

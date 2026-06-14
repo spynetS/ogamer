@@ -71,9 +71,6 @@ parent_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Render
         child_t.pos = parent_t.pos + rotate(child_t.local_pos * parent_t.size/100, parent_t.rot) // divide by 100 because default size is 100?
         child_t.size = parent_t.size + child_t.local_size
         child_t.rot = parent_t.rot
-
-        // cmd : rn.Rectangle = {child_t.pos+{200,0},child_t.size, rn.get_color(0xff0000ff)};
-        // append(&renderer.commands, cmd);
     }
 }
 
