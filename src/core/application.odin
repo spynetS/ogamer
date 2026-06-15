@@ -56,7 +56,6 @@ init_game :: proc() -> ^Game {
 
     // Initiation storages for the components
     ecs.add_storage(&game.ecs, ^ecs.Script);
-
     ecs.add_storage(&game.ecs, ^types.Transform);
     ecs.add_storage(&game.ecs, ^types.RigidBody);
     ecs.add_storage(&game.ecs, ^types.RectangleRenderable);
@@ -76,12 +75,15 @@ init_game :: proc() -> ^Game {
 free_game :: proc(game: ^Game) {
     delete(game.renderer.commands);
     free(game.renderer);
+    free(game.io_handler);
     ecs.delete_storage(&game.ecs, ^ecs.Script);
     ecs.delete_storage(&game.ecs, ^types.Parent);
     ecs.delete_storage(&game.ecs, ^types.Transform);
     ecs.delete_storage(&game.ecs, ^types.RigidBody);
     ecs.delete_storage(&game.ecs, ^types.RectangleRenderable);
     ecs.delete_storage(&game.ecs, ^types.SpriteRenderable);
+    ecs.delete_storage(&game.ecs, ^types.Camera2D);
+    systems.deinit_physics();
     delete(game.ecs.storages);
     free(game);
 }

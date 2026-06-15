@@ -23,6 +23,11 @@ init_physics :: proc () {
     worldId = b2.CreateWorld(worldDef);
 }
 
+deinit_physics :: proc () {
+    delete(body_id)
+    b2.DestroyWorld(worldId)
+}
+
 get_or_create_body :: proc(phy_body : ^types.RigidBody, transform: ^types.Transform) -> b2.BodyId {
     id, ok := body_id[phy_body]
     if !ok {
@@ -68,7 +73,7 @@ physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^io.IOHandler, renderer: ^rn.
 
         append(&renderer.commands, rn.Text({
             transform.pos-{100,80*2},
-            32,
+            24,
             0,
             fmt.tprintf("<%f, %f, %f>\n<%f,%f>",
                         transform.pos.x,

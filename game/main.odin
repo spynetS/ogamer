@@ -16,9 +16,19 @@ main :: proc() {
     defer core.free_game(game);
 
     camera, _ := sc.new_gameobject(&game.ecs);
+    defer free(camera)
     sc.add_component(camera, types.Camera2D({{0,0},{0,0},0,1}))
 
-      
+    roof, roof_ok := sc.new_gameobject(&game.ecs)
+    defer free(roof)
+    if roof_ok {
+        roof.transform.pos = {50, 300}
+        sc.add_component(roof, types.RectangleRenderable({rn.get_color(0xaaaaffff)}))
+        rigid := types.RigidBody({})
+        rigid.type = types.BodyType.staticBody
+        sc.add_component(roof, rigid)
+    }
+
     go, ok := sc.new_gameobject(&game.ecs)
     defer free(go);
     sc.add_component(go, types.RectangleRenderable({rn.get_color(0xaaaaffff)}))
