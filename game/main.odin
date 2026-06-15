@@ -31,6 +31,7 @@ main :: proc() {
 
     go, ok := sc.new_gameobject(&game.ecs)
     defer free(go);
+    go.transform.size = {200,100}
     sc.add_component(go, types.RectangleRenderable({rn.get_color(0xaaaaffff)}))
     sc.add_component(go, types.Camera2D({{0,0},{0,0},0,1}))
     rigid := types.RigidBody({})
@@ -40,17 +41,10 @@ main :: proc() {
     sc.add_component(go, ecs.Script({
         on_update = proc(ecs_ : ^ecs.ECS, e: u32, dt: f32) {
             rigid, _ := ecs.get_component(ecs_,e, types.RigidBody)
-            for event in es.events{
-                switch ev in event {
-                case es.Event_Key_Pressed:
-                    if ev.key == types.KeyboardKey.SPACE do sc.apply_force(rigid, {0,-5000})
-                    if ev.key == types.KeyboardKey.A do sc.apply_force(rigid, {-5000,0})
-                    if ev.key == types.KeyboardKey.D do sc.apply_force(rigid, {5000,0})
+            if sc.is_key_pressed(types.KeyboardKey.SPACE) do sc.apply_force(rigid, {0,-5000})
+            if sc.is_key_down(types.KeyboardKey.A) do sc.apply_force(rigid, {-100,0})
+            if sc.is_key_down(types.KeyboardKey.D) do sc.apply_force(rigid, {100,0})
 
-                    fmt.println(ev.key);
-                }
-            }
-            es.event_queue_clear();
         }
     }))
 

@@ -24,7 +24,6 @@ main_loop :: proc (game: ^Game) {
     
 
     for game.should_run {
-
         
         game.should_run = !rl.WindowShouldClose() // TODO make generic event for it
         append(&game.renderer.commands, begin);
@@ -34,14 +33,16 @@ main_loop :: proc (game: ^Game) {
         dt := rl.GetFrameTime(); // TODO calculate own dt
         // updating the systems 
 
-        systems.render_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.physics_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.script_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.sprite_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.parent_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.camera_system(&game.ecs,game.io_handler, game.renderer, dt);  
+        systems.render_system(&game.ecs,game.io_handler, game.renderer, dt);  
+
         
         append(&game.renderer.commands, end);
+        es.event_queue_clear();
         rn.execute(game.renderer);
     }
 }

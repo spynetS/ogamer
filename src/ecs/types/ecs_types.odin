@@ -4,6 +4,8 @@ package types;
 Entity :: u32;
 Vector2 :: [2]f32;
 
+keys : [dynamic]KeyboardKey;
+
 BodyType :: enum {
     staticBody = 0,
 	  kinematicBody = 1,

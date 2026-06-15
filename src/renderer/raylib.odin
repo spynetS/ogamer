@@ -14,13 +14,19 @@ width :: 1240
 height :: 720
 
 
-
 execute :: proc(renderer: ^Renderer) {
     key := types.KeyboardKey(rl.GetKeyPressed());
     if key != types.KeyboardKey.KEY_NULL {
-        ks := es.Event_Key_Pressed({key})
-        es.emit(ks);
+        es.emit(es.Event_Key_Pressed({key}));
+        append(&types.keys, key);
     }
+
+    for i := len(types.keys) - 1; i >= 0; i -= 1 {
+        if rl.IsKeyReleased(rl.KeyboardKey(types.keys[i])) {
+            unordered_remove(&types.keys, i)
+        }
+    }    
+
 
     if RENDER {
 
