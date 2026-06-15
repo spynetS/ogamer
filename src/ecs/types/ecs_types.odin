@@ -4,6 +4,13 @@ package types;
 Entity :: u32;
 Vector2 :: [2]f32;
 
+BodyType :: enum {
+    staticBody = 0,
+	  kinematicBody = 1,
+	  dynamicBody = 2,
+}
+
+
 Camera2D :: struct {
     offset:   Vector2,            // Camera offset (displacement from target)
 	  target:   Vector2,            // Camera target (rotation and zoom origin)
@@ -29,9 +36,14 @@ RectangleRenderable :: struct {
 }
 
 
-PhysicsBody :: struct {
+RigidBody :: struct {
     vel  : Vector2,
-    acc  : Vector2
+    acc  : Vector2,
+    type : BodyType
+}
+
+SquareCollider :: struct {
+    size : Vector2
 }
 
 SpriteRenderable :: struct {

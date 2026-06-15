@@ -7,7 +7,7 @@ import "../ecs/types"
 import "../ecs/systems"
 import "../io"
 import "core:fmt"
-
+import b2 "vendor:box2d"
 
 Game :: struct {
     should_run: bool,
@@ -20,8 +20,11 @@ main_loop :: proc (game: ^Game) {
     begin :rn.BeginDraw = {};
     end :rn.EndDraw = {};
     cmd : rn.Clear = {rn.get_color(0x181818ff)};
+    
 
-    for game.should_run { 
+    for game.should_run {
+
+        
         game.should_run = !rl.WindowShouldClose() // TODO make generic event for it
         append(&game.renderer.commands, begin);
         append(&game.renderer.commands, cmd);
@@ -29,6 +32,7 @@ main_loop :: proc (game: ^Game) {
 
         dt := rl.GetFrameTime(); // TODO calculate own dt
         // updating the systems 
+
         systems.render_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.physics_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.script_system(&game.ecs,game.io_handler, game.renderer, dt);  
@@ -48,15 +52,17 @@ init_game :: proc() -> ^Game {
     game.renderer= new(rn.Renderer);
     game.io_handler = new(io.IOHandler);
 
+    systems.init_physics();
+
     // Initiation storages for the components
     ecs.add_storage(&game.ecs, ^ecs.Script);
-
     ecs.add_storage(&game.ecs, ^types.Transform);
-    ecs.add_storage(&game.ecs, ^types.PhysicsBody);
+    ecs.add_storage(&game.ecs, ^types.RigidBody);
     ecs.add_storage(&game.ecs, ^types.RectangleRenderable);
     ecs.add_storage(&game.ecs, ^types.SpriteRenderable);
     ecs.add_storage(&game.ecs, ^types.Parent);
     ecs.add_storage(&game.ecs, ^types.Camera2D);
+
 
     // init rendering window
     init :rn.InitWindow = {800,500,"BLA"};
@@ -69,12 +75,15 @@ init_game :: proc() -> ^Game {
 free_game :: proc(game: ^Game) {
     delete(game.renderer.commands);
     free(game.renderer);
+    free(game.io_handler);
     ecs.delete_storage(&game.ecs, ^ecs.Script);
     ecs.delete_storage(&game.ecs, ^types.Parent);
     ecs.delete_storage(&game.ecs, ^types.Transform);
-    ecs.delete_storage(&game.ecs, ^types.PhysicsBody);
+    ecs.delete_storage(&game.ecs, ^types.RigidBody);
     ecs.delete_storage(&game.ecs, ^types.RectangleRenderable);
     ecs.delete_storage(&game.ecs, ^types.SpriteRenderable);
+    ecs.delete_storage(&game.ecs, ^types.Camera2D);
+    systems.deinit_physics();
     delete(game.ecs.storages);
     free(game);
 }

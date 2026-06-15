@@ -62,19 +62,9 @@ sprite_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.R
     }
 }
 
-// Vector2 RotatePoint(Vector2 p, float angle)
-// {
-//     float rad = angle * DEG2RAD;
-//     float s = sinf(rad);
-//     float c = cosf(rad);
-
-//     return (Vector2){
-//         p.x * c - p.y * s,
-//         p.x * s + p.y * c
-//     };
-// }
 
 rotate :: proc(p : types.Vector2, angle: f32) -> types.Vector2 {
+
     rad := angle / math.DEG_PER_RAD;
     s := math.sin(rad)
     c := math.cos(rad)
@@ -102,29 +92,9 @@ parent_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.R
         child_t.pos = parent_t.pos + rotate(child_t.local_pos * parent_t.size/100, parent_t.rot) // divide by 100 because default size is 100?
         child_t.size = parent_t.size + child_t.local_size
         child_t.rot = parent_t.rot
-
-        // cmd : rn.Rectangle = {child_t.pos+{200,0},child_t.size, rn.get_color(0xff0000ff)};
-        // append(&renderer.commands, cmd);
     }
 }
 
-physics_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
-    phys, ok := ecss.get_storage(ecs, ^types.PhysicsBody)
-    if !ok do return
-    trans, ok2 := ecss.get_storage(ecs, ^types.Transform)
-    if !ok2 do return
-
-    for i in 0..<len(phys.dense) {
-        entity := phys.entities[i]
-        t_idx, has_t := storage.has_component(trans, entity)
-        if !has_t do continue
-        t := trans.dense[trans.sparse[int(entity)]]
-        p := phys.dense[i]
-
-        p.vel += p.acc * dt
-        t.pos += p.vel * dt
-    }
-}
 
 script_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     script_storage, ok := ecss.get_storage(ecs, ^ecss.Script);
