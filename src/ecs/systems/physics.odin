@@ -1,20 +1,21 @@
-package ecs;
+package systems;
 
 import "core:fmt"
 import "core:math"
 import b2 "vendor:box2d"
 
-import storage "./storage"
-import rn "../renderer"
-import io "../io/"
+import storage "../storage"
+import rn "../../renderer"
+import io "../../io/"
+import "../types"
+import ecs "../"
 
 PIXELS_PER_METER :: 50.0
 
 
 
 worldId : b2.WorldId;
-body_id : map[^RigidBody]b2.BodyId;
-
+body_id : map[^types.RigidBody]b2.BodyId;
 
 init_physics :: proc () {
     worldDef := b2.DefaultWorldDef();
@@ -22,7 +23,7 @@ init_physics :: proc () {
     worldId = b2.CreateWorld(worldDef);
 }
 
-get_or_create_body :: proc(phy_body : ^RigidBody, transform: ^Transform) -> b2.BodyId {
+get_or_create_body :: proc(phy_body : ^types.RigidBody, transform: ^types.Transform) -> b2.BodyId {
     id, ok := body_id[phy_body]
     if !ok {
         body_def := b2.DefaultBodyDef();
@@ -45,10 +46,10 @@ get_or_create_body :: proc(phy_body : ^RigidBody, transform: ^Transform) -> b2.B
 }
 
 
-physics_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
-    phys, ok := get_storage(ecs, ^RigidBody)
+physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+    phys, ok := ecs.get_storage(ecs_, ^types.RigidBody)
     if !ok do return
-    trans, ok2 := get_storage(ecs, ^Transform)
+    trans, ok2 := ecs.get_storage(ecs_, ^types.Transform)
     if !ok2 do return
 
     b2.World_Step(worldId, dt, 8);

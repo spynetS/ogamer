@@ -1,4 +1,4 @@
-package ecs;
+package types;
 
 
 Entity :: u32;
@@ -9,6 +9,15 @@ BodyType :: enum {
 	  kinematicBody = 1,
 	  dynamicBody = 2,
 }
+
+
+Camera2D :: struct {
+    offset:   Vector2,            // Camera offset (displacement from target)
+	  target:   Vector2,            // Camera target (rotation and zoom origin)
+	  rotation: f32,                // Camera rotation in degrees
+	  zoom:     f32,                // Camera zoom (scaling), should be 1.0f by default
+}
+
 
 Transform :: struct {
     pos        : Vector2,

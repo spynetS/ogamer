@@ -6,12 +6,13 @@ import "core:strings";
 RENDER :: true
 
 texture_cache: map[string]rl.Texture2D
+camera := rl.Camera2D({{1240/2,720/2},{0,0},0,1});
 
-load :: proc() {
-
-}
+width :: 1240
+height :: 720
 
 execute :: proc(renderer: ^Renderer) {
+
 
     if RENDER {
 
@@ -19,11 +20,16 @@ execute :: proc(renderer: ^Renderer) {
             switch v in command {
             case InitWindow:
                 rl.SetTargetFPS(144)
-                rl.InitWindow(1240,720,"Hello World");
+                rl.InitWindow(width,height,"Hello World");
             case BeginDraw:
                 rl.BeginDrawing();
-                rl.DrawText(fmt.ctprintf("FPS: %d", rl.GetFPS()), 10, 10, 20, rl.BLACK)
+                camera : rl.Camera2D;
+                if renderer.active_camera != nil do camera = rl.Camera2D(renderer.active_camera^)
+                camera.offset = {width/2, height/2}
+                rl.BeginMode2D(camera);
+                
             case EndDraw:
+                rl.EndMode2D();
                 rl.EndDrawing();
             case Clear:
                 rl.ClearBackground(rl.RAYWHITE);

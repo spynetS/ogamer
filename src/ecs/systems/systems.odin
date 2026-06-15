@@ -1,17 +1,36 @@
-package ecs;
+package systems;
 
 import "core:fmt"
 import "core:math"
-import storage "./storage"
-import rn "../renderer"
+import storage "../storage"
+import rn "../../renderer"
 import rl "vendor:raylib/rlgl"
-import io "../io/"
+import io "../../io/"
+import ecss "../"
+import "../types"
 
 
-render_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
-    render_storage, ok := get_storage(ecs, ^RectangleRenderable);
+camera_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+    storage, ok := ecss.get_storage(ecs, ^types.Camera2D);
     if !ok do return;
-    trans, ok2 := get_storage(ecs, ^Transform)
+    t_storage, ok2 := ecss.get_storage(ecs, ^types.Transform)
+    if !ok2 do return
+    
+    for i in 0..<len(storage.dense) {
+        entity    := storage.entities[i]
+        camera    := storage.dense[i];
+        transform := t_storage.dense[t_storage.sparse[entity]];
+
+        camera.target = transform.pos
+        renderer.active_camera = camera
+    }
+
+}
+
+render_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+    render_storage, ok := ecss.get_storage(ecs, ^types.RectangleRenderable);
+    if !ok do return;
+    trans, ok2 := ecss.get_storage(ecs, ^types.Transform)
     if !ok2 do return
     for i in 0..<len(render_storage.dense) {
         entity := render_storage.entities[i]
@@ -25,10 +44,10 @@ render_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Render
     }
 }
 
-sprite_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
-    sprite_storage, ok := get_storage(ecs, ^SpriteRenderable);
+sprite_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+    sprite_storage, ok := ecss.get_storage(ecs, ^types.SpriteRenderable);
     if !ok do return;
-    trans, ok2 := get_storage(ecs, ^Transform)
+    trans, ok2 := ecss.get_storage(ecs, ^types.Transform)
     if !ok2 do return
     for i in 0..<len(sprite_storage.dense) {
         entity := sprite_storage.entities[i]
@@ -43,20 +62,22 @@ sprite_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Render
     }
 }
 
-rotate :: proc(p : Vector2, angle: f32) -> Vector2 {
+
+rotate :: proc(p : types.Vector2, angle: f32) -> types.Vector2 {
+
     rad := angle / math.DEG_PER_RAD;
     s := math.sin(rad)
     c := math.cos(rad)
-    return Vector2({
+    return types.Vector2({
         p.x * c - p.y * s,
         p.x * s + p.y * c
     })
 }
 
-parent_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
-    parent_storage, ok := get_storage(ecs, ^Parent);
+parent_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+    parent_storage, ok := ecss.get_storage(ecs, ^types.Parent);
     if !ok do return;
-    t_storage, ok2 := get_storage(ecs, ^Transform)
+    t_storage, ok2 := ecss.get_storage(ecs, ^types.Transform)
     if !ok2 do return
 
     for i in 0..<len(parent_storage.dense) {
@@ -75,8 +96,8 @@ parent_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Render
 }
 
 
-script_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
-    script_storage, ok := get_storage(ecs, ^Script);
+script_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+    script_storage, ok := ecss.get_storage(ecs, ^ecss.Script);
     if !ok do return;
     for i in 0..<len(script_storage.dense) {
         entity := script_storage.entities[i]
