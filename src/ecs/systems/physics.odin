@@ -38,6 +38,7 @@ get_or_create_body :: proc(phy_body : ^types.RigidBody, transform: ^types.Transf
         id = b2.CreateBody(worldId, body_def);
         body_id[phy_body] = id
 
+        // TODO create shape based on collider component
         box := b2.MakeBox(
             (transform.size.x/2) / PIXELS_PER_METER,
             (transform.size.y/2) / PIXELS_PER_METER
@@ -64,7 +65,6 @@ physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^io.IOHandler, renderer: ^rn.
         physics_body := phys.dense[i];
         
         transform := trans.dense[trans.sparse[entity]];
-
 
         t := b2.Body_GetTransform(get_or_create_body(physics_body, transform));
 

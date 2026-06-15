@@ -32,18 +32,11 @@ main :: proc() {
     go, ok := sc.new_gameobject(&game.ecs)
     defer free(go);
     sc.add_component(go, types.RectangleRenderable({rn.get_color(0xaaaaffff)}))
+    sc.add_component(go, types.Camera2D({{0,0},{0,0},0,1}))
     rigid := types.RigidBody({})
     rigid.type = types.BodyType.dynamicBody
     sc.add_component(go, rigid)
     
-    // sc.add_component(go, ecs.Script({
-    //     on_update = proc(ecs_: ^ecs.ECS, e: u32, dt: f32) {
-    //         go, _ := sc.get_gameobject(ecs_,e)
-    //         go.transform.pos.x += 1;
-    //     }
-    // }))
-    
-
     core.main_loop(game);
 }
 
