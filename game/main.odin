@@ -25,7 +25,7 @@ main :: proc() {
         roof.transform.pos = {50, 300}
         sc.add_component(roof, types.RectangleRenderable({rn.get_color(0xaaaaffff)}))
         rigid := types.RigidBody({})
-        rigid.type = types.BodyType.staticBody
+        rigid.type = types.BodyType.kinematicBody
         sc.add_component(roof, rigid)
     }
 

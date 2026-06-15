@@ -9,13 +9,15 @@ import rn "../../renderer"
 import io "../../io/"
 import "../types"
 import ecs "../"
+import es "../../event-system"
 
 PIXELS_PER_METER :: 50.0
 
 
 
-worldId : b2.WorldId;
-body_id : map[^types.RigidBody]b2.BodyId;
+worldId  : b2.WorldId;
+body_id  : map[^types.RigidBody]b2.BodyId;
+shape_id : map[b2.ShapeId]^types.RigidBody; // TODO use collider component instead
 
 init_physics :: proc () {
     worldDef := b2.DefaultWorldDef();
@@ -43,14 +45,44 @@ get_or_create_body :: proc(phy_body : ^types.RigidBody, transform: ^types.Transf
             (transform.size.x/2) / PIXELS_PER_METER,
             (transform.size.y/2) / PIXELS_PER_METER
         )
+
         shapeDef := b2.DefaultShapeDef() 
-        shapeDef.density = 1    
+        shapeDef.density = 1
+        shapeDef.enableContactEvents = true;
         shapeId := b2.CreatePolygonShape(body_id[phy_body], shapeDef, box);
+        shape_id[shapeId] = phy_body
         
     }
     return id
 }
 
+handle_collision :: proc(events: b2.ContactEvents) {
+    for i in 0..< events.beginCount {
+        //b2ContactBeginTouchEvent* e = events.beginEvents + i;
+        e := events.beginEvents[i]
+        ra := shape_id[e.shapeIdA]
+        rb := shape_id[e.shapeIdB]
+        es.emit(es.Event_Collision_Entered({ra,rb}))
+    }
+
+    for i in 0..< events.endCount {
+        //b2ContactEndTouchEvent* e = events.endEvents + i;
+        e := events.endEvents[i]
+        ra := shape_id[e.shapeIdA]
+        rb := shape_id[e.shapeIdB]
+        es.emit(es.Event_Collision_Left({ra,rb}))
+        // collision ended
+    }
+
+    for i in 0..< events.hitCount {
+        //b2ContactHitEvent* e = events.hitEvents + i;
+        e := events.hitEvents[i]
+        ra := shape_id[e.shapeIdA]
+        rb := shape_id[e.shapeIdB]
+        es.emit(es.Event_Collision_Hit({ra,rb}))
+        // significant impact
+    }
+}
 
 physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     phys, ok := ecs.get_storage(ecs_, ^types.RigidBody)
@@ -59,6 +91,8 @@ physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^io.IOHandler, renderer: ^rn.
     if !ok2 do return
 
     b2.World_Step(worldId, dt, 8);
+    events := b2.World_GetContactEvents(worldId);
+    handle_collision(events)
 
     for i in 0..<len(phys.dense) {
         entity := phys.entities[i]
