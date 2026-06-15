@@ -32,10 +32,14 @@ get_or_create_body :: proc(phy_body : ^RigidBody, transform: ^Transform) -> b2.B
         id = b2.CreateBody(worldId, body_def);
         body_id[phy_body] = id
 
-        box := b2.MakeBox(transform.size.x/100, transform.size.y/100);
+        box := b2.MakeBox(
+            (transform.size.x/2) / PIXELS_PER_METER,
+            (transform.size.y/2) / PIXELS_PER_METER
+        )
         shapeDef := b2.DefaultShapeDef() 
-        shapeDef.density = 1       
+        shapeDef.density = 1    
         shapeId := b2.CreatePolygonShape(body_id[phy_body], shapeDef, box);
+        
     }
     return id
 }
@@ -47,17 +51,33 @@ physics_system :: proc(ecs: ^ECS, io_handler: ^io.IOHandler, renderer: ^rn.Rende
     trans, ok2 := get_storage(ecs, ^Transform)
     if !ok2 do return
 
+    b2.World_Step(worldId, dt, 8);
+
     for i in 0..<len(phys.dense) {
         entity := phys.entities[i]
         physics_body := phys.dense[i];
         
         transform := trans.dense[trans.sparse[entity]];
 
-        b2.World_Step(worldId, dt, 4);
+
         t := b2.Body_GetTransform(get_or_create_body(physics_body, transform));
 
         transform.pos = t.p*PIXELS_PER_METER;
-        transform.rot = b2.Rot_GetAngle(t.q)*PIXELS_PER_METER;
+        transform.rot = b2.Rot_GetAngle(t.q)*math.DEG_PER_RAD
+
+        append(&renderer.commands, rn.Text({
+            transform.pos-{100,80*2},
+            32,
+            0,
+            fmt.tprintf("<%f, %f, %f>\n<%f,%f>",
+                        transform.pos.x,
+                        transform.pos.y,
+                        transform.rot,
+                        transform.size.x/2/PIXELS_PER_METER,
+                        transform.size.y/2/PIXELS_PER_METER,
+
+                       )
+        }))
 
     }
         

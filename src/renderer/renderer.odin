@@ -13,12 +13,14 @@ RenderCommand :: union {
     Clear,
     Rectangle,
     Sprite,
+    Text,
 }
 
 InitWindow :: struct { width, height: int, title: string }
 Clear      :: struct { color: [4]u8 }
 Rectangle  :: struct { pos, size: [2]f32, rot: f32, color: [4]u8 }
-Sprite  :: struct { pos, size: [2]f32,rot: f32, file_path: string }
+Sprite     :: struct { pos, size: [2]f32, rot: f32, file_path: string }
+Text       :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string }
 BeginDraw  :: struct {}
 EndDraw    :: struct {}
 
