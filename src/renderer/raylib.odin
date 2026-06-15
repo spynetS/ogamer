@@ -2,6 +2,8 @@ package renderer;
 import rl "vendor:raylib";
 import "core:fmt";
 import "core:strings";
+import es "../event-system";
+import "../ecs/types";
 
 RENDER :: true
 
@@ -11,8 +13,14 @@ camera := rl.Camera2D({{1240/2,720/2},{0,0},0,1});
 width :: 1240
 height :: 720
 
-execute :: proc(renderer: ^Renderer) {
 
+
+execute :: proc(renderer: ^Renderer) {
+    key := types.KeyboardKey(rl.GetKeyPressed());
+    if key != types.KeyboardKey.KEY_NULL {
+        ks := es.Event_Key_Pressed({key})
+        es.emit(ks);
+    }
 
     if RENDER {
 

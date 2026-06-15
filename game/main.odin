@@ -1,12 +1,12 @@
 package main;
 
 import "core:fmt"
-import rl "vendor:raylib"
 import "../src/core"
 import "../src/ecs"
 import "../src/ecs/types"
 import sc "../src/scripting"
 import rn "../src/renderer"
+import es "../src/event-system"
 
 
 
@@ -36,7 +36,25 @@ main :: proc() {
     rigid := types.RigidBody({})
     rigid.type = types.BodyType.dynamicBody
     sc.add_component(go, rigid)
-    
+
+    sc.add_component(go, ecs.Script({
+        on_update = proc(ecs_ : ^ecs.ECS, e: u32, dt: f32) {
+            rigid, _ := ecs.get_component(ecs_,e, types.RigidBody)
+            for event in es.events{
+                switch ev in event {
+                case es.Event_Key_Pressed:
+                    if ev.key == types.KeyboardKey.SPACE do sc.apply_force(rigid, {0,-5000})
+                    if ev.key == types.KeyboardKey.A do sc.apply_force(rigid, {-5000,0})
+                    if ev.key == types.KeyboardKey.D do sc.apply_force(rigid, {5000,0})
+
+                    fmt.println(ev.key);
+                }
+            }
+            es.event_queue_clear();
+        }
+    }))
+
+
     core.main_loop(game);
 }
 

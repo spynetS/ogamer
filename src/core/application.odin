@@ -5,6 +5,7 @@ import rn "../renderer"
 import "../ecs"
 import "../ecs/types"
 import "../ecs/systems"
+import es "../event-system"
 import "../io"
 import "core:fmt"
 import b2 "vendor:box2d"
@@ -53,6 +54,8 @@ init_game :: proc() -> ^Game {
     game.io_handler = new(io.IOHandler);
 
     systems.init_physics();
+
+    es.event_queue_init();
 
     // Initiation storages for the components
     ecs.add_storage(&game.ecs, ^ecs.Script);
