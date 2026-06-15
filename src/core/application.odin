@@ -3,6 +3,8 @@ package core;
 import rl "vendor:raylib"
 import rn "../renderer"
 import "../ecs"
+import "../ecs/types"
+import "../ecs/systems"
 import "../io"
 import "core:fmt"
 
@@ -27,11 +29,12 @@ main_loop :: proc (game: ^Game) {
 
         dt := rl.GetFrameTime(); // TODO calculate own dt
         // updating the systems 
-        ecs.render_system(&game.ecs,game.io_handler, game.renderer, dt);  
-        ecs.physics_system(&game.ecs,game.io_handler, game.renderer, dt);  
-        ecs.script_system(&game.ecs,game.io_handler, game.renderer, dt);  
-        ecs.sprite_system(&game.ecs,game.io_handler, game.renderer, dt);  
-        ecs.parent_system(&game.ecs,game.io_handler, game.renderer, dt);  
+        systems.render_system(&game.ecs,game.io_handler, game.renderer, dt);  
+        systems.physics_system(&game.ecs,game.io_handler, game.renderer, dt);  
+        systems.script_system(&game.ecs,game.io_handler, game.renderer, dt);  
+        systems.sprite_system(&game.ecs,game.io_handler, game.renderer, dt);  
+        systems.parent_system(&game.ecs,game.io_handler, game.renderer, dt);  
+        systems.camera_system(&game.ecs,game.io_handler, game.renderer, dt);  
         
         append(&game.renderer.commands, end);
         rn.execute(game.renderer);
@@ -48,11 +51,12 @@ init_game :: proc() -> ^Game {
     // Initiation storages for the components
     ecs.add_storage(&game.ecs, ^ecs.Script);
 
-    ecs.add_storage(&game.ecs, ^ecs.Transform);
-    ecs.add_storage(&game.ecs, ^ecs.PhysicsBody);
-    ecs.add_storage(&game.ecs, ^ecs.RectangleRenderable);
-    ecs.add_storage(&game.ecs, ^ecs.SpriteRenderable);
-    ecs.add_storage(&game.ecs, ^ecs.Parent);
+    ecs.add_storage(&game.ecs, ^types.Transform);
+    ecs.add_storage(&game.ecs, ^types.PhysicsBody);
+    ecs.add_storage(&game.ecs, ^types.RectangleRenderable);
+    ecs.add_storage(&game.ecs, ^types.SpriteRenderable);
+    ecs.add_storage(&game.ecs, ^types.Parent);
+    ecs.add_storage(&game.ecs, ^types.Camera2D);
 
     // init rendering window
     init :rn.InitWindow = {800,500,"BLA"};
@@ -66,11 +70,11 @@ free_game :: proc(game: ^Game) {
     delete(game.renderer.commands);
     free(game.renderer);
     ecs.delete_storage(&game.ecs, ^ecs.Script);
-    //ecs.delete_storage(&game.ecs, ^ecs.Parent);
-    ecs.delete_storage(&game.ecs, ^ecs.Transform);
-    ecs.delete_storage(&game.ecs, ^ecs.PhysicsBody);
-    ecs.delete_storage(&game.ecs, ^ecs.RectangleRenderable);
-    ecs.delete_storage(&game.ecs, ^ecs.SpriteRenderable);
+    ecs.delete_storage(&game.ecs, ^types.Parent);
+    ecs.delete_storage(&game.ecs, ^types.Transform);
+    ecs.delete_storage(&game.ecs, ^types.PhysicsBody);
+    ecs.delete_storage(&game.ecs, ^types.RectangleRenderable);
+    ecs.delete_storage(&game.ecs, ^types.SpriteRenderable);
     delete(game.ecs.storages);
     free(game);
 }

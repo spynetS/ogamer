@@ -4,10 +4,11 @@ import "core:fmt"
 
 import stor "../ecs/storage/"
 import "../ecs"
+import "../ecs/types"
 
 GameObject :: struct {
-    entity: ecs.Entity,
-    transform: ^ecs.Transform, // ecs should handle the transform memory
+    entity: types.Entity,
+    transform: ^types.Transform, // ecs should handle the transform memory
     parent: ^GameObject,
     ecs: ^ecs.ECS,
 }
@@ -15,25 +16,25 @@ GameObject :: struct {
 new_gameobject :: proc(ecs_: ^ecs.ECS) -> (^GameObject, bool) {
     game_object := new(GameObject)
 
-    t_storage, ok := ecs.get_storage(ecs_, ^ecs.Transform)
-    entity := ecs.Entity(len(t_storage.entities))
+    t_storage, ok := ecs.get_storage(ecs_, ^types.Transform)
+    entity := types.Entity(len(t_storage.entities))
     append(&t_storage.entities, entity)
 
     game_object.entity = entity
     game_object.ecs = ecs_
-    game_object.transform, _ = ecs.add_component(ecs_, entity, ecs.Transform {{100,100}, {0,0}, {100,100}, {0,0}, 0});
+    game_object.transform, _ = ecs.add_component(ecs_, entity, types.Transform {{100,100}, {0,0}, {100,100}, {0,0}, 0});
     return game_object, true
 }
 
-get_gameobject :: proc(ecs_: ^ecs.ECS, entity: ecs.Entity) -> (^GameObject, bool) {
+get_gameobject :: proc(ecs_: ^ecs.ECS, entity: types.Entity) -> (^GameObject, bool) {
     game_object := new(GameObject)
 
-    trans, ok := ecs.get_component(ecs_, entity, ecs.Transform);
+    trans, ok := ecs.get_component(ecs_, entity, types.Transform);
     if !ok {
-        trans, _ = ecs.add_component(ecs_, entity, ecs.Transform {{100,100}, {0,0}, {100,100}, {0,0}, 0});
+        trans, _ = ecs.add_component(ecs_, entity, types.Transform {{100,100}, {0,0}, {100,100}, {0,0}, 0});
     }
 
-    parent, got_parent := ecs.get_component(ecs_, entity, ecs.Parent);
+    parent, got_parent := ecs.get_component(ecs_, entity, types.Parent);
     if got_parent {
         if parent.entity == entity do return nil, false
         game_object.parent, _ = get_gameobject(ecs_, parent.entity);
@@ -57,6 +58,6 @@ free_gameobject :: proc(game_object: ^GameObject) {
 }
 
 add_child :: proc(game_object: ^GameObject, child: ^GameObject) {
-    add_component(child, ecs.Parent({game_object.entity}));
+    add_component(child, types.Parent({game_object.entity}));
     child.parent = game_object
 }

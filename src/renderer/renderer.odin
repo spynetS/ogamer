@@ -1,6 +1,8 @@
 package renderer;
 
 import io "../io/"
+import "../ecs"
+import "../ecs/types"
 
 // Renderer works by having a bunch of rendering commands that
 // the underlaying graphics arcitecture implements by having 
@@ -25,4 +27,5 @@ EndDraw    :: struct {}
 
 Renderer :: struct {
     commands: [dynamic]RenderCommand,
+    active_camera: ^types.Camera2D
 }
