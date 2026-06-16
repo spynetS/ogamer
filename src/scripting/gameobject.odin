@@ -54,8 +54,8 @@ new_renderobject :: proc(e: ^ecs.ECS) -> (^GameObject, bool){
     return go, created
 }
 
-add_component :: proc(game_object: ^GameObject, component: $T) {
-    ecs.add_component(game_object.ecs, game_object.entity, component);
+add_component :: proc(game_object: ^GameObject, component: $T) -> (^T, bool) {
+    return ecs.add_component(game_object.ecs, game_object.entity, component);
 }
 
 /** this procedure does not free the components atteched to the entity */

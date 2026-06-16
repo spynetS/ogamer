@@ -65,6 +65,25 @@ sprite_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^r
     }
 }
 
+sprite_animator_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+    storage, ok := ecss.get_storage(ecs, ^types.SpriteAnimator);
+    if !ok do return;
+    for i in 0..<len(storage.dense) {
+        animator := storage.dense[i]
+        if animator.disabled do continue;
+        if animator.counter <= 0 {
+            fmt.println("new sprite")
+            animator.counter = animator.time
+            animator.active_index = (animator.active_index + 1) % len(animator.sprites)
+            animator.sprite_comp.image = animator.sprites[animator.active_index]
+        }
+        else {
+            fmt.println("count down", animator.counter, animator.active_index)
+            animator.counter -= dt;
+        }
+    }
+}
+
 
 rotate :: proc(p : types.Vector2, angle: f32) -> types.Vector2 {
 

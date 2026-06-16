@@ -73,6 +73,7 @@ execute :: proc(renderer: ^Renderer) {
                 );
             case Sprite:
                 // tecture cacheing
+                // TODO load this before rendering (make a sperate function to load tectures)
                 sprite, got := texture_cache[v.image]
                 if !got {
                     fmt.println("INFO: load texture")

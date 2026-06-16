@@ -38,6 +38,8 @@ main_loop :: proc (game: ^Game) {
         systems.sprite_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.parent_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.camera_system(&game.ecs,game.io_handler, game.renderer, dt);  
+        systems.sprite_animator_system(&game.ecs,game.io_handler, game.renderer, dt);  
+
         systems.render_system(&game.ecs,game.io_handler, game.renderer, dt);  
 
         
@@ -65,6 +67,7 @@ init_game :: proc() -> ^Game {
     ecs.add_storage(&game.ecs, ^types.SpriteRenderable);
     ecs.add_storage(&game.ecs, ^types.Parent);
     ecs.add_storage(&game.ecs, ^types.Camera2D);
+    ecs.add_storage(&game.ecs, ^types.SpriteAnimator);
 
 
     // init rendering window
@@ -86,6 +89,7 @@ free_game :: proc(game: ^Game) {
     ecs.delete_storage(&game.ecs, ^types.RectangleRenderable);
     ecs.delete_storage(&game.ecs, ^types.SpriteRenderable);
     ecs.delete_storage(&game.ecs, ^types.Camera2D);
+    ecs.delete_storage(&game.ecs, ^types.SpriteAnimator);
     systems.deinit_physics();
 
     es.event_queue_destroy();

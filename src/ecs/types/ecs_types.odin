@@ -79,6 +79,16 @@ SpriteRenderable :: struct {
     image : ^Image
 }
 
+SpriteAnimator :: struct {
+    using component: Component,
+    sprite_comp: ^SpriteRenderable,
+    sprites: []^Image,
+    time: f32,
+    counter: f32,
+    active_index: int
+}
+
+
 // TAKEN FROM RAYLIB
 KeyboardKey :: enum i32 {
 	KEY_NULL      = 0,   // Key: NULL, used for no key pressed
