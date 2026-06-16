@@ -3,19 +3,19 @@ package file_io;
 import "../ecs/types"
 import "core:fmt"
 
-new_tilesheet :: proc (image: ^types.Image, s: [2]i32) -> ^types.TileSheet {
-    columns := image.width / s.x;
-    rows    := image.height / s.y;
+new_tilesheet :: proc (image: ^types.Image, tile_size: [2]i32, box_offset:[2]i32 = {0,0}) -> ^types.TileSheet {
+    columns := image.width / (box_offset.x+ tile_size.x);
+    rows    := image.height / (box_offset.y+tile_size.y);
 
     ts := new(types.TileSheet)
     ts.images = make([][]^types.Image, rows)
-    ts.size = s;
+    ts.size = tile_size;
 
 
     for r in 0..<rows {
         ts.images[r] = make([]^types.Image, columns)
         for c in 0..<columns {
-            croped := crop(image, c*s.x, r*s.y, s.x, s.y);
+            croped := crop(image, c*(box_offset.x+tile_size.x), (box_offset.y+tile_size.y)*r, tile_size.x, tile_size.y);
             ts.images[r][c] = croped
         }
     } 

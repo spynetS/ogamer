@@ -65,12 +65,23 @@ execute :: proc(renderer: ^Renderer) {
                     v.size.x / 2,
                     v.size.y / 2
                 };
-                rl.DrawRectanglePro(
-                    rec,
-                    origin,
-                    v.rot,
-                    rl.Color(v.color)
-                );
+                if !v.lines {
+                    rl.DrawRectanglePro(
+                        rec,
+                        origin,
+                        v.rot,
+                        rl.Color(v.color)
+                    );
+                }
+                else {
+                    rec.x -= rec.width/2
+                    rec.y -= rec.height/2
+                    rl.DrawRectangleLinesEx(
+                        rec,
+                        1,
+                        rl.Color(v.color)
+                    );
+                }
             case Sprite:
                 // tecture cacheing
                 // TODO load this before rendering (make a sperate function to load tectures)
@@ -89,7 +100,7 @@ execute :: proc(renderer: ^Renderer) {
                 }
                 
                 
-                source : rl.Rectangle = {0,0, cast(f32)sprite.width, cast(f32)sprite.height}
+                source : rl.Rectangle = {0,0, cast(f32)(v.inverted ? -sprite.width :sprite.width ), cast(f32)sprite.height}
                 dest : rl.Rectangle = {v.pos.x,v.pos.y, v.size.x, v.size.y}
 
                 origin : rl.Vector2 = {

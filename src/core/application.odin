@@ -20,10 +20,12 @@ Game :: struct {
 main_loop :: proc (game: ^Game) {
     begin :rn.BeginDraw = {};
     end :rn.EndDraw = {};
-    cmd : rn.Clear = {rn.get_color(0x181818ff)};
+    cmd : rn.Clear = {rn.get_color(0x00aaddff)};
     
 
     for game.should_run {
+
+        
         
         game.should_run = !rl.WindowShouldClose() // TODO make generic event for it
         append(&game.renderer.commands, begin);
@@ -33,6 +35,7 @@ main_loop :: proc (game: ^Game) {
         dt := rl.GetFrameTime(); // TODO calculate own dt
         // updating the systems 
 
+        
         systems.physics_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.sprite_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.parent_system(&game.ecs,game.io_handler, game.renderer, dt);  
@@ -40,7 +43,6 @@ main_loop :: proc (game: ^Game) {
         systems.sprite_animator_system(&game.ecs,game.io_handler, game.renderer, dt);  
 
         systems.script_system(&game.ecs,game.io_handler, game.renderer, dt);  
-
         systems.render_system(&game.ecs,game.io_handler, game.renderer, dt);  
 
         

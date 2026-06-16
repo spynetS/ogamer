@@ -18,8 +18,8 @@ RenderCommand :: union {
 
 InitWindow :: struct { width, height: int, title: string }
 Clear      :: struct { color: [4]u8 }
-Rectangle  :: struct { pos, size: [2]f32, rot: f32, color: [4]u8 }
-Sprite     :: struct { pos, size: [2]f32, rot: f32, image: ^types.Image }
+Rectangle  :: struct { pos, size: [2]f32, rot: f32, color: [4]u8, lines: bool}
+Sprite     :: struct { pos, size: [2]f32, rot: f32, inverted: bool, image: ^types.Image }
 Text       :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string }
 BeginDraw  :: struct {}
 EndDraw    :: struct {}

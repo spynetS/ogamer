@@ -40,7 +40,7 @@ render_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^r
         
         t := trans.dense[trans.sparse[int(entity)]]
         r := render_storage.dense[i]
-        cmd : rn.Rectangle = {t.pos,t.size, t.rot, r.color};
+        cmd : rn.Rectangle = {t.pos,t.size, t.rot, r.color, false};
         append(&renderer.commands, cmd);
     }
 }
@@ -61,26 +61,44 @@ sprite_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^r
         t := trans.dense[trans.sparse[int(entity)]]
         
         
-        cmd := rn.Sprite({t.pos, t.size, t.rot, sprite.image})
+        cmd := rn.Sprite({t.pos, t.size*sprite.scale, t.rot, sprite.inverted, sprite.image})
         append(&renderer.commands, cmd);
+        append(&renderer.commands, rn.Rectangle({t.pos, t.size, t.rot, rn.get_color(0x00ff00ff), true}));
     }
 }
 
 sprite_animator_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     storage, ok := ecss.get_storage(ecs, ^types.SpriteAnimator);
     if !ok do return;
+    
     for i in 0..<len(storage.dense) {
         animator := storage.dense[i]
         if animator.disabled do continue;
-        if animator._counter <= 0 {
-            animator._counter = animator.time
-            animator.active_index = (animator.active_index + 1) % len(animator.sprites[animator.active_animation])
-            animator.sprite_comp.image = animator.sprites[animator.active_animation][animator.active_index]
+
+        // if we get a new animation to animate 
+        if animator.active_animation != animator._active_animation {
+            fmt.println("changed animation")
+            animator._active_animation = animator.active_animation
+            animator._frame_counter = len(animator.sprites[animator._active_animation])-1
+            animator.active_index = 0
+            animator._time_counter = animator.time
+        }
+
+        if animator._frame_counter <= 0 {
+            animator._frame_counter = len(animator.sprites[animator._active_animation])-1
             es.emit(es.Event_SpriteAnimator_End({animator}))
         }
-        else {
-            animator._counter -= dt;
+        if animator._time_counter <= 0 {
+
+            animator._time_counter = animator.time
+            animator.active_index = (animator.active_index + 1) % len(animator.sprites[animator._active_animation])
+            animator.sprite_comp.image = animator.sprites[animator._active_animation][animator.active_index]
+            animator._frame_counter -= 1
         }
+        else {
+            animator._time_counter -= dt;
+        }
+
     }
 }
 

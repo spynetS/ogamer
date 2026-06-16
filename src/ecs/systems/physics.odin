@@ -27,6 +27,7 @@ init_physics :: proc () {
 
 deinit_physics :: proc () {
     delete(body_id)
+    delete(shape_id)
     b2.DestroyWorld(worldId)
 }
 
@@ -38,6 +39,7 @@ get_or_create_body :: proc(rigid : ^types.RigidBody, transform: ^types.Transform
         body_def.type = b2.BodyType(rigid.type)
 
         if rigid.disable_gravity do body_def.gravityScale = 0
+        if rigid.disable_rotation do body_def.fixedRotation = true
         body_def.linearDamping = rigid.linear_damping
 
         id = b2.CreateBody(worldId, body_def);
