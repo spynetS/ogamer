@@ -1,10 +1,27 @@
 package types;
 
 
+
 Entity :: u32;
 Vector2 :: [2]f32;
 
 keys : [dynamic]KeyboardKey;
+
+Image :: struct {
+    data : []u8,
+    width, height, mipmaps, channels : i32
+}
+
+TileSheet :: struct {
+    image: [^]Image,
+    width, height: int // the width and height for each tile
+}
+
+IOHandler :: struct {
+    images : map[string]^Image
+}
+
+
 
 BodyType :: enum {
     staticBody = 0,
@@ -49,7 +66,7 @@ SquareCollider :: struct {
 }
 
 SpriteRenderable :: struct {
-    file_path : string
+    image : ^Image
 }
 
 // TAKEN FROM RAYLIB

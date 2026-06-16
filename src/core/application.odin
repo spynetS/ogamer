@@ -14,7 +14,7 @@ Game :: struct {
     should_run: bool,
     renderer: ^rn.Renderer,
     ecs: ecs.ECS,
-    io_handler: ^io.IOHandler
+    io_handler: ^types.IOHandler
 }
 
 main_loop :: proc (game: ^Game) {
@@ -52,8 +52,7 @@ init_game :: proc() -> ^Game {
     game.should_run = true;
     
     game.renderer= new(rn.Renderer);
-    game.io_handler = new(io.IOHandler);
-
+    game.io_handler = new(types.IOHandler);
     systems.init_physics();
 
     es.event_queue_init();
@@ -88,6 +87,9 @@ free_game :: proc(game: ^Game) {
     ecs.delete_storage(&game.ecs, ^types.SpriteRenderable);
     ecs.delete_storage(&game.ecs, ^types.Camera2D);
     systems.deinit_physics();
+
+    es.event_queue_destroy();
+
     delete(game.ecs.storages);
     free(game);
 }

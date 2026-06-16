@@ -84,7 +84,7 @@ handle_collision :: proc(events: b2.ContactEvents) {
     }
 }
 
-physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     phys, ok := ecs.get_storage(ecs_, ^types.RigidBody)
     if !ok do return
     trans, ok2 := ecs.get_storage(ecs_, ^types.Transform)

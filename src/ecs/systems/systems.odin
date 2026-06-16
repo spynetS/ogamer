@@ -10,7 +10,7 @@ import ecss "../"
 import "../types"
 
 
-camera_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+camera_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     storage, ok := ecss.get_storage(ecs, ^types.Camera2D);
     if !ok do return;
     t_storage, ok2 := ecss.get_storage(ecs, ^types.Transform)
@@ -27,7 +27,7 @@ camera_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.R
 
 }
 
-render_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+render_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     render_storage, ok := ecss.get_storage(ecs, ^types.RectangleRenderable);
     if !ok do return;
     trans, ok2 := ecss.get_storage(ecs, ^types.Transform)
@@ -44,7 +44,7 @@ render_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.R
     }
 }
 
-sprite_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+sprite_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     sprite_storage, ok := ecss.get_storage(ecs, ^types.SpriteRenderable);
     if !ok do return;
     trans, ok2 := ecss.get_storage(ecs, ^types.Transform)
@@ -57,7 +57,7 @@ sprite_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.R
         t := trans.dense[trans.sparse[int(entity)]]
         sprite := sprite_storage.dense[i]
         
-        cmd := rn.Sprite({t.pos, t.size, t.rot, sprite.file_path})
+        cmd := rn.Sprite({t.pos, t.size, t.rot, sprite.image})
         append(&renderer.commands, cmd);
     }
 }
@@ -74,7 +74,7 @@ rotate :: proc(p : types.Vector2, angle: f32) -> types.Vector2 {
     })
 }
 
-parent_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+parent_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     parent_storage, ok := ecss.get_storage(ecs, ^types.Parent);
     if !ok do return;
     t_storage, ok2 := ecss.get_storage(ecs, ^types.Transform)
@@ -96,7 +96,7 @@ parent_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.R
 }
 
 
-script_system :: proc(ecs: ^ecss.ECS, io_handler: ^io.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+script_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     script_storage, ok := ecss.get_storage(ecs, ^ecss.Script);
     if !ok do return;
     for i in 0..<len(script_storage.dense) {

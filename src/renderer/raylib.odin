@@ -7,7 +7,7 @@ import "../ecs/types";
 
 RENDER :: true
 
-texture_cache: map[string]rl.Texture2D
+texture_cache: map[^types.Image]rl.Texture2D
 camera := rl.Camera2D({{1240/2,720/2},{0,0},0,1});
 
 width :: 1240
@@ -66,12 +66,18 @@ execute :: proc(renderer: ^Renderer) {
                 );
             case Sprite:
                 // tecture cacheing
-                sprite, got := texture_cache[v.file_path]
+                sprite, got := texture_cache[v.image]
                 if !got {
-                    file_path := strings.clone_to_cstring(v.file_path)
-                    defer delete(file_path)
-                    sprite = rl.LoadTexture(file_path);
-                    texture_cache[v.file_path] = sprite
+                    fmt.println("INFO: load texture")
+                    image : rl.Image = {
+                        raw_data(v.image.data),
+                        v.image.width,
+                        v.image.height,
+                        v.image.mipmaps,
+                        rl.PixelFormat.UNCOMPRESSED_R8G8B8A8
+                    }
+                    sprite = rl.LoadTextureFromImage(image);
+                    texture_cache[v.image] = sprite
                 }
                 
                 

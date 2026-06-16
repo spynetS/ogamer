@@ -48,6 +48,12 @@ get_gameobject :: proc(ecs_: ^ecs.ECS, entity: types.Entity) -> (^GameObject, bo
     return game_object, true
 }
 
+new_renderobject :: proc(e: ^ecs.ECS) -> (^GameObject, bool){
+    go, created := new_gameobject(e);
+    add_component(go, types.RectangleRenderable({{24,24,24,255}}))
+    return go, created
+}
+
 add_component :: proc(game_object: ^GameObject, component: $T) {
     ecs.add_component(game_object.ecs, game_object.entity, component);
 }
