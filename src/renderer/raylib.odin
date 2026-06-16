@@ -52,7 +52,7 @@ execute :: proc(renderer: ^Renderer) {
                 rl.EndMode2D();
                 rl.EndDrawing();
             case Clear:
-                rl.ClearBackground(rl.RAYWHITE);
+                rl.ClearBackground(rl.Color(v.color));
             case Text:
                 rl.DrawText(fmt.ctprintf("%s", v.text),
                             i32(v.pos.x),

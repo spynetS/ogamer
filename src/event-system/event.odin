@@ -20,6 +20,9 @@ Event_Collision_Hit :: struct {
     a: ^types.RigidBody,
     b: ^types.RigidBody
 }
+Event_SpriteAnimator_End :: struct {
+    animator: ^types.SpriteAnimator
+}
 
 // The union of all possible events
 Event :: union {
@@ -28,6 +31,7 @@ Event :: union {
     Event_Collision_Entered,
     Event_Collision_Left,
     Event_Collision_Hit,
+    Event_SpriteAnimator_End,
 }
 
 events: [dynamic]Event

@@ -34,11 +34,12 @@ main_loop :: proc (game: ^Game) {
         // updating the systems 
 
         systems.physics_system(&game.ecs,game.io_handler, game.renderer, dt);  
-        systems.script_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.sprite_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.parent_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.camera_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.sprite_animator_system(&game.ecs,game.io_handler, game.renderer, dt);  
+
+        systems.script_system(&game.ecs,game.io_handler, game.renderer, dt);  
 
         systems.render_system(&game.ecs,game.io_handler, game.renderer, dt);  
 

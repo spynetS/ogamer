@@ -64,9 +64,11 @@ RectangleRenderable :: struct {
 
 RigidBody :: struct {
     using component: Component,
-    vel  : Vector2,
-    acc  : Vector2,
-    type : BodyType
+    vel             : Vector2,
+    acc             : Vector2,
+    type            : BodyType,
+    disable_gravity : bool,
+    linear_damping  : f32,
 }
 
 SquareCollider :: struct {
@@ -80,12 +82,13 @@ SpriteRenderable :: struct {
 }
 
 SpriteAnimator :: struct {
-    using component: Component,
-    sprite_comp: ^SpriteRenderable,
-    sprites: []^Image,
-    time: f32,
-    counter: f32,
-    active_index: int
+    using component  : Component,
+    sprite_comp      : ^SpriteRenderable, // sprite component to be actived on
+    sprites          : [][]^Image,        // image matrix
+    active_animation : int,               // the row in the sprites matrix
+    time             : f32,               // time for each frame
+    _counter         : f32,               // internal counter
+    active_index     : int                // active frame in animation
 }
 
 

@@ -30,15 +30,18 @@ deinit_physics :: proc () {
     b2.DestroyWorld(worldId)
 }
 
-get_or_create_body :: proc(phy_body : ^types.RigidBody, transform: ^types.Transform) -> b2.BodyId {
-    id, ok := body_id[phy_body]
+get_or_create_body :: proc(rigid : ^types.RigidBody, transform: ^types.Transform) -> b2.BodyId {
+    id, ok := body_id[rigid]
     if !ok {
         body_def := b2.DefaultBodyDef();
         body_def.position = transform.pos/PIXELS_PER_METER
-        body_def.type = b2.BodyType(phy_body.type)
+        body_def.type = b2.BodyType(rigid.type)
+
+        if rigid.disable_gravity do body_def.gravityScale = 0
+        body_def.linearDamping = rigid.linear_damping
 
         id = b2.CreateBody(worldId, body_def);
-        body_id[phy_body] = id
+        body_id[rigid] = id
 
         // TODO create shape based on collider component
         box := b2.MakeBox(
@@ -49,8 +52,8 @@ get_or_create_body :: proc(phy_body : ^types.RigidBody, transform: ^types.Transf
         shapeDef := b2.DefaultShapeDef() 
         shapeDef.density = 1
         shapeDef.enableContactEvents = true;
-        shapeId := b2.CreatePolygonShape(body_id[phy_body], shapeDef, box);
-        shape_id[shapeId] = phy_body
+        shapeId := b2.CreatePolygonShape(body_id[rigid], shapeDef, box);
+        shape_id[shapeId] = rigid
         
     }
     return id

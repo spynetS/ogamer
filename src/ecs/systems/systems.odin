@@ -8,6 +8,7 @@ import rl "vendor:raylib/rlgl"
 import io "../../io/"
 import ecss "../"
 import "../types"
+import es "../../event-system"
 
 
 camera_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
@@ -71,15 +72,14 @@ sprite_animator_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, ren
     for i in 0..<len(storage.dense) {
         animator := storage.dense[i]
         if animator.disabled do continue;
-        if animator.counter <= 0 {
-            fmt.println("new sprite")
-            animator.counter = animator.time
-            animator.active_index = (animator.active_index + 1) % len(animator.sprites)
-            animator.sprite_comp.image = animator.sprites[animator.active_index]
+        if animator._counter <= 0 {
+            animator._counter = animator.time
+            animator.active_index = (animator.active_index + 1) % len(animator.sprites[animator.active_animation])
+            animator.sprite_comp.image = animator.sprites[animator.active_animation][animator.active_index]
+            es.emit(es.Event_SpriteAnimator_End({animator}))
         }
         else {
-            fmt.println("count down", animator.counter, animator.active_index)
-            animator.counter -= dt;
+            animator._counter -= dt;
         }
     }
 }
