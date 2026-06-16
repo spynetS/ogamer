@@ -27,9 +27,11 @@ main :: proc() {
     roof.transform.pos = {0,200}
     roof.transform.size = {1000,100}
 
-    box, _ := sc.new_renderobject(&game.ecs);
+    box, _ := sc.new_gameobject(&game.ecs);
     defer free(box)
     sc.add_component(box, types.RigidBody({type=types.BodyType.dynamicBody}))
+    image,_:= io.load("./game/assets/box.png")
+    sc.add_component(box, types.SpriteRenderable({image=image, scale=1}))
     box.transform.pos = {200,-100}
     
 
