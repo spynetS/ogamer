@@ -38,7 +38,14 @@ execute :: proc(renderer: ^Renderer) {
             case BeginDraw:
                 rl.BeginDrawing();
                 camera : rl.Camera2D;
-                if renderer.active_camera != nil do camera = rl.Camera2D(renderer.active_camera^)
+                if renderer.active_camera != nil {
+                    camera = rl.Camera2D({
+                        renderer.active_camera.offset,
+                        renderer.active_camera.target,
+                        renderer.active_camera.rotation,
+                        renderer.active_camera.zoom
+                    })
+                }
                 camera.offset = {width/2, height/2}
                 rl.BeginMode2D(camera);
             case EndDraw:

@@ -2,7 +2,7 @@ package file_io;
 
 import "vendor:stb/image"
 import "core:strings"
-import "core:mem"
+import "core:fmt"
 
 import "../ecs/types"
 
@@ -63,4 +63,35 @@ load :: proc(file_path: string) -> (^types.Image, bool) {
 free_image :: proc (image: ^types.Image) {
     delete(image.data)
     free(image)
+}
+
+new_tilesheet :: proc (image: ^types.Image, s: [2]i32) -> ^types.TileSheet {
+    columns := image.width / s.x;
+    rows    := image.height / s.y;
+
+    ts := new(types.TileSheet)
+    ts.images = make([][]^types.Image, rows)
+    ts.size = s;
+
+
+    for r in 0..<rows {
+        ts.images[r] = make([]^types.Image, columns)
+        for c in 0..<columns {
+            croped := crop(image, c*s.x, r*s.y, s.x, s.y);
+            ts.images[r][c] = croped
+        }
+    } 
+    return ts
+}
+
+free_tilesheet :: proc(ts: ^types.TileSheet) {
+    for r in 0..<len(ts.images) {
+        //ts.images[r] = make([]^types.Image, columns)
+        for c in 0..<len(ts.images[r]) {
+            free_image(ts.images[r][c]);
+        }
+        delete(ts.images[r])
+    }
+    delete(ts.images);
+    free(ts)
 }

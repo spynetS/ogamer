@@ -50,12 +50,15 @@ sprite_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^r
     trans, ok2 := ecss.get_storage(ecs, ^types.Transform)
     if !ok2 do return
     for i in 0..<len(sprite_storage.dense) {
+        sprite := sprite_storage.dense[i]
+        if sprite.disabled do continue;
+        
         entity := sprite_storage.entities[i]
         t_idx, has_t := storage.has_component(trans, entity)
         if !has_t do continue
         
         t := trans.dense[trans.sparse[int(entity)]]
-        sprite := sprite_storage.dense[i]
+        
         
         cmd := rn.Sprite({t.pos, t.size, t.rot, sprite.image})
         append(&renderer.commands, cmd);

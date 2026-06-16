@@ -18,19 +18,22 @@ main :: proc() {
 
     camera, _ := sc.new_gameobject(&game.ecs);
     defer free(camera)
-    sc.add_component(camera, types.Camera2D({{0,0},{0,0},0,1}))
+    sc.add_component(camera, types.Camera2D({zoom=1}))
 
     go, _ := sc.new_gameobject(&game.ecs);
     defer free(go)
     image, loaded := io.load("./game/assets/Idle (78x58).png")
     defer io.free_image(image);
-    croped := io.crop(image, 0,0,78,58);
-    defer io.free_image(croped);
 
-    
-    if loaded do sc.add_component(go, types.SpriteRenderable({croped}))
-    else do sc.add_component(go, types.RectangleRenderable({rn.get_color(0x181818ff)}))
+    ts := io.new_tilesheet(image, {78,58})
+    defer io.free_tilesheet(ts);
 
-    core.main_loop(game);
+    for i in 0..<len(ts.images[0]){
+        go, _ = sc.new_gameobject(&game.ecs)
+        go.transform.pos = {f32(50*i)-250,0}
+        sc.add_component(go, types.SpriteRenderable({image=ts.images[0][i]}))
+    }
+
+    core.main_loop(game)
 }
 

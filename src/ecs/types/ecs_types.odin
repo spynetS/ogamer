@@ -13,8 +13,8 @@ Image :: struct {
 }
 
 TileSheet :: struct {
-    image: [^]Image,
-    width, height: int // the width and height for each tile
+    images: [][]^Image,
+    size: [2]i32 // the width and height for each tile
 }
 
 IOHandler :: struct {
@@ -29,8 +29,12 @@ BodyType :: enum {
 	  dynamicBody = 2,
 }
 
+Component :: struct {
+    disabled : bool
+}
 
 Camera2D :: struct {
+    using component: Component,
     offset:   Vector2,            // Camera offset (displacement from target)
 	  target:   Vector2,            // Camera target (rotation and zoom origin)
 	  rotation: f32,                // Camera rotation in degrees
@@ -39,6 +43,7 @@ Camera2D :: struct {
 
 
 Transform :: struct {
+    using component: Component,
     pos        : Vector2,
     local_pos  : Vector2,
     size       : Vector2,
@@ -47,25 +52,30 @@ Transform :: struct {
 }
 
 Parent :: struct {
+    using component: Component,
     entity: Entity
 }
 
 RectangleRenderable :: struct {
+    using component: Component,
     color : [4]u8
 }
 
 
 RigidBody :: struct {
+    using component: Component,
     vel  : Vector2,
     acc  : Vector2,
     type : BodyType
 }
 
 SquareCollider :: struct {
+    using component: Component,
     size : Vector2
 }
 
 SpriteRenderable :: struct {
+    using component: Component,
     image : ^Image
 }
 
