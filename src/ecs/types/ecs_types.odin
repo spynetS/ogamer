@@ -1,7 +1,5 @@
 package types;
 
-
-
 Entity :: u32;
 Vector2 :: [2]f32;
 
@@ -64,8 +62,8 @@ RectangleRenderable :: struct {
 
 RigidBody :: struct {
     using component: Component,
-    vel              : Vector2,
-    acc              : Vector2,
+    velocity         : Vector2,
+    acceleration     : Vector2,
     type             : BodyType,
     disable_gravity  : bool,
     linear_damping   : f32,

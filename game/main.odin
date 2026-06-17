@@ -9,27 +9,24 @@ import rn "../src/renderer"
 import "../src/io"
 import es "../src/event-system"
 
-
-
 main :: proc() {
     
     game := core.init_game();
     defer core.free_game(game);
 
-    camera, _ := sc.new_gameobject(&game.ecs);
-    defer free(camera)
-    
-
-    
-    roof, _ := sc.new_renderobject(&game.ecs);
+    roof, _ := sc.new_gameobject(&game.ecs);
     defer free(roof)
+    sc.add_component(roof, types.RectangleRenderable({color=rn.get_color(0x00aa00ff)}))
     sc.add_component(roof, types.RigidBody({}))
     roof.transform.pos = {0,200}
     roof.transform.size = {1000,100}
+    roof.transform.rot = 10
+    sc.add_component(roof, types.SquareCollider({}))
 
     box, _ := sc.new_gameobject(&game.ecs);
     defer free(box)
     sc.add_component(box, types.RigidBody({type=types.BodyType.dynamicBody}))
+    sc.add_component(box, types.SquareCollider({}))
     image,_:= io.load("./game/assets/box.png")
     sc.add_component(box, types.SpriteRenderable({image=image, scale=1}))
     box.transform.pos = {200,-100}
@@ -38,21 +35,16 @@ main :: proc() {
     go, _ := sc.new_gameobject(&game.ecs);
     defer free(go)
     go.transform.size = {100,100}
+    sc.add_component(go, types.SquareCollider({size={-20,0}}))
     sc.add_component(go, types.Camera2D({zoom=1}))
 
-    idle_image, loaded := io.load("./game/assets/Idle (78x58).png")
-    defer io.free_image(idle_image);
-    attack_image, _ := io.load("./game/assets/Attack (78x58).png")
-    defer io.free_image(attack_image);
-    run_image, _ := io.load("./game/assets/Run (78x58).png")
-    defer io.free_image(run_image);
-    
-    ts := io.new_tilesheet(idle_image, {64,58}, {14,0})
+    ts := io.new_tilesheet("./game/assets/Idle (78x58).png", {64,58}, {14,0})
     defer io.free_tilesheet(ts);
-    attack_ts := io.new_tilesheet(attack_image, {64,58}, {14,0})
+    attack_ts := io.new_tilesheet("./game/assets/Attack (78x58).png", {64,58}, {14,0})
     defer io.free_tilesheet(attack_ts);
-    run_ts := io.new_tilesheet(run_image, {64,58},{14,0})
+    run_ts := io.new_tilesheet("./game/assets/Run (78x58).png", {64,58},{14,0})
     defer io.free_tilesheet(run_ts);
+
 
     io.merge_tilesheet(ts, attack_ts);
     io.merge_tilesheet(ts, run_ts);
@@ -64,6 +56,7 @@ main :: proc() {
     sc.add_component(go, ecs.Script({
         on_update = proc(e: ^ecs.ECS, ent: u32, dt: f32) {
             rigid,_ := ecs.get_component(e,ent, types.RigidBody);
+            trans,_ := ecs.get_component(e,ent, types.Transform);
             animator,_ := ecs.get_component(e,ent, types.SpriteAnimator);
             if sc.is_key_down(types.KeyboardKey.A) {
                 sc.apply_force(rigid, {-100,0});
@@ -75,8 +68,14 @@ main :: proc() {
                 animator.active_animation = 2
                 animator.sprite_comp.inverted = false
             }
-            if sc.is_key_pressed(types.KeyboardKey.SPACE) do sc.apply_force(rigid, {0,-5000});
-            if sc.is_key_pressed(types.KeyboardKey.ENTER) do animator.active_animation = 1
+            if sc.is_key_pressed(types.KeyboardKey.SPACE) {                
+                sc.apply_force(rigid, {0,-3000});
+            }
+            if sc.is_key_pressed(types.KeyboardKey.ENTER) {
+                animator.active_animation = 1
+                rigid, _ := ecs.get_component(e, 2, types.RigidBody)
+                sc.apply_force(rigid, {5000,0})
+            }
 
             for event in es.event_queue_poll() {
                 #partial switch v in event{
@@ -87,7 +86,7 @@ main :: proc() {
 
         }
     }))
-    sprite, _:= sc.add_component(go, types.SpriteRenderable({image=idle_image, scale=2}))
+    sprite, _:= sc.add_component(go, types.SpriteRenderable({image=nil, scale=2}))
     sc.add_component(go, types.SpriteAnimator({
         sprite_comp = sprite,
         sprites = ts.images,

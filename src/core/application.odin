@@ -1,14 +1,11 @@
 package core;
 
-import rl "vendor:raylib"
 import rn "../renderer"
 import "../ecs"
 import "../ecs/types"
 import "../ecs/systems"
 import es "../event-system"
-import "../io"
-import "core:fmt"
-import b2 "vendor:box2d"
+import "core:time"
 
 Game :: struct {
     should_run: bool,
@@ -22,25 +19,32 @@ main_loop :: proc (game: ^Game) {
     end :rn.EndDraw = {};
     cmd : rn.Clear = {rn.get_color(0x00aaddff)};
     
-
+    prev := time.now()
     for game.should_run {
 
         
+        for event in es.event_queue_poll() {
+            #partial switch v in event {
+                case es.Event_Should_Close_Window:
+                game.should_run = false;
+            }
+        }
         
-        game.should_run = !rl.WindowShouldClose() // TODO make generic event for it
+
         append(&game.renderer.commands, begin);
         append(&game.renderer.commands, cmd);
 
-
-        dt := rl.GetFrameTime(); // TODO calculate own dt
-        // updating the systems 
+        current := time.now()
+        dt :f32 = f32(time.duration_seconds(time.Duration(current._nsec-prev._nsec)))
+        prev = current
 
         
-        systems.physics_system(&game.ecs,game.io_handler, game.renderer, dt);  
+        systems.physics_system(&game.ecs,game.io_handler, game.renderer, dt);
         systems.sprite_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.parent_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.camera_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.sprite_animator_system(&game.ecs,game.io_handler, game.renderer, dt);  
+        systems.collider_system(&game.ecs,game.io_handler, game.renderer, dt);  
 
         systems.script_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.render_system(&game.ecs,game.io_handler, game.renderer, dt);  
@@ -66,6 +70,7 @@ init_game :: proc() -> ^Game {
     ecs.add_storage(&game.ecs, ^ecs.Script);
     ecs.add_storage(&game.ecs, ^types.Transform);
     ecs.add_storage(&game.ecs, ^types.RigidBody);
+    ecs.add_storage(&game.ecs, ^types.SquareCollider);
     ecs.add_storage(&game.ecs, ^types.RectangleRenderable);
     ecs.add_storage(&game.ecs, ^types.SpriteRenderable);
     ecs.add_storage(&game.ecs, ^types.Parent);
@@ -89,6 +94,7 @@ free_game :: proc(game: ^Game) {
     ecs.delete_storage(&game.ecs, ^types.Parent);
     ecs.delete_storage(&game.ecs, ^types.Transform);
     ecs.delete_storage(&game.ecs, ^types.RigidBody);
+    ecs.delete_storage(&game.ecs, ^types.SquareCollider);
     ecs.delete_storage(&game.ecs, ^types.RectangleRenderable);
     ecs.delete_storage(&game.ecs, ^types.SpriteRenderable);
     ecs.delete_storage(&game.ecs, ^types.Camera2D);

@@ -27,6 +27,7 @@ execute :: proc(renderer: ^Renderer) {
         }
     }    
 
+    if rl.IsWindowReady() && rl.WindowShouldClose() do es.emit(es.Event_Should_Close_Window({}));
 
     if RENDER {
 
@@ -48,6 +49,7 @@ execute :: proc(renderer: ^Renderer) {
                 }
                 camera.offset = {width/2, height/2}
                 rl.BeginMode2D(camera);
+                rl.DrawText(fmt.ctprintf("%d", rl.GetFPS()),0,-200,32, rl.GRAY);
             case EndDraw:
                 rl.EndMode2D();
                 rl.EndDrawing();
@@ -85,6 +87,7 @@ execute :: proc(renderer: ^Renderer) {
             case Sprite:
                 // tecture cacheing
                 // TODO load this before rendering (make a sperate function to load tectures)
+                if v.image == nil do continue
                 sprite, got := texture_cache[v.image]
                 if !got {
                     fmt.println("INFO: load texture")

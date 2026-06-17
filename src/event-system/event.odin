@@ -23,6 +23,9 @@ Event_Collision_Hit :: struct {
 Event_SpriteAnimator_End :: struct {
     animator: ^types.SpriteAnimator
 }
+Event_Should_Close_Window :: struct {
+
+}
 
 // The union of all possible events
 Event :: union {
@@ -32,6 +35,7 @@ Event :: union {
     Event_Collision_Left,
     Event_Collision_Hit,
     Event_SpriteAnimator_End,
+    Event_Should_Close_Window,
 }
 
 next_events    : [dynamic]Event

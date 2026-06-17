@@ -31,29 +31,35 @@ deinit_physics :: proc () {
     b2.DestroyWorld(worldId)
 }
 
-get_or_create_body :: proc(rigid : ^types.RigidBody, transform: ^types.Transform) -> b2.BodyId {
+get_rot :: proc (rot: f32) -> b2.Rot {
+    rot := rot * math.RAD_PER_DEG
+    return b2.Rot({s=math.sin(rot), c=math.cos(rot)})
+}
+
+get_or_create_body :: proc(rigid : ^types.RigidBody, collider: ^types.SquareCollider, transform: ^types.Transform) -> b2.BodyId {
     id, ok := body_id[rigid]
     if !ok {
         body_def := b2.DefaultBodyDef();
         body_def.position = transform.pos/PIXELS_PER_METER
         body_def.type = b2.BodyType(rigid.type)
-
+        
         if rigid.disable_gravity do body_def.gravityScale = 0
         if rigid.disable_rotation do body_def.fixedRotation = true
         body_def.linearDamping = rigid.linear_damping
 
         id = b2.CreateBody(worldId, body_def);
+        b2.Body_SetTransform(id, transform.pos/PIXELS_PER_METER, get_rot(transform.rot))
         body_id[rigid] = id
 
-        // TODO create shape based on collider component
         box := b2.MakeBox(
-            (transform.size.x/2) / PIXELS_PER_METER,
-            (transform.size.y/2) / PIXELS_PER_METER
+            ((transform.size.x + (collider != nil ? collider.size.x : 0)) / 2) / PIXELS_PER_METER,
+            ((transform.size.y + (collider != nil ? collider.size.y : 0)) / 2) / PIXELS_PER_METER
         )
 
         shapeDef := b2.DefaultShapeDef() 
         shapeDef.density = 1
-        shapeDef.enableContactEvents = true;
+        shapeDef.enableContactEvents = (collider == nil);
+        shapeDef.isSensor = (collider == nil)
         shapeId := b2.CreatePolygonShape(body_id[rigid], shapeDef, box);
         shape_id[shapeId] = rigid
         
@@ -89,11 +95,19 @@ handle_collision :: proc(events: b2.ContactEvents) {
     }
 }
 
+get_body_id :: proc(rigid: ^types.RigidBody) -> b2.BodyId {
+    return body_id[rigid]
+}
+
+
 physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     phys, ok := ecs.get_storage(ecs_, ^types.RigidBody)
     if !ok do return
     trans, ok2 := ecs.get_storage(ecs_, ^types.Transform)
     if !ok2 do return
+
+    c_storage, c_ok := ecs.get_storage(ecs_, ^types.SquareCollider)
+    if !c_ok do return
 
     b2.World_Step(worldId, dt, 8);
     events := b2.World_GetContactEvents(worldId);
@@ -104,25 +118,26 @@ physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^types.IOHandler, renderer: ^
         physics_body := phys.dense[i];
         
         transform := trans.dense[trans.sparse[entity]];
+        collider, has_component := storage.get_component(c_storage, entity);
 
-        t := b2.Body_GetTransform(get_or_create_body(physics_body, transform));
+        t := b2.Body_GetTransform(get_or_create_body(physics_body, collider, transform));
 
         transform.pos = t.p*PIXELS_PER_METER;
         transform.rot = b2.Rot_GetAngle(t.q)*math.DEG_PER_RAD
 
-        append(&renderer.commands, rn.Text({
-            transform.pos-{100,80*2},
-            24,
-            0,
-            fmt.tprintf("<%f, %f, %f>\n<%f,%f>",
-                        transform.pos.x,
-                        transform.pos.y,
-                        transform.rot,
-                        transform.size.x/2/PIXELS_PER_METER,
-                        transform.size.y/2/PIXELS_PER_METER,
+        // append(&renderer.commands, rn.Text({
+        //     transform.pos-{100,80*2},
+        //     24,
+        //     0,
+        //     fmt.tprintf("<%f, %f, %f>\n<%f,%f>",
+        //                 transform.pos.x,
+        //                 transform.pos.y,
+        //                 transform.rot,
+        //                 transform.size.x/2/PIXELS_PER_METER,
+        //                 transform.size.y/2/PIXELS_PER_METER,
 
-                       )
-        }))
+        //                )
+        // }))
 
     }
         

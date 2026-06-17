@@ -3,7 +3,18 @@ package file_io;
 import "../ecs/types"
 import "core:fmt"
 
-new_tilesheet :: proc (image: ^types.Image, tile_size: [2]i32, box_offset:[2]i32 = {0,0}) -> ^types.TileSheet {
+new_tilesheet :: proc {
+    new_tilesheet_path,
+    new_tilesheet_image
+}
+
+new_tilesheet_path :: proc (path: string, tile_size: [2]i32, box_offset:[2]i32 = {0,0}) -> ^types.TileSheet {
+    image, _ := load(path);
+    defer free_image(image);
+    return new_tilesheet_image(image, tile_size, box_offset);
+}
+
+new_tilesheet_image :: proc (image: ^types.Image, tile_size: [2]i32, box_offset:[2]i32 = {0,0}) -> ^types.TileSheet {
     columns := image.width / (box_offset.x+ tile_size.x);
     rows    := image.height / (box_offset.y+tile_size.y);
 
