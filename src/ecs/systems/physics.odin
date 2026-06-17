@@ -11,9 +11,8 @@ import "../types"
 import ecs "../"
 import es "../../event-system"
 
+
 PIXELS_PER_METER :: 50.0
-
-
 
 worldId  : b2.WorldId;
 body_id  : map[^types.RigidBody]b2.BodyId;
@@ -36,7 +35,48 @@ get_rot :: proc (rot: f32) -> b2.Rot {
     return b2.Rot({s=math.sin(rot), c=math.cos(rot)})
 }
 
-get_or_create_body :: proc(rigid : ^types.RigidBody, collider: ^types.SquareCollider, transform: ^types.Transform) -> b2.BodyId {
+create_child :: proc(
+    collider  : ^types.SquareCollider,
+    c_transform : ^types.Transform,
+    transform : ^types.Transform,
+    rigid     : ^types.RigidBody,
+    body_id   : b2.BodyId
+) {
+    fmt.println("create child")
+    // Calculate the offset where the tool sits relative to the parent center
+    // e.g., putting it slightly to the right of the parent body
+    tool_offset := b2.Vec2{
+        (c_transform.local_pos.x ) / PIXELS_PER_METER, 
+        (c_transform.local_pos.y ) / PIXELS_PER_METER, 
+    }
+
+    // In Box2D v3, you can create an offset box using b2.MakeOffsetBox
+    tool_box := b2.MakeOffsetBox(
+        (c_transform.size.x + collider.size.x ) / 2 / PIXELS_PER_METER,
+        (c_transform.size.y + collider.size.y ) / 2 / PIXELS_PER_METER,
+        tool_offset,
+        b2.Rot_identity, // No extra local rotation, or use b2.MakeRot(angle)
+    )
+
+    tool_shape_def := b2.DefaultShapeDef()
+    tool_shape_def.density = 0.5 // Adjust weight of the tool
+    tool_shape_def.enableContactEvents = true
+    tool_shape_def.isSensor = false // Set to true if it's just a weapon trigger
+
+    tool_shape_id := b2.CreatePolygonShape(body_id, tool_shape_def, tool_box)
+    
+    // You can map this shape to the rigid body too, 
+    // or a different mapping if you need to detect tool hits specifically
+    shape_id[tool_shape_id] = rigid
+}
+
+get_or_create_body :: proc(e: ^ecs.ECS,
+                           entity: u32,
+                           rigid : ^types.RigidBody,
+                           collider: ^types.SquareCollider,
+                           transform: ^types.Transform) -> b2.BodyId
+{
+                               
     id, ok := body_id[rigid]
     if !ok {
         body_def := b2.DefaultBodyDef();
@@ -46,11 +86,11 @@ get_or_create_body :: proc(rigid : ^types.RigidBody, collider: ^types.SquareColl
         if rigid.disable_gravity do body_def.gravityScale = 0
         if rigid.disable_rotation do body_def.fixedRotation = true
         body_def.linearDamping = rigid.linear_damping
-
+        
         id = b2.CreateBody(worldId, body_def);
         b2.Body_SetTransform(id, transform.pos/PIXELS_PER_METER, get_rot(transform.rot))
         body_id[rigid] = id
-
+        
         box := b2.MakeBox(
             ((transform.size.x + (collider != nil ? collider.size.x : 0)) / 2) / PIXELS_PER_METER,
             ((transform.size.y + (collider != nil ? collider.size.y : 0)) / 2) / PIXELS_PER_METER
@@ -58,18 +98,37 @@ get_or_create_body :: proc(rigid : ^types.RigidBody, collider: ^types.SquareColl
 
         shapeDef := b2.DefaultShapeDef() 
         shapeDef.density = 1
-        shapeDef.enableContactEvents = (collider == nil);
+        shapeDef.enableContactEvents = (collider != nil);
         shapeDef.isSensor = (collider == nil)
         shapeId := b2.CreatePolygonShape(body_id[rigid], shapeDef, box);
         shape_id[shapeId] = rigid
+
         
+        storage, _ := ecs.get_storage(e, ^types.SquareCollider)
+        parent_storage, _ := ecs.get_storage(e, ^types.Parent)
+        transform_storage, _ := ecs.get_storage(e, ^types.Transform)
+        components := make([dynamic]^types.SquareCollider)
+        for i in 0..<len(parent_storage.dense) {
+            // if we have child
+
+            if parent_storage.dense[i].entity == entity {
+
+                child_entity := parent_storage.entities[i]
+                comp := storage.dense[storage.sparse[child_entity]]
+                trans := transform_storage.dense[storage.sparse[child_entity]]
+                fmt.println(comp)
+                create_child(comp, trans, transform, rigid, id);
+            }
+        }
+        //delete(components)
     }
+    fmt.println(transform)
+
     return id
 }
 
 handle_collision :: proc(events: b2.ContactEvents) {
     for i in 0..< events.beginCount {
-        //b2ContactBeginTouchEvent* e = events.beginEvents + i;
         e := events.beginEvents[i]
         ra := shape_id[e.shapeIdA]
         rb := shape_id[e.shapeIdB]
@@ -77,7 +136,6 @@ handle_collision :: proc(events: b2.ContactEvents) {
     }
 
     for i in 0..< events.endCount {
-        //b2ContactEndTouchEvent* e = events.endEvents + i;
         e := events.endEvents[i]
         ra := shape_id[e.shapeIdA]
         rb := shape_id[e.shapeIdB]
@@ -86,7 +144,6 @@ handle_collision :: proc(events: b2.ContactEvents) {
     }
 
     for i in 0..< events.hitCount {
-        //b2ContactHitEvent* e = events.hitEvents + i;
         e := events.hitEvents[i]
         ra := shape_id[e.shapeIdA]
         rb := shape_id[e.shapeIdB]
@@ -120,11 +177,14 @@ physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^types.IOHandler, renderer: ^
         transform := trans.dense[trans.sparse[entity]];
         collider, has_component := storage.get_component(c_storage, entity);
 
-        t := b2.Body_GetTransform(get_or_create_body(physics_body, collider, transform));
+        // TODO handle collider toggle
+
+
+        t := b2.Body_GetTransform(get_or_create_body(ecs_,entity,physics_body, collider, transform));
 
         transform.pos = t.p*PIXELS_PER_METER;
         transform.rot = b2.Rot_GetAngle(t.q)*math.DEG_PER_RAD
-
+        
         // append(&renderer.commands, rn.Text({
         //     transform.pos-{100,80*2},
         //     24,
@@ -138,7 +198,7 @@ physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^types.IOHandler, renderer: ^
 
         //                )
         // }))
-
+        append(&renderer.commands, rn.Rectangle({transform.pos, transform.size/2, transform.rot, rn.get_color(0x00ff00ff), false}));
     }
         
 }

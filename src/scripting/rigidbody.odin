@@ -9,3 +9,8 @@ apply_force :: proc(rigid: ^types.RigidBody, force: [2]f32) {
     bodyId := systems.body_id[rigid];
     b2.Body_ApplyForceToCenter(bodyId, force, true);
 }
+
+
+
+
+

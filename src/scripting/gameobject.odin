@@ -67,3 +67,37 @@ add_child :: proc(game_object: ^GameObject, child: ^GameObject) {
     add_component(child, types.Parent({entity=game_object.entity}));
     child.parent = game_object
 }
+// TODO make a system for faster children search
+get_children :: proc(go: ^GameObject) -> [dynamic]^GameObject {
+    storage, _ := ecs.get_storage(go.ecs, ^types.Parent)
+    children := make([dynamic]^GameObject)
+    for i in 0..<len(storage.dense) {
+        if storage.dense[i].entity == go.entity {
+            child, _ := get_gameobject(go.ecs, storage.entities[i]);
+            append(&children,child)
+        }
+    }
+    return children
+}
+get_child_components :: proc {
+    get_child_components_gameobject,
+    get_child_components_entity
+}
+get_child_components_gameobject :: proc (go: ^GameObject, $T: typeid) -> [dynamic]^T {
+    return get_child_components_entity(go.ecs, go.entity, T);
+}
+
+get_child_components_entity :: proc (e: ^ecs.ECS, ent: u32, $T: typeid) -> [dynamic]^T {
+    storage, _ := ecs.get_storage(e, ^T)
+    parent_storage, _ := ecs.get_storage(e, ^types.Parent)
+    components := make([dynamic]^T)
+    for i in 0..<len(parent_storage.dense) {
+        // if we have child
+        if parent_storage.dense[i].entity == ent {
+            child_entity := parent_storage.entities[i]
+            comp := storage.dense[storage.sparse[child_entity]]
+            append(&components, comp)
+        }
+    }
+    return components
+}

@@ -80,7 +80,7 @@ collider_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: 
         if !has_t do continue
         t := trans.dense[trans.sparse[int(entity)]]
         
-        //append(&renderer.commands, rn.Rectangle({t.pos, t.size+collider.size, t.rot, rn.get_color(0x00ff00ff), true}));
+        append(&renderer.commands, rn.Rectangle({t.pos, t.size+collider.size, t.rot, rn.get_color(0x00ff00ff), true}));
     }
 }
 

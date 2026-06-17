@@ -1,6 +1,7 @@
 package main;
 
 import "core:fmt"
+import b2 "vendor:box2d"
 import "../src/core"
 import "../src/ecs"
 import "../src/ecs/types"
@@ -8,6 +9,10 @@ import sc "../src/scripting"
 import rn "../src/renderer"
 import "../src/io"
 import es "../src/event-system"
+import sys "../src/ecs/systems"
+
+PIXELS_PER_METER :: 50.0
+
 
 main :: proc() {
     
@@ -20,7 +25,7 @@ main :: proc() {
     sc.add_component(roof, types.RigidBody({}))
     roof.transform.pos = {0,200}
     roof.transform.size = {1000,100}
-    roof.transform.rot = 10
+    roof.transform.rot = 5
     sc.add_component(roof, types.SquareCollider({}))
 
     box, _ := sc.new_gameobject(&game.ecs);
@@ -30,13 +35,32 @@ main :: proc() {
     image,_:= io.load("./game/assets/box.png")
     sc.add_component(box, types.SpriteRenderable({image=image, scale=1}))
     box.transform.pos = {200,-100}
+    sc.add_component(box, ecs.Script({
+        on_update = proc(e: ^ecs.ECS, ent: u32, dt: f32) {
+            rigid, _ := ecs.get_component(e, ent, types.RigidBody)
+            for event in es.event_queue_poll() {
+                #partial switch v in event{
+                    case es.Event_Collision_Entered:
+                    //sc.apply_force(v.a, {3000,0})
+                }
+            }
+
+        }
+    }))
+
     
+    tool, _ := sc.new_gameobject(&game.ecs);
+    tool.transform.local_pos = {100,0}
+    sc.add_component(tool, types.SquareCollider({disabled=true,size={-20,-20}}))
+
 
     go, _ := sc.new_gameobject(&game.ecs);
     defer free(go)
     go.transform.size = {100,100}
     sc.add_component(go, types.SquareCollider({size={-20,0}}))
     sc.add_component(go, types.Camera2D({zoom=1}))
+
+  
 
     ts := io.new_tilesheet("./game/assets/Idle (78x58).png", {64,58}, {14,0})
     defer io.free_tilesheet(ts);
@@ -49,7 +73,7 @@ main :: proc() {
     io.merge_tilesheet(ts, attack_ts);
     io.merge_tilesheet(ts, run_ts);
 
-    sc.add_component(go, types.RigidBody({
+    parent_rigid, _ := sc.add_component(go, types.RigidBody({
         type=types.BodyType.dynamicBody,
         disable_rotation=true
     }))
@@ -58,6 +82,9 @@ main :: proc() {
             rigid,_ := ecs.get_component(e,ent, types.RigidBody);
             trans,_ := ecs.get_component(e,ent, types.Transform);
             animator,_ := ecs.get_component(e,ent, types.SpriteAnimator);
+
+            colliders := sc.get_child_components(e, ent, types.SquareCollider);
+            
             if sc.is_key_down(types.KeyboardKey.A) {
                 sc.apply_force(rigid, {-100,0});
                 animator.active_animation = 2
@@ -74,7 +101,8 @@ main :: proc() {
             if sc.is_key_pressed(types.KeyboardKey.ENTER) {
                 animator.active_animation = 1
                 rigid, _ := ecs.get_component(e, 2, types.RigidBody)
-                sc.apply_force(rigid, {5000,0})
+                //sc.apply_force(rigid, {5000,0}) 
+                colliders[0].disabled = false
             }
 
             for event in es.event_queue_poll() {
@@ -95,6 +123,8 @@ main :: proc() {
         
     }))
 
+
+    sc.add_child(go,tool)
 
     core.main_loop(game)
 }
