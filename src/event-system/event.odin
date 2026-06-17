@@ -20,6 +20,18 @@ Event_Collision_Hit :: struct {
     a: ^types.RigidBody,
     b: ^types.RigidBody
 }
+Event_Trigger_Entered :: struct {
+    a: ^types.RigidBody,
+    b: ^types.RigidBody
+}
+Event_Trigger_Left :: struct {
+    a: ^types.RigidBody,
+    b: ^types.RigidBody
+}
+Event_Trigger_Hit :: struct {
+    a: ^types.RigidBody,
+    b: ^types.RigidBody
+}
 Event_SpriteAnimator_End :: struct {
     animator: ^types.SpriteAnimator
 }
@@ -31,9 +43,16 @@ Event_Should_Close_Window :: struct {
 Event :: union {
     Event_Key_Pressed,
     Event_Key_Released,
+
     Event_Collision_Entered,
     Event_Collision_Left,
     Event_Collision_Hit,
+
+    Event_Trigger_Entered,
+    Event_Trigger_Left,
+    Event_Trigger_Hit,
+    
+
     Event_SpriteAnimator_End,
     Event_Should_Close_Window,
 }

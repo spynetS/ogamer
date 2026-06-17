@@ -66,24 +66,6 @@ sprite_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^r
     }
 }
 
-collider_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
-    storage, ok := ecss.get_storage(ecs, ^types.SquareCollider);
-    if !ok do return;
-    trans, ok2 := ecss.get_storage(ecs, ^types.Transform)
-    if !ok2 do return
-    for i in 0..<len(storage.dense) {
-        collider := storage.dense[i]
-        if collider.disabled do continue;
-        
-        entity := storage.entities[i]
-        t_idx, has_t := stor.has_component(trans, entity)
-        if !has_t do continue
-        t := trans.dense[trans.sparse[int(entity)]]
-        
-        append(&renderer.commands, rn.Rectangle({t.pos, t.size+collider.size, t.rot, rn.get_color(0x00ff00ff), true}));
-    }
-}
-
 sprite_animator_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     storage, ok := ecss.get_storage(ecs, ^types.SpriteAnimator);
     if !ok do return;

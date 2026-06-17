@@ -56,7 +56,7 @@ Parent :: struct {
 
 RectangleRenderable :: struct {
     using component: Component,
-    color : [4]u8
+    color : [4]u8,
 }
 
 
@@ -72,7 +72,8 @@ RigidBody :: struct {
 
 SquareCollider :: struct {
     using component: Component,
-    size : Vector2
+    size : Vector2,
+    trigger: bool
 }
 
 SpriteRenderable :: struct {

@@ -13,9 +13,8 @@ import sys "../src/ecs/systems"
 
 PIXELS_PER_METER :: 50.0
 
-
 main :: proc() {
-    
+
     game := core.init_game();
     defer core.free_game(game);
 
@@ -51,7 +50,7 @@ main :: proc() {
     
     tool, _ := sc.new_gameobject(&game.ecs);
     tool.transform.local_pos = {100,0}
-    sc.add_component(tool, types.SquareCollider({disabled=true,size={-20,-20}}))
+    sc.add_component(tool, types.SquareCollider({disabled=true,size={-20,-20}, trigger=true}))
 
 
     go, _ := sc.new_gameobject(&game.ecs);
@@ -102,7 +101,7 @@ main :: proc() {
                 animator.active_animation = 1
                 rigid, _ := ecs.get_component(e, 2, types.RigidBody)
                 //sc.apply_force(rigid, {5000,0}) 
-                colliders[0].disabled = false
+                colliders[0].disabled = !colliders[0].disabled
             }
 
             for event in es.event_queue_poll() {

@@ -14,9 +14,12 @@ import es "../../event-system"
 
 PIXELS_PER_METER :: 50.0
 
-worldId  : b2.WorldId;
-body_id  : map[^types.RigidBody]b2.BodyId;
-shape_id : map[b2.ShapeId]^types.RigidBody; // TODO use collider component instead
+// TODO renames theise so they make sense
+worldId               : b2.WorldId;
+body_id_by_rigidbody  : map[^types.RigidBody]b2.BodyId;
+rigidbody_by_shape_id : map[b2.ShapeId]^types.RigidBody; // TODO use collider component instead
+shape_id_by_collider  : map[^types.SquareCollider]b2.ShapeId
+collider_by_shape_id  : map[b2.ShapeId]^types.SquareCollider
 
 init_physics :: proc () {
     worldDef := b2.DefaultWorldDef();
@@ -25,8 +28,9 @@ init_physics :: proc () {
 }
 
 deinit_physics :: proc () {
-    delete(body_id)
-    delete(shape_id)
+    delete(body_id_by_rigidbody)
+    delete(rigidbody_by_shape_id)
+    delete(shape_id_by_collider)
     b2.DestroyWorld(worldId)
 }
 
@@ -67,7 +71,9 @@ create_child :: proc(
     
     // You can map this shape to the rigid body too, 
     // or a different mapping if you need to detect tool hits specifically
-    shape_id[tool_shape_id] = rigid
+    rigidbody_by_shape_id[tool_shape_id] = rigid
+    shape_id_by_collider[collider] = tool_shape_id
+    collider_by_shape_id[tool_shape_id] = collider
 }
 
 get_or_create_body :: proc(e: ^ecs.ECS,
@@ -77,7 +83,7 @@ get_or_create_body :: proc(e: ^ecs.ECS,
                            transform: ^types.Transform) -> b2.BodyId
 {
                                
-    id, ok := body_id[rigid]
+    id, ok := body_id_by_rigidbody[rigid]
     if !ok {
         body_def := b2.DefaultBodyDef();
         body_def.position = transform.pos/PIXELS_PER_METER
@@ -89,7 +95,7 @@ get_or_create_body :: proc(e: ^ecs.ECS,
         
         id = b2.CreateBody(worldId, body_def);
         b2.Body_SetTransform(id, transform.pos/PIXELS_PER_METER, get_rot(transform.rot))
-        body_id[rigid] = id
+        body_id_by_rigidbody[rigid] = id
         
         box := b2.MakeBox(
             ((transform.size.x + (collider != nil ? collider.size.x : 0)) / 2) / PIXELS_PER_METER,
@@ -100,8 +106,8 @@ get_or_create_body :: proc(e: ^ecs.ECS,
         shapeDef.density = 1
         shapeDef.enableContactEvents = (collider != nil);
         shapeDef.isSensor = (collider == nil)
-        shapeId := b2.CreatePolygonShape(body_id[rigid], shapeDef, box);
-        shape_id[shapeId] = rigid
+        shapeId := b2.CreatePolygonShape(body_id_by_rigidbody[rigid], shapeDef, box);
+        rigidbody_by_shape_id[shapeId] = rigid
 
         
         storage, _ := ecs.get_storage(e, ^types.SquareCollider)
@@ -120,40 +126,89 @@ get_or_create_body :: proc(e: ^ecs.ECS,
                 create_child(comp, trans, transform, rigid, id);
             }
         }
-        //delete(components)
+        delete(components)
     }
-    fmt.println(transform)
-
     return id
 }
 
 handle_collision :: proc(events: b2.ContactEvents) {
     for i in 0..< events.beginCount {
         e := events.beginEvents[i]
-        ra := shape_id[e.shapeIdA]
-        rb := shape_id[e.shapeIdB]
-        es.emit(es.Event_Collision_Entered({ra,rb}))
+        ra := rigidbody_by_shape_id[e.shapeIdA]
+        rb := rigidbody_by_shape_id[e.shapeIdB]
+
+        ca, geta := collider_by_shape_id[e.shapeIdA]
+        cb, getb := collider_by_shape_id[e.shapeIdB]
+        if (geta && ca.trigger) || (getb && cb.trigger) do es.emit(es.Event_Trigger_Entered({ra,rb}))
+        else do es.emit(es.Event_Collision_Entered({ra,rb}))
     }
 
     for i in 0..< events.endCount {
         e := events.endEvents[i]
-        ra := shape_id[e.shapeIdA]
-        rb := shape_id[e.shapeIdB]
-        es.emit(es.Event_Collision_Left({ra,rb}))
+        ra := rigidbody_by_shape_id[e.shapeIdA]
+        rb := rigidbody_by_shape_id[e.shapeIdB]
+        ca, geta := collider_by_shape_id[e.shapeIdA]
+        cb, getb := collider_by_shape_id[e.shapeIdB]
+        if (geta && ca.trigger) || (getb && cb.trigger) do es.emit(es.Event_Trigger_Left({ra,rb}))
+        else do es.emit(es.Event_Collision_Left({ra,rb}))
         // collision ended
     }
 
     for i in 0..< events.hitCount {
         e := events.hitEvents[i]
-        ra := shape_id[e.shapeIdA]
-        rb := shape_id[e.shapeIdB]
-        es.emit(es.Event_Collision_Hit({ra,rb}))
+        ra := rigidbody_by_shape_id[e.shapeIdA]
+        rb := rigidbody_by_shape_id[e.shapeIdB]
+        ca, geta := collider_by_shape_id[e.shapeIdA]
+        cb, getb := collider_by_shape_id[e.shapeIdB]
+        if (geta && ca.trigger) || (getb && cb.trigger) do es.emit(es.Event_Trigger_Hit({ra,rb}))
+        else do es.emit(es.Event_Collision_Hit({ra,rb}))
         // significant impact
     }
 }
 
 get_body_id :: proc(rigid: ^types.RigidBody) -> b2.BodyId {
-    return body_id[rigid]
+    return body_id_by_rigidbody[rigid]
+}
+
+toggle_collider :: proc(collider: ^types.SquareCollider) {
+    shape_id, found := shape_id_by_collider[collider]
+    if !found do return
+    
+    filter := b2.Shape_GetFilter(shape_id)
+    
+    if !collider.disabled && !collider.trigger{
+        // Restore your default collision bits 
+        // (0xFFFF means collide with everything, or use your specific category bits)
+        filter.maskBits = 0xFFFF 
+    } else {
+        // Setting maskBits to 0 effectively turns the collider off
+        filter.maskBits = 0 
+    }
+    
+    // Apply the updated filter back to the shape
+    b2.Shape_SetFilter(shape_id, filter)
+}
+
+
+collider_system :: proc(ecs_: ^ecs.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+    c_storage, ok := ecs.get_storage(ecs_, ^types.SquareCollider);
+    if !ok do return;
+    trans, ok2 := ecs.get_storage(ecs_, ^types.Transform)
+    if !ok2 do return
+    for i in 0..<len(c_storage.dense) {
+        collider := c_storage.dense[i]
+        // TODO handle collider toggle
+        toggle_collider(collider);
+        
+
+        if collider.disabled do continue;
+        entity := c_storage.entities[i]
+        t_idx, has_t := storage.has_component(trans, entity)
+        if !has_t do continue
+        t := trans.dense[trans.sparse[int(entity)]]
+        
+        append(&renderer.commands, rn.Rectangle({t.pos, t.size+collider.size, t.rot, rn.get_color(0x00ff00ff), true}));
+    }
 }
 
 
@@ -177,10 +232,7 @@ physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^types.IOHandler, renderer: ^
         transform := trans.dense[trans.sparse[entity]];
         collider, has_component := storage.get_component(c_storage, entity);
 
-        // TODO handle collider toggle
-
-
-        t := b2.Body_GetTransform(get_or_create_body(ecs_,entity,physics_body, collider, transform));
+        t := b2.Body_GetTransform(get_or_create_body(ecs_,entity, physics_body, collider, transform));
 
         transform.pos = t.p*PIXELS_PER_METER;
         transform.rot = b2.Rot_GetAngle(t.q)*math.DEG_PER_RAD
