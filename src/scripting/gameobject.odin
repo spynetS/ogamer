@@ -6,6 +6,7 @@ import stor "../ecs/storage/"
 import "../ecs"
 import "../ecs/types"
 
+// TODO add children array
 GameObject :: struct {
     entity: types.Entity,
     transform: ^types.Transform, // ecs should handle the transform memory

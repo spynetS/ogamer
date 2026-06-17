@@ -235,7 +235,7 @@ collider_system :: proc(ecs_: ^ecs.ECS, io_handler: ^types.IOHandler, renderer: 
         toggle_collider(collider, t);
         
         if collider.disabled do continue;
-        //append(&renderer.commands, rn.Rectangle({t.pos, t.size+collider.size, t.rot, rn.get_color(0x00ff00ff), true}));
+        append(&renderer.commands, rn.Rectangle({t.pos, t.size+collider.size, t.rot, rn.get_color(0x00ff00ff), true}));
     }
 }
 

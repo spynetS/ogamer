@@ -101,8 +101,10 @@ main :: proc() {
             if sc.is_key_pressed(types.KeyboardKey.ENTER) {
                 animator.active_animation = 1
                 rigid, _ := ecs.get_component(e, 2, types.RigidBody)
-                //sc.apply_force(rigid, {5000,0}) 
+                go, _ := sc.get_gameobject(e,ent);
                 colliders[0].disabled = !colliders[0].disabled
+                sc.get_children(go)[0].transform.local_pos = animator.sprite_comp.inverted ? {-80,0} : {80,0}
+
             }
 
             for event in es.event_queue_poll() {
