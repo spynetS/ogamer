@@ -39,8 +39,8 @@ main :: proc() {
             rigid, _ := ecs.get_component(e, ent, types.RigidBody)
             for event in es.event_queue_poll() {
                 #partial switch v in event{
-                    case es.Event_Collision_Entered:
-                    //sc.apply_force(v.a, {3000,0})
+                    case es.Event_Trigger_Entered:
+                    sc.apply_force(v.b, {3000,0})
                 }
             }
 
@@ -50,7 +50,7 @@ main :: proc() {
     
     tool, _ := sc.new_gameobject(&game.ecs);
     tool.transform.local_pos = {100,0}
-    sc.add_component(tool, types.SquareCollider({disabled=true,size={-20,-20}, trigger=true}))
+    sc.add_component(tool, types.SquareCollider({disabled=false,size={-20,-20}, trigger=true}))
 
 
     go, _ := sc.new_gameobject(&game.ecs);
@@ -83,6 +83,7 @@ main :: proc() {
             animator,_ := ecs.get_component(e,ent, types.SpriteAnimator);
 
             colliders := sc.get_child_components(e, ent, types.SquareCollider);
+            if !colliders[0].disabled do colliders[0].disabled = true
             
             if sc.is_key_down(types.KeyboardKey.A) {
                 sc.apply_force(rigid, {-100,0});
