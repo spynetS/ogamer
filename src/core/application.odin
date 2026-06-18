@@ -62,6 +62,8 @@ init_game :: proc() -> ^Game {
     
     game.renderer= new(rn.Renderer);
     game.io_handler = new(types.IOHandler);
+
+    rn.init_renderer();
     systems.init_physics(&game.ecs);
 
     es.event_queue_init();

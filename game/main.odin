@@ -22,8 +22,8 @@ main :: proc() {
     defer free(roof)
     sc.add_component(roof, types.RectangleRenderable({color=rn.get_color(0x00aa00ff)}))
     sc.add_component(roof, types.RigidBody({}))
-    roof.transform.pos = {0,200}
-    roof.transform.size = {10000,100}
+    roof.transform.pos = {0,300}
+    roof.transform.size = {10000,500}
     sc.add_component(roof, types.SquareCollider({}))
 
     box, _ := sc.new_gameobject(&game.ecs);
