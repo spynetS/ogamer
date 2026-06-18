@@ -67,7 +67,8 @@ RigidBody :: struct {
     type             : BodyType,
     disable_gravity  : bool,
     linear_damping   : f32,
-    disable_rotation : bool,
+    density          : f32,
+    disable_rotation : bool
 }
 
 SquareCollider :: struct {

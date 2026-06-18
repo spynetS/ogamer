@@ -11,14 +11,15 @@ The user should pass a pointer to a component but theft
 component storage will copy that memory!
 */
 
-
 ComponentStorage :: struct($T: typeid) {
-    sparse: [dynamic]int,
-    dense:  [dynamic]T,
-    entities: [dynamic]Entity,
+    sparse         : [dynamic]int,
+    dense          : [dynamic]T,
+    entities       : [dynamic]Entity,
+    entity_by_comp : map[T]Entity
 }
 
 NO_ENTITY :: -1
+
 
 init_storage :: proc($T: typeid, capacity: int) -> ^ComponentStorage(T) {
     storage := new(ComponentStorage(T))
@@ -33,9 +34,10 @@ add_component :: proc(storage: ^ComponentStorage($T), e:Entity, component: T) ->
     storage.sparse[id] = len(storage.dense)
  
     copy_component := new_clone(component^)
-    
+    storage.entity_by_comp[copy_component] = e
     append(&storage.dense, copy_component)
     append(&storage.entities, e)
+
     return copy_component;
 }
 

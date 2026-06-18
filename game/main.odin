@@ -23,13 +23,12 @@ main :: proc() {
     sc.add_component(roof, types.RectangleRenderable({color=rn.get_color(0x00aa00ff)}))
     sc.add_component(roof, types.RigidBody({}))
     roof.transform.pos = {0,200}
-    roof.transform.size = {1000,100}
-    roof.transform.rot = 5
+    roof.transform.size = {10000,100}
     sc.add_component(roof, types.SquareCollider({}))
 
     box, _ := sc.new_gameobject(&game.ecs);
     defer free(box)
-    sc.add_component(box, types.RigidBody({type=types.BodyType.dynamicBody}))
+    sc.add_component(box, types.RigidBody({density=5, type=types.BodyType.dynamicBody}))
     sc.add_component(box, types.SquareCollider({}))
     image,_:= io.load("./game/assets/box.png")
     sc.add_component(box, types.SpriteRenderable({image=image, scale=1}))
@@ -40,7 +39,9 @@ main :: proc() {
             for event in es.event_queue_poll() {
                 #partial switch v in event{
                     case es.Event_Trigger_Entered:
-                    sc.apply_force(v.b, {3000,0})
+                    trans,_ := ecs.get_component(e, v.ea, types.Transform)
+                    fmt.println("TRANSS:  ", trans.local_pos)
+                    sc.apply_force(v.ra, trans.local_pos*{20*5,0})
                 }
             }
 
@@ -50,7 +51,8 @@ main :: proc() {
     
     tool, _ := sc.new_gameobject(&game.ecs);
     tool.transform.local_pos = {100,0}
-    sc.add_component(tool, types.SquareCollider({disabled=false,size={-20,-20}, trigger=true}))
+    //sc.add_component(tool, types.RigidBody({type=types.BodyType.dynamicBody}))
+    collider,_ := sc.add_component(tool, types.SquareCollider({disabled=false, size={-20,-20}, trigger=true}))
 
 
     go, _ := sc.new_gameobject(&game.ecs);
@@ -74,7 +76,8 @@ main :: proc() {
 
     parent_rigid, _ := sc.add_component(go, types.RigidBody({
         type=types.BodyType.dynamicBody,
-        disable_rotation=true
+        disable_rotation=true,
+        density=2
     }))
     sc.add_component(go, ecs.Script({
         on_update = proc(e: ^ecs.ECS, ent: u32, dt: f32) {
@@ -82,7 +85,9 @@ main :: proc() {
             trans,_ := ecs.get_component(e,ent, types.Transform);
             animator,_ := ecs.get_component(e,ent, types.SpriteAnimator);
 
-            colliders := sc.get_child_components(e, ent, types.SquareCollider);
+            colliders   := sc.get_child_components(e, ent, types.SquareCollider);
+            child_trans := sc.get_child_components(e, ent, types.Transform);
+            
             if !colliders[0].disabled do colliders[0].disabled = true
             
             if sc.is_key_down(types.KeyboardKey.A) {
@@ -95,6 +100,7 @@ main :: proc() {
                 animator.active_animation = 2
                 animator.sprite_comp.inverted = false
             }
+            
             if sc.is_key_pressed(types.KeyboardKey.SPACE) {                
                 sc.apply_force(rigid, {0,-3000});
             }
@@ -104,6 +110,7 @@ main :: proc() {
                 go, _ := sc.get_gameobject(e,ent);
                 colliders[0].disabled = !colliders[0].disabled
                 sc.get_children(go)[0].transform.local_pos = animator.sprite_comp.inverted ? {-80,0} : {80,0}
+                sys.create_collider(rigid, colliders[0], child_trans[0])
 
             }
 
@@ -124,7 +131,6 @@ main :: proc() {
         time = 0.1,
         
     }))
-
 
     sc.add_child(go,tool)
 

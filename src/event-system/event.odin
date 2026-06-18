@@ -9,28 +9,27 @@ Event_Key_Released :: struct { // TODO add so it gets emited
     key: types.KeyboardKey,
 }
 Event_Collision_Entered :: struct {
-    a: ^types.RigidBody,
-    b: ^types.RigidBody
+    ra: ^types.RigidBody,
+    rb: ^types.RigidBody,
+    ca: ^types.SquareCollider,
+    cb: ^types.SquareCollider,
+    ea: u32,
+    eb: u32,
 }
 Event_Collision_Left :: struct {
-    a: ^types.RigidBody,
-    b: ^types.RigidBody
+    using Event_Collision_Entered,
 }
 Event_Collision_Hit :: struct {
-    a: ^types.RigidBody,
-    b: ^types.RigidBody
+    using Event_Collision_Entered
 }
 Event_Trigger_Entered :: struct {
-    a: ^types.RigidBody,
-    b: ^types.RigidBody
+    using Event_Collision_Entered,
 }
 Event_Trigger_Left :: struct {
-    a: ^types.RigidBody,
-    b: ^types.RigidBody
+    using Event_Collision_Entered,
 }
 Event_Trigger_Hit :: struct {
-    a: ^types.RigidBody,
-    b: ^types.RigidBody
+    using Event_Collision_Entered,
 }
 Event_SpriteAnimator_End :: struct {
     animator: ^types.SpriteAnimator
