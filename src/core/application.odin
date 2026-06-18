@@ -89,6 +89,7 @@ init_game :: proc() -> ^Game {
 }
 
 free_game :: proc(game: ^Game) {
+
     delete(game.renderer.commands);
     free(game.renderer);
     free(game.io_handler);
@@ -102,7 +103,7 @@ free_game :: proc(game: ^Game) {
     ecs.delete_storage(&game.ecs, ^types.Camera2D);
     ecs.delete_storage(&game.ecs, ^types.SpriteAnimator);
     systems.deinit_physics();
-
+    rn.deinit_renderer();
     es.event_queue_destroy();
 
     delete(game.ecs.storages);

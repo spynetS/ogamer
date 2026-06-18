@@ -26,14 +26,16 @@ init_physics :: proc (e: ^ecs.ECS) {
     worldDef := b2.DefaultWorldDef();
     worldDef.gravity = {0,10};
     worldId = b2.CreateWorld(worldDef);
+    
 
-    //ecs.subscribe(e, added_component)
 }
 
 deinit_physics :: proc () {
     delete(body_id_by_rigidbody)
     delete(rigidbody_by_shape_id)
     delete(shape_id_by_collider)
+    delete(collider_by_shape_id)
+    delete(body_id_by_collider)
     b2.DestroyWorld(worldId)
 }
 

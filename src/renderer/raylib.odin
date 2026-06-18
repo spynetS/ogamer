@@ -17,10 +17,15 @@ height :: 720
 target : rl.RenderTexture
 
 init_renderer :: proc() {
+    if !RENDER do return
     rl.InitWindow(width,height,"Hello World");
     rl.SetWindowState({.WINDOW_RESIZABLE})
     target = rl.LoadRenderTexture(width, height);
     rl.SetTextureFilter(target.texture, rl.TextureFilter.POINT);
+}
+
+deinit_renderer :: proc() {
+    rl.UnloadTexture(target.texture);
 }
 
 execute :: proc(renderer: ^Renderer) {
