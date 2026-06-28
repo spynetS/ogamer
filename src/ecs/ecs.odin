@@ -51,7 +51,7 @@ add_component :: proc(s: ^ECS, entity: u32, component: $T) -> (^T, bool) {
 }
 
 has_component :: proc(s: ^ECS, entity: u32, $T: typeid) -> (int, bool) {
-    storage, ok := get_storage(s,T);
+    storage, ok := get_storage(s,^T);
     if !ok do return 0, false
     return stor.has_component(storage, entity);
 }

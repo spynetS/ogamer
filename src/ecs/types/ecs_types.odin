@@ -81,7 +81,6 @@ SpriteRenderable :: struct {
     using component: Component,
     image    : ^Image,
     inverted : bool,
-    scale    : f32
 }
 
 SpriteAnimator :: struct {

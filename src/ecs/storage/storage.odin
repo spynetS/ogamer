@@ -50,7 +50,8 @@ get_component :: proc(storage : ^ComponentStorage($T), e: Entity) -> (T, bool) {
 
 has_component :: proc(s: ^ComponentStorage($T), entity: Entity) -> (int, bool) {
     id := int(entity)
-    return s.sparse[id], id < len(s.sparse) && s.sparse[id] != NO_ENTITY
+    has := id < len(s.sparse) && s.sparse[id] != NO_ENTITY
+    return has ? s.sparse[id] : -1, has
 }
 
 delete_storage :: proc(storage : ^ComponentStorage($T)) {

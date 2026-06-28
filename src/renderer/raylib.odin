@@ -49,11 +49,6 @@ execute :: proc(renderer: ^Renderer) {
 		window_h := f32(rl.GetScreenHeight())
     scale := math.min(window_w / width, window_h / height)
 
-        //----------------------------------------------------------------------------------
-        // Draw Stage 1: Render your camera world into the virtual texture
-        //----------------------------------------------------------------------------------
-    
-
     if RENDER {
 
         for command in renderer.commands {

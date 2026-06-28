@@ -93,10 +93,14 @@ create_body :: proc(e: ^ecs.ECS, ent: u32){
     rigid, has_rigid := ecs.get_component(e, ent, types.RigidBody)
     collider, has_collider := ecs.get_component(e, ent, types.SquareCollider)
 
+    // no rigidbody skip
     if !has_rigid do return
+    // if its created skip
     temp_id, exists := body_id_by_rigidbody[rigid]
     if exists do return
+    fmt.println("INFO: creating box2d body")
 
+    
     body_def := b2.DefaultBodyDef();
     body_def.position = transform.pos/PIXELS_PER_METER
     body_def.type = b2.BodyType(rigid.type)
@@ -241,7 +245,6 @@ toggle_collider :: proc(
             b2.Shape_SetFilter(shape_id, filter)
         }
     }
-
 }
 
 
@@ -260,7 +263,7 @@ collider_system :: proc(ecs_: ^ecs.ECS, io_handler: ^types.IOHandler, renderer: 
         toggle_collider(collider, t);
         
         if collider.disabled do continue;
-        //append(&renderer.commands, rn.Rectangle({t.pos, t.size+collider.size, t.rot, rn.get_color(0x00ff00ff), true}));
+        append(&renderer.commands, rn.Rectangle({t.pos, t.size+collider.size, t.rot, rn.get_color(0x00ff00ff), true}));
     }
 }
 
@@ -289,8 +292,12 @@ physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^types.IOHandler, renderer: ^
         collider, has_component := storage.get_component(c_storage, entity);
 
         id, has := body_id_by_rigidbody[physics_body];
-        if !has do create_body(ecs_, entity);
-        
+        if !has {
+            create_body(ecs_, entity);
+            id = body_id_by_rigidbody[physics_body]; 
+        }
+
+
         t := b2.Body_GetTransform(id);
 
         transform.pos = t.p*PIXELS_PER_METER;
