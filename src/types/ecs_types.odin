@@ -25,7 +25,7 @@ GameObject :: struct {
 
 // TODO change this to more
 Script :: struct {
-    on_update: proc(gameObject: GameObject, entity: u32, dt: f32),
+    on_update: proc(gameObject: GameObject, dt: f32),
 }
 
 

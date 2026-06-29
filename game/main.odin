@@ -6,7 +6,7 @@ import "../src/core"
 import "../src/ecs"
 import "../src/types"
 import sc "../src/scripting"
-import rn "../src/renderer"
+
 import "../src/io"
 import es "../src/event-system"
 import sys "../src/ecs/systems"
@@ -20,9 +20,21 @@ create_player :: proc (e: ^types.ECS) {
     run := io.new_tilesheet("./game/assets/Run (78x58).png", {64,58}, {14, 0});
     io.merge_tilesheet(idle,run)
 
+    collider, _ := sc.add_component(player, types.SquareCollider({}))
+    sc.add_component(player, types.RigidBody({type=types.BodyType.dynamicBody}))
+
     sc.add_component(player, types.Script({
-        on_update = proc(go: types.GameObject, entity: u32, dt: f32) {
-            go.transform.pos += {1,0};
+        on_update = proc(go: types.GameObject, dt: f32) {
+            collider, _ := ecs.get_component(go.ecs, go.entity, types.SquareCollider);
+            rigid, _ := ecs.get_component(go.ecs, go.entity, types.RigidBody);
+            
+            if sc.is_key_down(types.KeyboardKey.D) do sc.apply_force(rigid, {100,0})
+            if sc.is_key_down(types.KeyboardKey.A) do sc.apply_force(rigid, {-100,0})
+            collider.disabled = true;
+            if sc.is_key_down(types.KeyboardKey.SPACE) {
+                collider.disabled = false;
+            }
+            
         }
     }))
 
@@ -42,6 +54,22 @@ create_enemy :: proc(e: ^types.ECS) {
     defer free(enemy)
     enemy.transform.pos = {100,0}
     idle : ^types.TileSheet = io.new_tilesheet("./game/assets/Pig Idle (34x28).png", {28,28}, {34-28,0})
+
+
+    sc.add_component(enemy, types.RigidBody({type=types.BodyType.dynamicBody}))
+
+    sc.add_component(enemy, types.Script({
+        on_update = proc(go: types.GameObject, dt: f32 ) {
+            for event in es.event_queue_poll(){
+                #partial switch v in event  {
+                    case es.Event_Collision_Entered:
+                    fmt.println("COLLISION");
+            }
+
+            }
+        }
+    }))
+
     
     sc.add_component(enemy, types.SquareCollider({}))
     sc.add_component(enemy, types.SpriteAnimator({
@@ -62,6 +90,14 @@ main :: proc() {
     
     create_player(&game.ecs);
     create_enemy(&game.ecs);
+
+    floor,_ := sc.new_renderobject(&game.ecs);
+    floor.transform.pos = {0,200}
+    floor.transform.size = {500,50}
+    sc.add_component(floor, types.RigidBody({}))
+    sc.add_component(floor, types.SquareCollider({}))
+    
+
 
     core.main_loop(game);
 }

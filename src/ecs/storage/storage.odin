@@ -20,6 +20,10 @@ ComponentStorage :: struct($T: typeid) {
 
 NO_ENTITY :: -1
 
+// TODO add delete entity!
+// remove_entity :: proc(storage: ^ComponentStorage($T), e:Entitydelete) {
+    
+// }
 
 init_storage :: proc($T: typeid, capacity: int) -> ^ComponentStorage(T) {
     storage := new(ComponentStorage(T))

@@ -158,7 +158,7 @@ script_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
         go, _ := ecss.get_gameobject(ecs, entity);
         defer free(go);
 
-        script.on_update(go^, u32(entity), dt);
+        script.on_update(go^, dt);
     }
 
 }
