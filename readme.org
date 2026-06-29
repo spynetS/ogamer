@@ -25,7 +25,7 @@ main :: proc() {
         sc.add_component(go, ec.RectangleRenderable({rn.get_color(0x181818ff)}))
         sc.add_component(go, ec.RigidBody({{0,0},{0,98}}))
         sc.add_component(go, ecs.Script({
-            on_update = proc(ecs: ^ecs.ECS, entity: ec.Entity, dt:f32) {
+            on_update = proc(ecs: ^types.ECS, entity: ec.Entity, dt:f32) {
                 go, _ := sc.get_gameobject(ecs, entity)
                 go.transform.pos.x += 1;
             }

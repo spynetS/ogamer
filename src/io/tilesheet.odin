@@ -1,6 +1,6 @@
 package file_io;
 
-import "../ecs/types"
+import "../types"
 import "core:fmt"
 
 new_tilesheet :: proc {

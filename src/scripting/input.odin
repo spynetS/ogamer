@@ -1,6 +1,6 @@
 package scripting;
 import es "../event-system"
-import "../ecs/types"
+import "../types"
 
 
 

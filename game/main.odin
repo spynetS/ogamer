@@ -4,7 +4,7 @@ import "core:fmt"
 import b2 "vendor:box2d"
 import "../src/core"
 import "../src/ecs"
-import "../src/ecs/types"
+import "../src/types"
 import sc "../src/scripting"
 import rn "../src/renderer"
 import "../src/io"
@@ -12,13 +12,20 @@ import es "../src/event-system"
 import sys "../src/ecs/systems"
 
 
-create_player :: proc (e: ^ecs.ECS) {
+create_player :: proc (e: ^types.ECS) {
     player, _ := sc.new_gameobject(e);
     defer free(player)
     
     idle := io.new_tilesheet("./game/assets/Idle (78x58).png", {64,58}, {14, 0});
     run := io.new_tilesheet("./game/assets/Run (78x58).png", {64,58}, {14, 0});
     io.merge_tilesheet(idle,run)
+
+    sc.add_component(player, types.Script({
+        on_update = proc(go: types.GameObject, entity: u32, dt: f32) {
+            go.transform.pos += {1,0};
+        }
+    }))
+
 
     sprite,_ := sc.add_component(player, types.SpriteRenderable({}))
     sc.add_component(player, types.SpriteAnimator({
@@ -29,13 +36,13 @@ create_player :: proc (e: ^ecs.ECS) {
     }))
 }
 
-create_enemy :: proc(e: ^ecs.ECS) {
+create_enemy :: proc(e: ^types.ECS) {
 
     enemy, _ := sc.new_gameobject(e);
     defer free(enemy)
     enemy.transform.pos = {100,0}
     idle : ^types.TileSheet = io.new_tilesheet("./game/assets/Pig Idle (34x28).png", {28,28}, {34-28,0})
-
+    
     sc.add_component(enemy, types.SquareCollider({}))
     sc.add_component(enemy, types.SpriteAnimator({
         sprites=idle.images,

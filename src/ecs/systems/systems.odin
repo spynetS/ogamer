@@ -4,14 +4,12 @@ import "core:fmt"
 import "core:math"
 import stor "../storage"
 import rn "../../renderer"
-import rl "vendor:raylib/rlgl"
-import io "../../io/"
 import ecss "../"
-import "../types"
+import "../../types"
 import es "../../event-system"
 
 
-camera_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+camera_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     storage, ok := ecss.get_storage(ecs, ^types.Camera2D);
     if !ok do return;
     t_storage, ok2 := ecss.get_storage(ecs, ^types.Transform)
@@ -28,7 +26,7 @@ camera_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^r
 
 }
 
-render_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+render_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     render_storage, ok := ecss.get_storage(ecs, ^types.RectangleRenderable);
     if !ok do return;
     trans, ok2 := ecss.get_storage(ecs, ^types.Transform)
@@ -45,7 +43,7 @@ render_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^r
     }
 }
 
-sprite_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+sprite_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     sprite_storage, ok := ecss.get_storage(ecs, ^types.SpriteRenderable);
     if !ok do return;
     trans, ok2 := ecss.get_storage(ecs, ^types.Transform)
@@ -66,7 +64,7 @@ sprite_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^r
     }
 }
 
-sprite_animator_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+sprite_animator_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     storage, ok := ecss.get_storage(ecs, ^types.SpriteAnimator);
     sprite_storage, ok2 := ecss.get_storage(ecs, ^types.SpriteRenderable);
     if !ok || !ok2 do return;
@@ -128,7 +126,7 @@ rotate :: proc(p : types.Vector2, angle: f32) -> types.Vector2 {
     })
 }
 
-parent_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+parent_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     parent_storage, ok := ecss.get_storage(ecs, ^types.Parent);
     if !ok do return;
     t_storage, ok2 := ecss.get_storage(ecs, ^types.Transform)
@@ -150,13 +148,17 @@ parent_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^r
 }
 
 
-script_system :: proc(ecs: ^ecss.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
-    script_storage, ok := ecss.get_storage(ecs, ^ecss.Script);
+script_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+    script_storage, ok := ecss.get_storage(ecs, ^types.Script);
     if !ok do return;
     for i in 0..<len(script_storage.dense) {
         entity := script_storage.entities[i]
         script := script_storage.dense[i];
-        script.on_update(ecs, u32(entity), dt);
+
+        go, _ := ecss.get_gameobject(ecs, entity);
+        defer free(go);
+
+        script.on_update(go^, u32(entity), dt);
     }
 
 }

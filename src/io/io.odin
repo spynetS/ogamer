@@ -4,7 +4,7 @@ import "vendor:stb/image"
 import "core:strings"
 import "core:fmt"
 
-import "../ecs/types"
+import "../types"
 
 add :: proc(handler : ^types.IOHandler, file_path: string) -> (^types.Image, bool){
     image, ok := load(file_path)

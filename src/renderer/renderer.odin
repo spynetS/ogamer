@@ -1,6 +1,6 @@
 package renderer;
 
-import "../ecs/types"
+import "../types"
 
 // Renderer works by having a bunch of rendering commands that
 // the underlaying graphics arcitecture implements by having 

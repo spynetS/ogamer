@@ -7,7 +7,7 @@ import b2 "vendor:box2d"
 import storage "../storage"
 import rn "../../renderer"
 import io "../../io/"
-import "../types"
+import "../../types"
 import ecs "../"
 import es "../../event-system"
 
@@ -22,7 +22,7 @@ shape_id_by_collider  : map[^types.SquareCollider]b2.ShapeId
 collider_by_shape_id  : map[b2.ShapeId]^types.SquareCollider
 body_id_by_collider  : map[^types.SquareCollider]b2.BodyId;
 
-init_physics :: proc (e: ^ecs.ECS) {
+init_physics :: proc (e: ^types.ECS) {
     worldDef := b2.DefaultWorldDef();
     worldDef.gravity = {0,10};
     worldId = b2.CreateWorld(worldDef);
@@ -88,7 +88,7 @@ create_collider :: proc(rigid: ^types.RigidBody, collider: ^types.SquareCollider
 }
 
 
-create_body :: proc(e: ^ecs.ECS, ent: u32){
+create_body :: proc(e: ^types.ECS, ent: u32){
     transform, has_transform := ecs.get_component(e, ent, types.Transform)
     rigid, has_rigid := ecs.get_component(e, ent, types.RigidBody)
     collider, has_collider := ecs.get_component(e, ent, types.SquareCollider)
@@ -127,7 +127,7 @@ create_body :: proc(e: ^ecs.ECS, ent: u32){
     rigidbody_by_shape_id[shapeId] = rigid
 }
 
-handle_collision :: proc(e: ^ecs.ECS, events: b2.ContactEvents) {
+handle_collision :: proc(e: ^types.ECS, events: b2.ContactEvents) {
     c_storage, _ := ecs.get_storage(e,^types.SquareCollider)
     
     for i in 0..< events.beginCount {
@@ -175,7 +175,7 @@ handle_collision :: proc(e: ^ecs.ECS, events: b2.ContactEvents) {
 }
 
 
-handle_trigger_collision :: proc(e: ^ecs.ECS, events: b2.SensorEvents) {
+handle_trigger_collision :: proc(e: ^types.ECS, events: b2.SensorEvents) {
     c_storage, _ := ecs.get_storage(e,^types.SquareCollider)
     for i in 0..< events.beginCount {
         e := events.beginEvents[i]
@@ -249,7 +249,7 @@ toggle_collider :: proc(
 
 
 
-collider_system :: proc(ecs_: ^ecs.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+collider_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     c_storage,_ := ecs.get_storage(ecs_, ^types.SquareCollider);
     trans,_ := ecs.get_storage(ecs_, ^types.Transform)
     for i in 0..<len(c_storage.dense) {
@@ -268,7 +268,7 @@ collider_system :: proc(ecs_: ^ecs.ECS, io_handler: ^types.IOHandler, renderer: 
 }
 
 
-physics_system :: proc(ecs_: ^ecs.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+physics_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     phys, ok := ecs.get_storage(ecs_, ^types.RigidBody)
     if !ok do return
     trans, ok2 := ecs.get_storage(ecs_, ^types.Transform)

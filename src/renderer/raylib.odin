@@ -4,7 +4,7 @@ import "core:fmt";
 import "core:math";
 import "core:strings";
 import es "../event-system";
-import "../ecs/types";
+import "../types";
 
 RENDER :: true
 

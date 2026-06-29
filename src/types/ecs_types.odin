@@ -5,6 +5,30 @@ Vector2 :: [2]f32;
 
 keys : [dynamic]KeyboardKey;
 
+Event_Type :: enum {
+    RigidBody,
+    Collider,
+}
+
+ECS :: struct {
+    storages: map[typeid]rawptr, // rawptr -> ^ComponentStorage(T)
+}
+
+
+// TODO add children array
+GameObject :: struct {
+    entity: Entity,
+    transform: ^Transform, // ecs should handle the transform memory
+    parent: ^GameObject,
+    ecs: ^ECS,
+}
+
+// TODO change this to more
+Script :: struct {
+    on_update: proc(gameObject: GameObject, entity: u32, dt: f32),
+}
+
+
 Image :: struct {
     data : []u8,
     width, height, mipmaps, channels : i32

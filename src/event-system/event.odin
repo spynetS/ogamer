@@ -1,6 +1,6 @@
 package event;
 import "core:fmt"
-import "../ecs/types"
+import "../types"
 
 Event_Key_Pressed :: struct {
     key: types.KeyboardKey,

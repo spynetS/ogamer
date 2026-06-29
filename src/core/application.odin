@@ -2,15 +2,16 @@ package core;
 
 import rn "../renderer"
 import "../ecs"
-import "../ecs/types"
+import "../types"
 import "../ecs/systems"
+import "../scripting"
 import es "../event-system"
 import "core:time"
 
 Game :: struct {
     should_run: bool,
     renderer: ^rn.Renderer,
-    ecs: ecs.ECS,
+    ecs: types.ECS,
     io_handler: ^types.IOHandler
 }
 
@@ -69,7 +70,7 @@ init_game :: proc() -> ^Game {
     es.event_queue_init();
 
     // Initiation storages for the components
-    ecs.add_storage(&game.ecs, ^ecs.Script);
+    ecs.add_storage(&game.ecs, ^types.Script);
     ecs.add_storage(&game.ecs, ^types.Transform);
     ecs.add_storage(&game.ecs, ^types.RigidBody);
     ecs.add_storage(&game.ecs, ^types.SquareCollider);
@@ -93,7 +94,7 @@ free_game :: proc(game: ^Game) {
     delete(game.renderer.commands);
     free(game.renderer);
     free(game.io_handler);
-    ecs.delete_storage(&game.ecs, ^ecs.Script);
+    ecs.delete_storage(&game.ecs, ^types.Script);
     ecs.delete_storage(&game.ecs, ^types.Parent);
     ecs.delete_storage(&game.ecs, ^types.Transform);
     ecs.delete_storage(&game.ecs, ^types.RigidBody);
