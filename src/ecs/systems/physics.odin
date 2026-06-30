@@ -12,9 +12,10 @@ import ecs "../"
 import es "../../event-system"
 
 
-PIXELS_PER_METER :: 50.0
+PIXELS_PER_METER :: 50.0 // to sync better box2d physics with pixels
 
-// TODO renames theise so they make sense
+// TODO if collider is disabled the rigidbody should'nt collide!
+
 worldId               : b2.WorldId;
 body_id_by_rigidbody  : map[^types.RigidBody]b2.BodyId;
 rigidbody_by_shape_id : map[b2.ShapeId]^types.RigidBody; // TODO use collider component instead

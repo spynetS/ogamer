@@ -19,20 +19,27 @@ create_player :: proc (e: ^types.ECS) {
     idle := io.new_tilesheet("./game/assets/Idle (78x58).png", {64,58}, {14, 0});
     run := io.new_tilesheet("./game/assets/Run (78x58).png", {64,58}, {14, 0});
     io.merge_tilesheet(idle,run)
+    sc.add_component(player, types.SquareCollider({}))
 
-    collider, _ := sc.add_component(player, types.SquareCollider({}))
+
+    tool, _ := sc.new_gameobject(e);
+    defer free(tool);
+    tool.transform.local_pos = {100,0}
+    collider, _ := sc.add_component(tool, types.SquareCollider({trigger=true}))
+    
+    sc.add_child(player, tool);
     sc.add_component(player, types.RigidBody({type=types.BodyType.dynamicBody}))
 
     sc.add_component(player, types.Script({
         on_update = proc(go: types.GameObject, dt: f32) {
-            collider, _ := ecs.get_component(go.ecs, go.entity, types.SquareCollider);
+            collider :     d = sc.get_child_components(go.ecs, go.entity, types.SquareCollider);
             rigid, _ := ecs.get_component(go.ecs, go.entity, types.RigidBody);
             
             if sc.is_key_down(types.KeyboardKey.D) do sc.apply_force(rigid, {100,0})
             if sc.is_key_down(types.KeyboardKey.A) do sc.apply_force(rigid, {-100,0})
-            collider.disabled = true;
+            collider[0].disabled = true;
             if sc.is_key_down(types.KeyboardKey.SPACE) {
-                collider.disabled = false;
+                collider[0].disabled = false;
             }
             
         }
