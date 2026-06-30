@@ -13,7 +13,6 @@ new_gameobject :: proc(ecs_: ^types.ECS) -> (^types.GameObject, bool) {
 
     t_storage, ok := ecs.get_storage(ecs_, ^types.Transform)
     entity := types.Entity(len(t_storage.entities))
-    append(&t_storage.entities, entity)
 
     game_object.entity = entity
     game_object.ecs = ecs_

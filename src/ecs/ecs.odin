@@ -70,8 +70,19 @@ get_gameobject :: proc(ecs_: ^types.ECS, entity: types.Entity) -> (^types.GameOb
     game_object.entity = entity;
     game_object.ecs = ecs_;
 
-    
+
     return game_object, true
+}
+
+/**
+Frees a GameObject obtained from get_gameobject, including the parent
+chain it allocates. Do NOT use this on GameObjects whose parent was set
+via add_child (those parent pointers are shared, not owned).
+*/
+free_gameobject :: proc(game_object: ^types.GameObject) {
+    if game_object == nil do return
+    free_gameobject(game_object.parent)
+    free(game_object)
 }
 
 

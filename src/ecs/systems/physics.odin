@@ -18,6 +18,7 @@ PIXELS_PER_METER :: 50.0 // to sync better box2d physics with pixels
 
 worldId               : b2.WorldId;
 body_id_by_rigidbody  : map[^types.RigidBody]b2.BodyId;
+shape_id_by_rigidbody  : map[^types.RigidBody]b2.ShapeId;
 rigidbody_by_shape_id : map[b2.ShapeId]^types.RigidBody; // TODO use collider component instead
 shape_id_by_collider  : map[^types.SquareCollider]b2.ShapeId
 collider_by_shape_id  : map[b2.ShapeId]^types.SquareCollider
@@ -49,23 +50,24 @@ get_rot :: proc (rot: f32) -> b2.Rot {
 create_collider :: proc(rigid: ^types.RigidBody, collider: ^types.SquareCollider, child_t: ^types.Transform) {
     body_id, has_rigid := body_id_by_rigidbody[rigid];
     if !has_rigid do return // TODO maybe create body?
-    
-    shape_id, has_shape := shape_id_by_collider[collider];
-    if has_shape {
-        fmt.println("INFO: delete shape")
-        b2.DestroyShape(shape_id,true)
-        delete_key(&rigidbody_by_shape_id, shape_id)
+
+    // Recreate only if THIS collider already owns a shape. A body can own
+    // many shapes (its own fixture + each child collider), so keying off the
+    // body would wrongly destroy/unregister the parent's main shape.
+    if old_shape, has_shape := shape_id_by_collider[collider]; has_shape {
+        b2.DestroyShape(old_shape, true)
+        delete_key(&rigidbody_by_shape_id, old_shape)
+        delete_key(&collider_by_shape_id, old_shape)
         delete_key(&shape_id_by_collider, collider)
         delete_key(&body_id_by_collider, collider)
-        delete_key(&collider_by_shape_id, shape_id)
     }
 
-    
+    // Child-local offset in the body frame (body origin = parent center).
+    // Positive, to match parent_system which draws the child at +local_pos.
     offset := b2.Vec2({
-        -child_t.local_pos.x / PIXELS_PER_METER,
-        -child_t.local_pos.y / PIXELS_PER_METER
+        child_t.local_pos.x / PIXELS_PER_METER,
+        child_t.local_pos.y / PIXELS_PER_METER
     })
-    fmt.println("INFO: added shape with offset ", offset)
     box := b2.MakeOffsetBox(
         (child_t.size.x + collider.size.x) / 2 / PIXELS_PER_METER,
         (child_t.size.y + collider.size.y) / 2 / PIXELS_PER_METER,
@@ -79,8 +81,8 @@ create_collider :: proc(rigid: ^types.RigidBody, collider: ^types.SquareCollider
     shape_def.enableSensorEvents = true
     shape_def.isSensor = collider.trigger // Set to true if it's just a weapon trigger
 
-    shape_id = b2.CreatePolygonShape(body_id, shape_def, box)
-    
+    shape_id := b2.CreatePolygonShape(body_id, shape_def, box)
+
     rigidbody_by_shape_id[shape_id] = rigid
     shape_id_by_collider[collider] = shape_id
     body_id_by_collider[collider] = body_id
@@ -123,9 +125,10 @@ create_body :: proc(e: ^types.ECS, ent: u32){
     shapeDef.density = rigid.density == 0 ? 1 : rigid.density
     shapeDef.enableContactEvents = (has_collider);
     shapeDef.enableSensorEvents = true
-    shapeDef.isSensor = (!has_collider)
+    shapeDef.isSensor = (has_collider ? collider.trigger : true)
     shapeId := b2.CreatePolygonShape(body_id_by_rigidbody[rigid], shapeDef, box);
     rigidbody_by_shape_id[shapeId] = rigid
+    shape_id_by_rigidbody[rigid] = shapeId
 }
 
 handle_collision :: proc(e: ^types.ECS, events: b2.ContactEvents) {
@@ -271,14 +274,12 @@ collider_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer
 
 physics_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     phys, ok := ecs.get_storage(ecs_, ^types.RigidBody)
-    if !ok do return
     trans, ok2 := ecs.get_storage(ecs_, ^types.Transform)
-    if !ok2 do return
-
     c_storage, c_ok := ecs.get_storage(ecs_, ^types.SquareCollider)
-    if !c_ok do return
+    if !ok || !ok2 || !c_ok do return
 
     b2.World_Step(worldId, dt, 8);
+    
     events := b2.World_GetContactEvents(worldId);
     handle_collision(ecs_,events)
     

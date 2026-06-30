@@ -20,26 +20,30 @@ create_player :: proc (e: ^types.ECS) {
     run := io.new_tilesheet("./game/assets/Run (78x58).png", {64,58}, {14, 0});
     io.merge_tilesheet(idle,run)
     sc.add_component(player, types.SquareCollider({}))
-
+    rigid, _ := sc.add_component(player, types.RigidBody({type=types.BodyType.dynamicBody}))
+//    sys.create_body(e,player.entity)
 
     tool, _ := sc.new_gameobject(e);
     defer free(tool);
     tool.transform.local_pos = {100,0}
-    collider, _ := sc.add_component(tool, types.SquareCollider({trigger=true}))
+    tool.transform.local_size = {-50,-50}
+    collider, _ := sc.add_component(tool, types.SquareCollider({}))
     
     sc.add_child(player, tool);
-    sc.add_component(player, types.RigidBody({type=types.BodyType.dynamicBody}))
+    // sys.create_body(e, player.entity);
+    // sys.create_collider(rigid, collider, tool.transform)
+
 
     sc.add_component(player, types.Script({
         on_update = proc(go: types.GameObject, dt: f32) {
-            collider :     d = sc.get_child_components(go.ecs, go.entity, types.SquareCollider);
+            collider := sc.get_child_components(go.ecs, go.entity, types.SquareCollider);
             rigid, _ := ecs.get_component(go.ecs, go.entity, types.RigidBody);
             
             if sc.is_key_down(types.KeyboardKey.D) do sc.apply_force(rigid, {100,0})
             if sc.is_key_down(types.KeyboardKey.A) do sc.apply_force(rigid, {-100,0})
-            collider[0].disabled = true;
+            //collider[0].disabled = true;
             if sc.is_key_down(types.KeyboardKey.SPACE) {
-                collider[0].disabled = false;
+              //  collider[0].disabled = false;
             }
             
         }
@@ -59,7 +63,7 @@ create_enemy :: proc(e: ^types.ECS) {
 
     enemy, _ := sc.new_gameobject(e);
     defer free(enemy)
-    enemy.transform.pos = {100,0}
+    enemy.transform.pos = {200,0}
     idle : ^types.TileSheet = io.new_tilesheet("./game/assets/Pig Idle (34x28).png", {28,28}, {34-28,0})
 
 
@@ -70,9 +74,8 @@ create_enemy :: proc(e: ^types.ECS) {
             for event in es.event_queue_poll(){
                 #partial switch v in event  {
                     case es.Event_Collision_Entered:
-                    fmt.println("COLLISION");
-            }
-
+                    //game.should_run = false
+                }
             }
         }
     }))
@@ -85,10 +88,11 @@ create_enemy :: proc(e: ^types.ECS) {
     }))
 
 }
+game : ^core.Game;
 
 main :: proc() {
 
-    game := core.init_game();
+    game = core.init_game();
     defer core.free_game(game);
 
     camera, _ := sc.new_gameobject(&game.ecs);

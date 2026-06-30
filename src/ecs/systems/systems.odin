@@ -77,16 +77,15 @@ sprite_animator_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, re
             index, has_sprite := ecss.has_component(ecs, storage.entities[i], types.SpriteRenderable)
             if !has_sprite {
                 // if we don't have a sprite create it?
-                fmt.println("INFO: Adding sprite component to", storage.entities[i], animator, "because it had no sprite_component")
+                //fmt.println("INFO: Adding sprite component to", storage.entities[i], animator, "because it had no sprite_component")
                 sprite, _ := ecss.add_component(ecs, storage.entities[i], types.SpriteRenderable({}))
                 animator.sprite_comp = sprite
             }
         }
         // if we get a new animation to animate 
         if animator.active_animation != animator._active_animation {
-            fmt.println("changed animation")
             if animator.active_animation >= len(animator.sprites){
-                fmt.println("WARNING: active_animation", animator._active_animation, "out of bounds")
+                //fmt.println("WARNING: active_animation", animator._active_animation, "out of bounds")
             }
             else {
                 animator._active_animation = animator.active_animation
@@ -156,7 +155,7 @@ script_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
         script := script_storage.dense[i];
 
         go, _ := ecss.get_gameobject(ecs, entity);
-        defer free(go);
+        defer ecss.free_gameobject(go);
 
         script.on_update(go^, dt);
     }
