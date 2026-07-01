@@ -11,6 +11,14 @@ import "../src/io"
 import es "../src/event-system"
 import sys "../src/ecs/systems"
 
+PlayerData :: struct {
+    collider : ^types.SquareCollider,
+    rigid    : ^types.RigidBody
+}
+EnemyData :: struct {
+    health : int
+}
+
 
 create_player :: proc (e: ^types.ECS) {
     player, _ := sc.new_gameobject(e);
@@ -30,20 +38,29 @@ create_player :: proc (e: ^types.ECS) {
 
     sc.add_child(player, tool);
 
+    data := new(PlayerData)
+    data.collider=collider
+    data.rigid=rigid
 
     sc.add_component(player, types.Script({
-        on_update = proc(go: types.GameObject, dt: f32) {
-            collider := sc.get_child_components(go.ecs, go.entity, types.SquareCollider);
-            rigid, _ := ecs.get_component(go.ecs, go.entity, types.RigidBody);
-            
+        data=data,
+        on_update = proc(go: types.GameObject, data: rawptr, dt: f32) {
+            pd := cast(^PlayerData)data
+            collider := pd.collider
+            rigid := pd.rigid
+
             if sc.is_key_down(types.KeyboardKey.D) do sc.apply_force(rigid, {100,0})
             if sc.is_key_down(types.KeyboardKey.A) do sc.apply_force(rigid, {-100,0})
-            collider[0].disabled = true;
+            collider.disabled = true;
             if sc.is_key_down(types.KeyboardKey.SPACE) {
-                collider[0].disabled = false;
+                collider.disabled = false;
             }
-            
+        },
+        on_destroy = proc(go: types.GameObject, data:rawptr){
+            pd := cast(^PlayerData)data
+            free(pd)
         }
+        
     }))
 
 
@@ -66,14 +83,24 @@ create_enemy :: proc(e: ^types.ECS) {
     
     sc.add_component(enemy, types.RigidBody({type=types.BodyType.dynamicBody}))
 
+    ed: ^EnemyData = new(EnemyData)
+    ed.health = 5
+    fmt.println("EnemyData created at:", ed)  // <-- note this address
+    
     sc.add_component(enemy, types.Script({
-        on_update = proc(go: types.GameObject, dt: f32 ) {
+        data=ed,
+        on_update = proc(go: types.GameObject, data: rawptr, dt: f32 ) {
+            ed := cast(^EnemyData)data
             for event in es.event_queue_poll(){
                 #partial switch v in event  {
                     case es.Event_Trigger_Entered:
-                    ecs.destroy_entity(go.ecs, go.entity)
+                    ed.health = ed.health - 1
+                    if ed.health <= 0 do ecs.destroy_entity(go.ecs, go.entity)
                 }
             }
+        },
+        on_destroy = proc(go: types.GameObject, data: rawptr) {
+            free(data)
         }
     }))
 

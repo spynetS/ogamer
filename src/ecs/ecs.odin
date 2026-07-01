@@ -46,7 +46,15 @@ has_component :: proc(s: ^types.ECS, entity: u32, $T: typeid) -> (int, bool) {
 
 destroy_entity :: proc(ecs: ^types.ECS, entity: u32) {
     script, script_ok := get_storage(ecs, ^types.Script)
-    if script_ok do stor.destroy_entity(script, entity)
+    if script_ok {
+        go, ok := get_gameobject(ecs, entity)
+        if !ok {
+            fmt.println("ABOW");
+        }
+        script_comp := script.dense[script.sparse[entity]]
+        if script_comp.on_destroy != nil do script_comp.on_destroy(go^, script_comp.data)
+        stor.destroy_entity(script, entity)
+    }
 
     transform, transform_ok := get_storage(ecs, ^types.Transform)
     if transform_ok do stor.destroy_entity(transform, entity)
