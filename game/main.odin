@@ -21,17 +21,14 @@ create_player :: proc (e: ^types.ECS) {
     io.merge_tilesheet(idle,run)
     sc.add_component(player, types.SquareCollider({}))
     rigid, _ := sc.add_component(player, types.RigidBody({type=types.BodyType.dynamicBody}))
-//    sys.create_body(e,player.entity)
 
     tool, _ := sc.new_gameobject(e);
     defer free(tool);
     tool.transform.local_pos = {100,0}
     tool.transform.local_size = {-50,-50}
-    collider, _ := sc.add_component(tool, types.SquareCollider({}))
-    
+    collider, _ := sc.add_component(tool, types.SquareCollider({trigger=true}))
+
     sc.add_child(player, tool);
-    // sys.create_body(e, player.entity);
-    // sys.create_collider(rigid, collider, tool.transform)
 
 
     sc.add_component(player, types.Script({
@@ -41,9 +38,9 @@ create_player :: proc (e: ^types.ECS) {
             
             if sc.is_key_down(types.KeyboardKey.D) do sc.apply_force(rigid, {100,0})
             if sc.is_key_down(types.KeyboardKey.A) do sc.apply_force(rigid, {-100,0})
-            //collider[0].disabled = true;
+            collider[0].disabled = true;
             if sc.is_key_down(types.KeyboardKey.SPACE) {
-              //  collider[0].disabled = false;
+                collider[0].disabled = false;
             }
             
         }
@@ -73,8 +70,8 @@ create_enemy :: proc(e: ^types.ECS) {
         on_update = proc(go: types.GameObject, dt: f32 ) {
             for event in es.event_queue_poll(){
                 #partial switch v in event  {
-                    case es.Event_Collision_Entered:
-                    //game.should_run = false
+                    case es.Event_Trigger_Entered:
+                    
                 }
             }
         }

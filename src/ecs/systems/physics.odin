@@ -253,19 +253,39 @@ toggle_collider :: proc(
 
 
 
+// Attaches a child's SquareCollider to its parent's Box2D body as a shape, the
+// first time we see that collider. Mirrors Unity: a collider on a child
+// GameObject rides on the nearest ancestor's Rigidbody.
+attach_child_collider :: proc(ecs_: ^types.ECS, entity: u32, collider: ^types.SquareCollider, t: ^types.Transform) {
+    if _, has_shape := shape_id_by_collider[collider]; has_shape do return
+
+    parent, has_parent := ecs.get_component(ecs_, entity, types.Parent)
+    if !has_parent do return
+
+    rigid, has_rigid := ecs.get_component(ecs_, parent.entity, types.RigidBody)
+    if !has_rigid do return
+
+    // Parent body must already exist (created by physics_system earlier this frame).
+    if _, has_body := body_id_by_rigidbody[rigid]; !has_body do return
+
+    create_collider(rigid, collider, t)
+}
+
 collider_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     c_storage,_ := ecs.get_storage(ecs_, ^types.SquareCollider);
     trans,_ := ecs.get_storage(ecs_, ^types.Transform)
     for i in 0..<len(c_storage.dense) {
         collider := c_storage.dense[i]
-        
+
         entity := c_storage.entities[i]
         t_idx, has_t := storage.has_component(trans, entity)
         if !has_t do continue
         t := trans.dense[trans.sparse[int(entity)]]
 
+        attach_child_collider(ecs_, entity, collider, t)
+
         toggle_collider(collider, t);
-        
+
         if collider.disabled do continue;
         append(&renderer.commands, rn.Rectangle({t.pos, t.size+collider.size, t.rot, rn.get_color(0x00ff00ff), true}));
     }
