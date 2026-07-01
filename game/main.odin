@@ -63,7 +63,7 @@ create_enemy :: proc(e: ^types.ECS) {
     enemy.transform.pos = {200,0}
     idle : ^types.TileSheet = io.new_tilesheet("./game/assets/Pig Idle (34x28).png", {28,28}, {34-28,0})
 
-
+    
     sc.add_component(enemy, types.RigidBody({type=types.BodyType.dynamicBody}))
 
     sc.add_component(enemy, types.Script({
@@ -71,7 +71,7 @@ create_enemy :: proc(e: ^types.ECS) {
             for event in es.event_queue_poll(){
                 #partial switch v in event  {
                     case es.Event_Trigger_Entered:
-                    
+                    ecs.destroy_entity(go.ecs, go.entity)
                 }
             }
         }

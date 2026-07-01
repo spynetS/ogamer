@@ -44,6 +44,35 @@ has_component :: proc(s: ^types.ECS, entity: u32, $T: typeid) -> (int, bool) {
     return stor.has_component(storage, entity);
 }
 
+destroy_entity :: proc(ecs: ^types.ECS, entity: u32) {
+    script, script_ok := get_storage(ecs, ^types.Script)
+    if script_ok do stor.destroy_entity(script, entity)
+
+    transform, transform_ok := get_storage(ecs, ^types.Transform)
+    if transform_ok do stor.destroy_entity(transform, entity)
+
+    rigid_body, rigid_body_ok := get_storage(ecs, ^types.RigidBody)
+    if rigid_body_ok do stor.destroy_entity(rigid_body, entity)
+
+    square_collider, square_collider_ok := get_storage(ecs, ^types.SquareCollider)
+    if square_collider_ok do stor.destroy_entity(square_collider, entity)
+
+    rect_renderable, rect_renderable_ok := get_storage(ecs, ^types.RectangleRenderable)
+    if rect_renderable_ok do stor.destroy_entity(rect_renderable, entity)
+
+    sprite_renderable, sprite_renderable_ok := get_storage(ecs, ^types.SpriteRenderable)
+    if sprite_renderable_ok do stor.destroy_entity(sprite_renderable, entity)
+
+    parent, parent_ok := get_storage(ecs, ^types.Parent)
+    if parent_ok do stor.destroy_entity(parent, entity)
+
+    camera, camera_ok := get_storage(ecs, ^types.Camera2D)
+    if camera_ok do stor.destroy_entity(camera, entity)
+
+    sprite_animator, sprite_animator_ok := get_storage(ecs, ^types.SpriteAnimator)
+    if sprite_animator_ok do stor.destroy_entity(sprite_animator, entity)
+}
+
 get_component :: proc(s: ^types.ECS, entity: u32, $T: typeid) -> (^T, bool) {
     storage, ok := get_storage(s,^T);
     if !ok do return nil, false
@@ -62,7 +91,10 @@ get_gameobject :: proc(ecs_: ^types.ECS, entity: types.Entity) -> (^types.GameOb
 
     parent, got_parent := get_component(ecs_, entity, types.Parent);
     if got_parent {
-        if parent.entity == entity do return nil, false
+        if parent.entity == entity {
+            free(game_object)
+            return nil, false
+        }
         game_object.parent, _ = get_gameobject(ecs_, parent.entity);
     }
  
