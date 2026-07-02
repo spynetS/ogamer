@@ -18,7 +18,8 @@ PlayerData :: struct {
     animator : ^types.SpriteAnimator
 }
 EnemyData :: struct {
-    health : int
+    health   : int,
+    animator : ^types.SpriteAnimator
 }
 
 
@@ -79,7 +80,7 @@ create_player :: proc (e: ^types.ECS) {
                 pd.animator.active_animation=1
                 pd.animator.sprite_comp.inverted=true
             }
-            else if sc.is_key_down(types.KeyboardKey.SPACE) && pd.animator.active_animation != 2 {
+            else if sc.is_key_pressed(types.KeyboardKey.SPACE) && pd.animator.active_animation != 2 {
                 collider.disabled = false;
                 pd.tool.transform.local_pos = {pd.animator.sprite_comp.inverted ? -20 : 20,0}
                 pd.animator.active_animation=2
@@ -88,7 +89,7 @@ create_player :: proc (e: ^types.ECS) {
             for event in es.event_queue_poll() {
                 #partial switch v in event {
                     case es.Event_SpriteAnimator_End:
-                    pd.animator.active_animation = 0
+                    if v.animator == pd.animator do pd.animator.active_animation = 0
                 }
             }
 
@@ -108,23 +109,44 @@ create_enemy :: proc(e: ^types.ECS) {
     enemy, _ := sc.new_gameobject(e);
     defer free(enemy)
     enemy.transform.pos = {200,0}
-    idle : ^types.TileSheet = io.new_tilesheet("./game/assets/Pig Idle (34x28).png", {28,28}, {34-28,0})
+    enemy.transform.size = {400,400}
+
     
     sc.add_component(enemy, types.RigidBody({type=types.BodyType.dynamicBody}))
-
+    sc.add_component(enemy, types.SquareCollider({size={-350,-350}}))
     ed: ^EnemyData = new(EnemyData)
     ed.health = 5
+
     fmt.println("EnemyData created at:", ed)  // <-- note this address
-    
+
+
+    idle  : ^types.TileSheet = io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Orc/Orc with shadows/Orc_Idle.png", {100,100})
+    hurt  : ^types.TileSheet = io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Orc/Orc with shadows/Orc_Hurt.png", {100,100})
+    death : ^types.TileSheet = io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Orc/Orc with shadows/Orc_Death.png", {100,100})
+    io.merge_tilesheet(idle,hurt)
+    io.merge_tilesheet(idle,death)
+
+    ed.animator, _ = sc.add_component(enemy, types.SpriteAnimator({
+        sprites=idle.images,
+        active_animation=0,
+        time=0.1
+    }))
+
+        
     sc.add_component(enemy, types.Script({
         data=ed,
         on_update = proc(go: types.GameObject, data: rawptr, dt: f32 ) {
             ed := cast(^EnemyData)data
             for event in es.event_queue_poll(){
                 #partial switch v in event  {
+                    case es.Event_SpriteAnimator_End:
+                    if v.animator == ed.animator && v.animator.active_animation == 1 do ed.animator.active_animation = 0
+                    if v.animator == ed.animator && v.animator.active_animation == 2 do  ecs.destroy_entity(go.ecs, go.entity)
+
                     case es.Event_Trigger_Entered:
+                    ed.animator.active_animation = 1
                     ed.health = ed.health - 1
-                    if ed.health <= 0 do ecs.destroy_entity(go.ecs, go.entity)
+                    if ed.health <= 0 do ed.animator.active_animation = 2
                 }
             }
         },
@@ -134,11 +156,6 @@ create_enemy :: proc(e: ^types.ECS) {
     }))
 
     
-    sc.add_component(enemy, types.SquareCollider({}))
-    sc.add_component(enemy, types.SpriteAnimator({
-        sprites=idle.images,
-        time=0.1
-    }))
 
 }
 game : ^core.Game;

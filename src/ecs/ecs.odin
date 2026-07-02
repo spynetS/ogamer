@@ -51,7 +51,10 @@ destroy_entity :: proc(ecs: ^types.ECS, entity: u32) {
         if !ok {
             fmt.println("ABOW");
         }
-        script_comp := script.dense[script.sparse[entity]]
+        script_comp, got_component := stor.get_component(script, entity)
+        if !got_component {
+            fmt.println("WARNING: could not fetch script component on destroy")
+        }
         if script_comp.on_destroy != nil do script_comp.on_destroy(go^, script_comp.data)
         stor.destroy_entity(script, entity)
     }

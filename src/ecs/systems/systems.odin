@@ -74,7 +74,7 @@ sprite_animator_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, re
         if animator.disabled do continue;
         animation_length := 0
         if animator._active_animation == animator.active_animation {
-            if animator.sprites_length == nil {
+            if animator.sprites_length == nil || animator.sprites_length[animator.active_animation] == 0 {
                 animation_length = len(animator.sprites[animator._active_animation])
             }            
             else do animation_length = animator.sprites_length[animator._active_animation]
@@ -97,7 +97,10 @@ sprite_animator_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, re
             else {
 
                 animator._active_animation = animator.active_animation
-                animation_length = animator.sprites_length[animator._active_animation]
+                if animator.sprites_length == nil || animator.sprites_length[animator.active_animation] == 0 {
+                    animation_length = len(animator.sprites[animator._active_animation])
+                }            
+                else do animation_length = animator.sprites_length[animator._active_animation]
 
                 animator._frame_counter = animation_length-1
                 animator.active_index = 0
