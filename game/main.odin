@@ -26,7 +26,7 @@ EnemyData :: struct {
 create_player :: proc (e: ^types.ECS) {
     player, _ := sc.new_gameobject(e);
     defer free(player)
-    player.transform.size = {400,400}
+    player.transform.size = {100,100}
 
     idle := io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Soldier/Soldier/Soldier.png", {100,100}, {0, 0});
     sprite_length := make([]int, 7)
@@ -46,13 +46,13 @@ create_player :: proc (e: ^types.ECS) {
     }))
 
 
-    sc.add_component(player, types.SquareCollider({size={-350,-350}}))
+    sc.add_component(player, types.SquareCollider({size={-0,-0}}))
     rigid, _ := sc.add_component(player, types.RigidBody({type=types.BodyType.dynamicBody, disable_rotation=true}))
 
     tool, _ := sc.new_gameobject(e);
     defer free(tool);
-    tool.transform.local_pos = {40,0}
-    tool.transform.local_size = {-350,-350}
+    tool.transform.local_pos = {100,0}
+    tool.transform.local_size = {-50,-50}
     collider, _ := sc.add_component(tool, types.SquareCollider({trigger=true}))
 
     sc.add_child(player, tool);
@@ -82,7 +82,7 @@ create_player :: proc (e: ^types.ECS) {
             }
             else if sc.is_key_pressed(types.KeyboardKey.SPACE) && pd.animator.active_animation != 2 {
                 collider.disabled = false;
-                pd.tool.transform.local_pos = {pd.animator.sprite_comp.inverted ? -20 : 20,0}
+                pd.tool.transform.local_pos = {pd.animator.sprite_comp.inverted ? -80 : 80,0}
                 pd.animator.active_animation=2
             }
             
@@ -104,16 +104,16 @@ create_player :: proc (e: ^types.ECS) {
 
 }
 
-create_enemy :: proc(e: ^types.ECS) {
+create_enemy :: proc(e: ^types.ECS, pos: types.Vector2) {
 
     enemy, _ := sc.new_gameobject(e);
     defer free(enemy)
-    enemy.transform.pos = {200,0}
-    enemy.transform.size = {400,400}
+    enemy.transform.pos = pos
+    enemy.transform.size = {100,100}
 
     
     sc.add_component(enemy, types.RigidBody({type=types.BodyType.dynamicBody}))
-    sc.add_component(enemy, types.SquareCollider({size={-350,-350}}))
+    sc.add_component(enemy, types.SquareCollider({size={-0,-0}}))
     ed: ^EnemyData = new(EnemyData)
     ed.health = 5
 
@@ -144,9 +144,12 @@ create_enemy :: proc(e: ^types.ECS) {
                     if v.animator == ed.animator && v.animator.active_animation == 2 do  ecs.destroy_entity(go.ecs, go.entity)
 
                     case es.Event_Trigger_Entered:
-                    ed.animator.active_animation = 1
-                    ed.health = ed.health - 1
-                    if ed.health <= 0 do ed.animator.active_animation = 2
+                    fmt.println("ENITY: ", v.ea, v.eb, go.entity)
+                    if v.eb == go.entity {
+                        ed.animator.active_animation = 1
+                        ed.health = ed.health - 1
+                        if ed.health <= 0 do ed.animator.active_animation = 2
+                    }
                 }
             }
         },
@@ -180,7 +183,8 @@ main :: proc() {
 
 
     create_player(&game.ecs);
-    create_enemy(&game.ecs);
+    create_enemy(&game.ecs, {160,100});
+    create_enemy(&game.ecs, {200,100});
     
     floor,_ := sc.new_renderobject(&game.ecs);
     floor.transform.pos = {0,200}

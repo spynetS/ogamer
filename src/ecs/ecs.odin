@@ -61,7 +61,7 @@ destroy_entity :: proc(ecs: ^types.ECS, entity: u32) {
 
     transform, transform_ok := get_storage(ecs, ^types.Transform)
     if transform_ok do stor.destroy_entity(transform, entity)
-
+    // TODO remove box2d stuff
     rigid_body, rigid_body_ok := get_storage(ecs, ^types.RigidBody)
     if rigid_body_ok do stor.destroy_entity(rigid_body, entity)
 

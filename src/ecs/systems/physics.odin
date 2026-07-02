@@ -129,6 +129,12 @@ create_body :: proc(e: ^types.ECS, ent: u32){
     shapeId := b2.CreatePolygonShape(body_id_by_rigidbody[rigid], shapeDef, box);
     rigidbody_by_shape_id[shapeId] = rigid
     shape_id_by_rigidbody[rigid] = shapeId
+
+    if has_collider {
+        shape_id_by_collider[collider] = shapeId
+        body_id_by_collider[collider] = id
+        collider_by_shape_id[shapeId] = collider
+    }
 }
 
 handle_collision :: proc(e: ^types.ECS, events: b2.ContactEvents) {
@@ -287,7 +293,34 @@ collider_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer
         toggle_collider(collider, t);
 
         if collider.disabled do continue;
-        append(&renderer.commands, rn.Rectangle({t.pos, t.size+collider.size, t.rot, rn.get_color(0x00ff00ff), true}));
+
+        // Draw the actual box2d shape (not the ecs transform/collider size),
+        // so this reflects what box2d is really colliding against.
+        shape_id, has_shape := shape_id_by_collider[collider]
+        if !has_shape do continue
+
+        body_id := b2.Shape_GetBody(shape_id)
+        body_t := b2.Body_GetTransform(body_id)
+        poly := b2.Shape_GetPolygon(shape_id)
+
+        min_v := poly.vertices[0]
+        max_v := poly.vertices[0]
+        for j in 1..<int(poly.count) {
+            v := poly.vertices[j]
+            min_v.x = min(min_v.x, v.x); min_v.y = min(min_v.y, v.y)
+            max_v.x = max(max_v.x, v.x); max_v.y = max(max_v.y, v.y)
+        }
+        size := (max_v - min_v) * PIXELS_PER_METER
+        world_center := b2.TransformPoint(body_t, poly.centroid) * PIXELS_PER_METER
+        rot := b2.Rot_GetAngle(body_t.q) * math.DEG_PER_RAD
+
+        append(&renderer.commands, rn.Rectangle({world_center, size, rot, rn.get_color(0x00ff00ff), true}));
+        append(&renderer.commands, rn.Text({
+            world_center,
+            18,
+            0,
+            fmt.tprintf("<%d>",entity)
+        }))
     }
 }
 
