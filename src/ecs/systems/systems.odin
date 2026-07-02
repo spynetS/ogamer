@@ -72,12 +72,19 @@ sprite_animator_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, re
     for i in 0..<len(storage.dense) {
         animator := storage.dense[i]
         if animator.disabled do continue;
+        animation_length := 0
+        if animator._active_animation == animator.active_animation {
+            if animator.sprites_length == nil {
+                animation_length = len(animator.sprites[animator._active_animation])
+            }            
+            else do animation_length = animator.sprites_length[animator._active_animation]
+        }
         // if we dont have a sprite_component and there is no component create it and add it
         if animator.sprite_comp == nil {
             index, has_sprite := ecss.has_component(ecs, storage.entities[i], types.SpriteRenderable)
             if !has_sprite {
                 // if we don't have a sprite create it?
-                //fmt.println("INFO: Adding sprite component to", storage.entities[i], animator, "because it had no sprite_component")
+                fmt.println("INFO: Adding sprite component to", storage.entities[i], animator, "because it had no sprite_component")
                 sprite, _ := ecss.add_component(ecs, storage.entities[i], types.SpriteRenderable({}))
                 animator.sprite_comp = sprite
             }
@@ -85,24 +92,29 @@ sprite_animator_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, re
         // if we get a new animation to animate 
         if animator.active_animation != animator._active_animation {
             if animator.active_animation >= len(animator.sprites){
-                //fmt.println("WARNING: active_animation", animator._active_animation, "out of bounds")
+                fmt.println("WARNING: active_animation", animator._active_animation, "out of bounds")
             }
             else {
+
                 animator._active_animation = animator.active_animation
-                animator._frame_counter = len(animator.sprites[animator._active_animation])-1
+                animation_length = animator.sprites_length[animator._active_animation]
+
+                animator._frame_counter = animation_length-1
                 animator.active_index = 0
                 animator._time_counter = animator.time
+
             }
         }
 
         if animator._frame_counter <= 0 {
-            animator._frame_counter = len(animator.sprites[animator._active_animation])-1
+            animator._frame_counter =  animation_length
             es.emit(es.Event_SpriteAnimator_End({animator}))
         }
         if animator._time_counter <= 0 {
 
+
             animator._time_counter = animator.time
-            animator.active_index = (animator.active_index + 1) % len(animator.sprites[animator._active_animation])
+            animator.active_index = (animator.active_index + 1) % animation_length
             animator.sprite_comp.image = animator.sprites[animator._active_animation][animator.active_index]
             animator._frame_counter -= 1
         }

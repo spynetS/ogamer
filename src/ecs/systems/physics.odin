@@ -338,7 +338,7 @@ physics_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer:
 
                        )
         }))
-        append(&renderer.commands, rn.Rectangle({transform.pos, transform.size/2, transform.rot, rn.get_color(0x00ff00ff), false}));
+//        append(&renderer.commands, rn.Rectangle({transform.pos, transform.size/2, transform.rot, rn.get_color(0x00ff00ff), false}));
     }
         
 }

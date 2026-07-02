@@ -34,8 +34,9 @@ test_script_data_test :: proc(t: ^testing.T) {
         ecs.add_component(&e, entity, types.Parent{entity = entity})
         ecs.add_component(&e, entity, types.Script({
             data=data,
-            on_destroy = proc(go: types.GameObject, data: any){
-                dat := data.(^PlayerData)
+            on_destroy = proc(go: types.GameObject, data: rawptr){
+                dat := cast(^PlayerData)
+                data
                 free(dat)
             }
         }))

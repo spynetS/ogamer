@@ -37,8 +37,11 @@ add_component :: proc(storage: ^ComponentStorage($T), e:Entity, component: T) ->
         append(&storage.sparse, NO_ENTITY)
     }
     storage.sparse[id] = len(storage.dense)
- 
+
+
     copy_component := new_clone(component^)
+    fmt.println("NEW COMP: ", copy_component)
+
     storage.entity_by_comp[copy_component] = e
     append(&storage.dense, copy_component)
     append(&storage.entities, e)

@@ -13,7 +13,9 @@ import sys "../src/ecs/systems"
 
 PlayerData :: struct {
     collider : ^types.SquareCollider,
-    rigid    : ^types.RigidBody
+    tool     : types.GameObject,
+    rigid    : ^types.RigidBody,
+    animator : ^types.SpriteAnimator
 }
 EnemyData :: struct {
     health : int
@@ -23,24 +25,42 @@ EnemyData :: struct {
 create_player :: proc (e: ^types.ECS) {
     player, _ := sc.new_gameobject(e);
     defer free(player)
-    
-    idle := io.new_tilesheet("./game/assets/Idle (78x58).png", {64,58}, {14, 0});
-    run := io.new_tilesheet("./game/assets/Run (78x58).png", {64,58}, {14, 0});
-    io.merge_tilesheet(idle,run)
-    sc.add_component(player, types.SquareCollider({}))
-    rigid, _ := sc.add_component(player, types.RigidBody({type=types.BodyType.dynamicBody}))
+    player.transform.size = {400,400}
+
+    idle := io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Soldier/Soldier/Soldier.png", {100,100}, {0, 0});
+    sprite_length := make([]int, 7)
+    sprite_length[0] = 6
+    sprite_length[1] = 8
+    sprite_length[2] = 6
+    sprite_length[3] = 6
+    sprite_length[4] = 9
+    sprite_length[5] = 4
+    sprite_length[6] = 4
+
+    animator,_ := sc.add_component(player, types.SpriteAnimator({
+        sprites=idle.images,
+        sprites_length=sprite_length,
+        active_animation=0,
+        time=0.1
+    }))
+
+
+    sc.add_component(player, types.SquareCollider({size={-350,-350}}))
+    rigid, _ := sc.add_component(player, types.RigidBody({type=types.BodyType.dynamicBody, disable_rotation=true}))
 
     tool, _ := sc.new_gameobject(e);
     defer free(tool);
-    tool.transform.local_pos = {100,0}
-    tool.transform.local_size = {-50,-50}
+    tool.transform.local_pos = {40,0}
+    tool.transform.local_size = {-350,-350}
     collider, _ := sc.add_component(tool, types.SquareCollider({trigger=true}))
 
     sc.add_child(player, tool);
 
     data := new(PlayerData)
     data.collider=collider
+    data.tool=tool^
     data.rigid=rigid
+    data.animator=animator
 
     sc.add_component(player, types.Script({
         data=data,
@@ -48,29 +68,39 @@ create_player :: proc (e: ^types.ECS) {
             pd := cast(^PlayerData)data
             collider := pd.collider
             rigid := pd.rigid
-
-            if sc.is_key_down(types.KeyboardKey.D) do sc.apply_force(rigid, {100,0})
-            if sc.is_key_down(types.KeyboardKey.A) do sc.apply_force(rigid, {-100,0})
             collider.disabled = true;
-            if sc.is_key_down(types.KeyboardKey.SPACE) {
-                collider.disabled = false;
+            if sc.is_key_down(types.KeyboardKey.D) {
+                sc.apply_force(rigid, {50,0})
+                pd.animator.active_animation=1
+                pd.animator.sprite_comp.inverted=false
             }
+            else if sc.is_key_down(types.KeyboardKey.A) {
+                sc.apply_force(rigid, {-50,0})
+                pd.animator.active_animation=1
+                pd.animator.sprite_comp.inverted=true
+            }
+            else if sc.is_key_down(types.KeyboardKey.SPACE) && pd.animator.active_animation != 2 {
+                collider.disabled = false;
+                pd.tool.transform.local_pos = {pd.animator.sprite_comp.inverted ? -20 : 20,0}
+                pd.animator.active_animation=2
+            }
+            
+            for event in es.event_queue_poll() {
+                #partial switch v in event {
+                    case es.Event_SpriteAnimator_End:
+                    pd.animator.active_animation = 0
+                }
+            }
+
         },
         on_destroy = proc(go: types.GameObject, data:rawptr){
             pd := cast(^PlayerData)data
             free(pd)
         }
-        
     }))
 
 
-    sprite,_ := sc.add_component(player, types.SpriteRenderable({}))
-    sc.add_component(player, types.SpriteAnimator({
-        sprite_comp=sprite,
-        sprites=idle.images,
-        active_animation=2,
-        time=0.1
-    }))
+
 }
 
 create_enemy :: proc(e: ^types.ECS) {
@@ -79,7 +109,6 @@ create_enemy :: proc(e: ^types.ECS) {
     defer free(enemy)
     enemy.transform.pos = {200,0}
     idle : ^types.TileSheet = io.new_tilesheet("./game/assets/Pig Idle (34x28).png", {28,28}, {34-28,0})
-
     
     sc.add_component(enemy, types.RigidBody({type=types.BodyType.dynamicBody}))
 
@@ -122,10 +151,20 @@ main :: proc() {
     camera, _ := sc.new_gameobject(&game.ecs);
     defer free(camera)
     sc.add_component(camera, types.Camera2D({zoom=1}));
-    
+
+    // player,_ := sc.new_gameobject(&game.ecs);
+    // idle := io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Soldier/Soldier/Soldier.png", {100,100}, {0, 0});
+    // sc.add_component(player, types.SpriteAnimator({
+    //     sprites=idle.images,
+    //     sprites_length={6,8,6,6,9,4,4},
+    //     active_animation=1,
+    //     time=0.1
+    // }))
+
+
     create_player(&game.ecs);
     create_enemy(&game.ecs);
-
+    
     floor,_ := sc.new_renderobject(&game.ecs);
     floor.transform.pos = {0,200}
     floor.transform.size = {500,50}

@@ -114,6 +114,7 @@ SpriteAnimator :: struct {
     using component   : Component,
     sprite_comp       : ^SpriteRenderable, // sprite component to be actived on
     sprites           : [][]^Image,        // image matrix
+    sprites_length    : []int,             // the "real" length of each animation
     active_animation  : int,               // the row in the sprites matrix
     _active_animation : int,               // internal row in the sprites matrix
     time              : f32,               // time for each frame
