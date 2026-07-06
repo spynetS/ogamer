@@ -29,13 +29,19 @@ child_collider_params : map[^types.SquareCollider][4]f32
 // The box inputs {width, height} last used to build a body's own main shape.
 // Lets us rebuild only when the body's own transform/collider size changes.
 body_shape_params : map[^types.RigidBody][2]f32
+// The linear velocity (px/s) last mirrored from box2d onto a rigidbody. Lets us
+// tell an external write (user set velocity) apart from box2d's own simulation.
+last_velocity : map[^types.RigidBody]types.Vector2
+// Same idea for angular velocity (degrees/sec).
+last_angular_velocity : map[^types.RigidBody]f32
 
 init_physics :: proc (e: ^types.ECS) {
     worldDef := b2.DefaultWorldDef();
-    worldDef.gravity = {0,10};
     worldId = b2.CreateWorld(worldDef);
-    
 
+    // Tear down box2d objects when their components are destroyed.
+    ecs.on_rigidbody_removed = destroy_rigidbody
+    ecs.on_collider_removed  = destroy_collider
 }
 
 deinit_physics :: proc () {
@@ -46,12 +52,73 @@ deinit_physics :: proc () {
     delete(body_id_by_collider)
     delete(child_collider_params)
     delete(body_shape_params)
+    delete(last_velocity)
+    delete(last_angular_velocity)
     b2.DestroyWorld(worldId)
 }
 
 get_rot :: proc (rot: f32) -> b2.Rot {
     rot := rot * math.RAD_PER_DEG
     return b2.Rot({s=math.sin(rot), c=math.cos(rot)})
+}
+
+// Destroys the box2d body owned by a rigidbody and purges every map entry tied
+// to it. b2.DestroyBody also destroys all shapes on the body (its own main
+// shape plus any child colliders riding on it), so we drop that bookkeeping too.
+destroy_rigidbody :: proc(rigid: ^types.RigidBody) {
+    body_id, has := body_id_by_rigidbody[rigid]
+    if !has do return
+
+    // Collect colliders on this body first; deleting while ranging a map is unsafe.
+    doomed : [dynamic]^types.SquareCollider
+    defer delete(doomed)
+    for collider, b in body_id_by_collider {
+        if b == body_id do append(&doomed, collider)
+    }
+    for collider in doomed {
+        if shape, ok := shape_id_by_collider[collider]; ok {
+            delete_key(&collider_by_shape_id, shape)
+        }
+        delete_key(&shape_id_by_collider, collider)
+        delete_key(&body_id_by_collider, collider)
+        delete_key(&child_collider_params, collider)
+    }
+
+    if shape, ok := shape_id_by_rigidbody[rigid]; ok {
+        delete_key(&rigidbody_by_shape_id, shape)
+    }
+
+    b2.DestroyBody(body_id)
+
+    delete_key(&body_id_by_rigidbody, rigid)
+    delete_key(&shape_id_by_rigidbody, rigid)
+    delete_key(&body_shape_params, rigid)
+    delete_key(&last_velocity, rigid)
+    delete_key(&last_angular_velocity, rigid)
+}
+
+// Destroys the box2d shape backing a single collider (typically a child
+// collider riding on an ancestor's body). No-op if it has no live shape --
+// e.g. when its owning body was already torn down by destroy_rigidbody.
+destroy_collider :: proc(collider: ^types.SquareCollider) {
+    shape, has := shape_id_by_collider[collider]
+    if !has do return
+
+    // If this shape is actually the body's own main fixture (collider sits on
+    // the same entity as the rigidbody), leave it to destroy_rigidbody; ripping
+    // it out here would leave the body shapeless.
+    if rigid, ok := rigidbody_by_shape_id[shape]; ok {
+        if main, ok2 := shape_id_by_rigidbody[rigid]; ok2 && main == shape {
+            return
+        }
+    }
+
+    b2.DestroyShape(shape, true)
+    delete_key(&rigidbody_by_shape_id, shape)
+    delete_key(&collider_by_shape_id, shape)
+    delete_key(&shape_id_by_collider, collider)
+    delete_key(&body_id_by_collider, collider)
+    delete_key(&child_collider_params, collider)
 }
 
 
@@ -354,8 +421,8 @@ collider_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer
             world_center := b2.TransformPoint(body_t, poly.centroid) * PIXELS_PER_METER
             rot := b2.Rot_GetAngle(body_t.q) * math.DEG_PER_RAD
 
-            append(&renderer.commands, rn.Rectangle({world_center, size, rot, rn.get_color(0x00ff00ff), true}));
-            append(&renderer.commands, rn.Text({
+            append(&renderer.debug_commands, rn.Rectangle({world_center, size, rot, rn.get_color(0x00ff00ff), true}));
+            append(&renderer.debug_commands, rn.Text({
                 world_center,
                 18,
                 0,
@@ -372,25 +439,20 @@ physics_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer:
     c_storage, c_ok := ecs.get_storage(ecs_, ^types.SquareCollider)
     if !ok || !ok2 || !c_ok do return
 
-    b2.World_Step(worldId, dt, 8);
-    
-    events := b2.World_GetContactEvents(worldId);
-    handle_collision(ecs_,events)
-    
-    sensor_events := b2.World_GetSensorEvents(worldId);
-    handle_trigger_collision(ecs_, sensor_events)
-
+    // --- pre-step: create/rebuild bodies and push component values the user
+    //     changed this frame into box2d (so the step uses them) ---
     for i in 0..<len(phys.dense) {
         entity := phys.entities[i]
         physics_body := phys.dense[i];
-        
+
         transform := trans.dense[trans.sparse[entity]];
         collider, has_component := storage.get_component(c_storage, entity);
 
         id, has := body_id_by_rigidbody[physics_body];
         if !has {
             create_body(ecs_, entity);
-            id = body_id_by_rigidbody[physics_body];
+            id, has = body_id_by_rigidbody[physics_body];
+            if !has do continue
         } else {
             // Rebuild the body's own shape if its transform/collider size changed.
             params := body_box_params(transform, collider, has_component)
@@ -399,13 +461,57 @@ physics_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer:
             }
         }
 
+        // Two-way velocity bind: if the component's velocity no longer matches
+        // what we last mirrored out of box2d, the user set it -> push it in.
+        // box2d works in m/s, the component in px/s, hence PIXELS_PER_METER.
+        if cached, ok := last_velocity[physics_body]; !ok || cached != physics_body.velocity {
+            b2.Body_SetLinearVelocity(id, physics_body.velocity/PIXELS_PER_METER)
+        }
+        // Same for angular velocity; component is deg/s, box2d is rad/s.
+        if cached, ok := last_angular_velocity[physics_body]; !ok || cached != physics_body.angular_velocity {
+            b2.Body_SetAngularVelocity(id, physics_body.angular_velocity*math.RAD_PER_DEG)
+        }
+        // Acceleration is a continuous input: apply it as a force every step
+        // (F = m*a). Component is px/s^2, box2d wants Newtons in m/s^2. Guard the
+        // zero case so we don't keep waking resting bodies for no reason.
+        if physics_body.acceleration != {0, 0} {
+            mass := b2.Body_GetMass(id)
+            b2.Body_ApplyForceToCenter(id, physics_body.acceleration/PIXELS_PER_METER*mass, true)
+        }
+    }
+
+    b2.World_Step(worldId, dt, 8);
+
+    events := b2.World_GetContactEvents(worldId);
+    handle_collision(ecs_,events)
+
+    sensor_events := b2.World_GetSensorEvents(worldId);
+    handle_trigger_collision(ecs_, sensor_events)
+
+    // --- post-step: mirror the simulated box2d state back onto the components ---
+    for i in 0..<len(phys.dense) {
+        entity := phys.entities[i]
+        physics_body := phys.dense[i];
+
+        transform := trans.dense[trans.sparse[entity]];
+
+        id, has := body_id_by_rigidbody[physics_body];
+        if !has do continue
 
         t := b2.Body_GetTransform(id);
 
         transform.pos = t.p*PIXELS_PER_METER;
         transform.rot = b2.Rot_GetAngle(t.q)*math.DEG_PER_RAD
-        
-        append(&renderer.commands, rn.Text({
+
+        v := b2.Body_GetLinearVelocity(id)*PIXELS_PER_METER
+        physics_body.velocity = v
+        last_velocity[physics_body] = v
+
+        w := b2.Body_GetAngularVelocity(id)*math.DEG_PER_RAD
+        physics_body.angular_velocity = w
+        last_angular_velocity[physics_body] = w
+
+        append(&renderer.debug_commands, rn.Text({
             transform.pos-{100,80*2},
             18,
             0,

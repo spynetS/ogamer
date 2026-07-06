@@ -3,7 +3,14 @@ package ecs;
 import stor "./storage"
 import "../types"
 import "core:fmt"
+import es "../event-system/"
 
+// Hooks invoked with the component pointer right before that component's memory
+// is freed, so lower layers (e.g. the physics system) can release native
+// resources keyed by the pointer. Set by the owning system at init; nil = no-op.
+// Needed because `systems` imports `ecs`, so `ecs` can't call into it directly.
+on_rigidbody_removed : proc(rigid: ^types.RigidBody)
+on_collider_removed  : proc(collider: ^types.SquareCollider)
 
 delete_storage :: proc(storages: ^types.ECS, $T: typeid) {
     storage, ok := get_storage(storages, T)
@@ -32,6 +39,7 @@ add_component :: proc(s: ^types.ECS, entity: u32, component: $T) -> (^T, bool) {
     
     storage, ok := get_storage(s,^T);
     if !ok {
+        fmt.println("WARNING: no storage for", component)
         return nil, false
     }
     component := component; // do this so we can pass the adress
@@ -52,21 +60,34 @@ destroy_entity :: proc(ecs: ^types.ECS, entity: u32) {
             fmt.println("ABOW");
         }
         script_comp, got_component := stor.get_component(script, entity)
-        if !got_component {
-            fmt.println("WARNING: could not fetch script component on destroy")
+        if got_component {
+            if script_comp.on_destroy != nil do script_comp.on_destroy(go^, script_comp.data)
         }
-        if script_comp.on_destroy != nil do script_comp.on_destroy(go^, script_comp.data)
+        else do fmt.println("WARNING: could not fetch script component on destroy") 
+
         stor.destroy_entity(script, entity)
     }
 
     transform, transform_ok := get_storage(ecs, ^types.Transform)
     if transform_ok do stor.destroy_entity(transform, entity)
-    // TODO remove box2d stuff
+
+    // Release the box2d body/shape before the component memory is freed,
+    // otherwise the physics maps keyed by this pointer would dangle.
     rigid_body, rigid_body_ok := get_storage(ecs, ^types.RigidBody)
-    if rigid_body_ok do stor.destroy_entity(rigid_body, entity)
+    if rigid_body_ok {
+        if comp, ok := stor.get_component(rigid_body, entity); ok && on_rigidbody_removed != nil {
+            on_rigidbody_removed(comp)
+        }
+        stor.destroy_entity(rigid_body, entity)
+    }
 
     square_collider, square_collider_ok := get_storage(ecs, ^types.SquareCollider)
-    if square_collider_ok do stor.destroy_entity(square_collider, entity)
+    if square_collider_ok {
+        if comp, ok := stor.get_component(square_collider, entity); ok && on_collider_removed != nil {
+            on_collider_removed(comp)
+        }
+        stor.destroy_entity(square_collider, entity)
+    }
 
     rect_renderable, rect_renderable_ok := get_storage(ecs, ^types.RectangleRenderable)
     if rect_renderable_ok do stor.destroy_entity(rect_renderable, entity)

@@ -14,7 +14,7 @@ test_event_queue_double_buffering :: proc(t: ^testing.T) {
 
     // emit only queues into next_events; poll reads current_events, which
     // starts out empty until the first clear/swap.
-    es.emit(es.Event_Key_Pressed{key = types.KeyboardKey.A})
+    es.emit(types.Event_Key_Pressed{key = types.KeyboardKey.A})
     testing.expect_value(t, len(es.event_queue_poll()), 0)
 
     es.event_queue_clear()
@@ -22,7 +22,7 @@ test_event_queue_double_buffering :: proc(t: ^testing.T) {
     testing.expect_value(t, len(events), 1)
 
     #partial switch v in events[0] {
-    case es.Event_Key_Pressed:
+    case types.Event_Key_Pressed:
         testing.expect_value(t, v.key, types.KeyboardKey.A)
     case:
         testing.fail_now(t, "expected Event_Key_Pressed")

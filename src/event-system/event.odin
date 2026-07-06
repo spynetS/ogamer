@@ -5,7 +5,6 @@ import "../types"
 next_events    : [dynamic]types.Event
 current_events : [dynamic]types.Event
 
-
 event_queue_init :: proc() {
     next_events    = make([dynamic]types.Event, 0, 64)
     current_events = make([dynamic]types.Event, 0, 64)

@@ -6,13 +6,13 @@ import stor "../ecs/storage/"
 import "../ecs"
 import "../types"
 
-
+import "core:math/rand"
 
 new_gameobject :: proc(ecs_: ^types.ECS) -> (^types.GameObject, bool) {
     game_object := new(types.GameObject)
 
     t_storage, ok := ecs.get_storage(ecs_, ^types.Transform)
-    entity := types.Entity(len(t_storage.entities))
+    entity := types.Entity(rand.int_max(32000))
 
     game_object.entity = entity
     game_object.ecs = ecs_

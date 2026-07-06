@@ -38,8 +38,69 @@ render_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
         
         t := trans.dense[trans.sparse[int(entity)]]
         r := render_storage.dense[i]
-        cmd : rn.Rectangle = {t.pos,t.size, t.rot, r.color, false};
+        cmd : rn.Rectangle = {t.pos,t.size, t.rot, r.color, true};
         append(&renderer.commands, cmd);
+    }
+}
+
+ui_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+    text_storage, ok := ecss.get_storage(ecs, ^types.TextElement);
+    if !ok do return;
+    trans, ok2 := ecss.get_storage(ecs, ^types.Transform)
+    if !ok2 do return
+    for i in 0..<len(text_storage.dense) {
+        entity := text_storage.entities[i]
+        t_idx, has_t := stor.has_component(trans, entity)
+        if !has_t do continue
+        
+        t := trans.dense[trans.sparse[int(entity)]]
+        r := text_storage.dense[i]
+
+        color := r.color == 0 ? rn.get_color(0x181818ff) : r.color
+
+        cmd :rn.UIText = {t.pos, 16, t.rot, r.text}
+        
+        append(&renderer.commands, cmd);
+    }
+}
+
+tilemap_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
+    tilemap_storage, ok := ecss.get_storage(ecs, ^types.TileMap);
+    if !ok do return;
+    trans, ok2 := ecss.get_storage(ecs, ^types.Transform)
+    if !ok2 do return
+    for i in 0..<len(tilemap_storage.dense) {
+        tilemap := tilemap_storage.dense[i]
+        
+        entity := tilemap_storage.entities[i]
+        t_idx, has_t := stor.has_component(trans, entity)
+        if !has_t do continue
+        
+        t := trans.dense[trans.sparse[int(entity)]]
+
+        cols := tilemap.width
+        rows := tilemap.height
+        if cols <= 0 { // fall back to a single horizontal row
+            cols = len(tilemap.tiles)
+            rows = 1
+        }
+        if cols <= 0 do continue
+
+        tile_size := t.size / {f32(cols), f32(rows)}
+        // Center of the bottom-left tile in the Y-up world.
+        bottom_left := t.pos - t.size/2 + tile_size/2
+
+        for tile, index in tilemap.tiles {
+            col := index % cols
+            row := index / cols
+            // tiles are row-major with row 0 at the top; in Y-up, higher rows
+            // sit at higher Y, so count rows up from the bottom.
+            pos := bottom_left + {f32(col), f32(rows-1-row)} * tile_size
+
+            cmd := rn.Sprite({pos, tile_size, t.rot, false, tile})
+            append(&renderer.commands, cmd);
+        }
+
     }
 }
 
@@ -57,7 +118,9 @@ sprite_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
         if !has_t do continue
         
         t := trans.dense[trans.sparse[int(entity)]]
-        
+        if renderer.active_camera != nil {
+            sprite.offset = renderer.active_camera.target * (-sprite.parallax)
+        }
         
         cmd := rn.Sprite({t.pos+sprite.offset, t.size+sprite.size, t.rot, sprite.inverted, sprite.image})
         append(&renderer.commands, cmd);
@@ -176,6 +239,40 @@ script_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
         defer ecss.free_gameobject(go);
 
         script.on_update(go^,script.data ,dt);
+        // if we have a on_event function we call it witch each event
+        if script.on_event == nil do continue
+        
+        // TODO optimize this shit
+        for event in es.event_queue_poll() {
+            script.on_event(go^, script.data, event)
+            #partial switch v in event {
+                case types.Event_Collision_Entered:
+                if v.ea != go.entity do break
+                other, _ := ecss.get_gameobject(ecs, v.eb);
+                defer ecss.free_gameobject(other);
+                if script.on_collision_entered != nil do script.on_collision_entered(go^, other^, script.data, event)
+                
+                case types.Event_Collision_Left:
+                if v.ea != go.entity do break
+                other, _ := ecss.get_gameobject(ecs, v.eb);
+                defer ecss.free_gameobject(other);
+                if script.on_collision_left != nil do script.on_collision_left(go^, other^, script.data, event)
+
+                case types.Event_Trigger_Entered:
+                if v.ea != go.entity do break
+                other, _ := ecss.get_gameobject(ecs, v.eb);
+                defer ecss.free_gameobject(other);
+                if script.on_trigger_entered != nil do script.on_trigger_entered(go^, other^, script.data, event)
+
+                case types.Event_Trigger_Left:
+                if v.ea != go.entity do break
+                other, _ := ecss.get_gameobject(ecs, v.eb);
+                defer ecss.free_gameobject(other);
+                if script.on_trigger_left != nil do script.on_trigger_left(go^, other^, script.data, event)
+                
+            }
+        }
+        
     }
 
 }

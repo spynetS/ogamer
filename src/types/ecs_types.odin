@@ -25,13 +25,16 @@ GameObject :: struct {
 
 // TODO change this to more
 Script :: struct {
-    data: rawptr,
-    on_start:   proc(gameObject: GameObject, data: rawptr),
-    on_update:  proc(gameObject: GameObject, data: rawptr, dt: f32),
-    on_destroy: proc(gameObject: GameObject, data: rawptr),
-    on_event  : proc(gameObject: GameObject, event: Event)
+    data                 : rawptr, // Data is like the scripts data this is used instead of having an opp structure.
+    on_start             : proc(gameObject: GameObject, data: rawptr),
+    on_update            : proc(gameObject: GameObject, data: rawptr, dt: f32),
+    on_destroy           : proc(gameObject: GameObject, data: rawptr),
+    on_event             : proc(gameObject: GameObject, data: rawptr, event: Event),
+    on_trigger_entered   : proc(me: GameObject, other: GameObject, data: rawptr, event: Event),
+    on_trigger_left      : proc(me: GameObject, other: GameObject, data: rawptr, event: Event),
+    on_collision_entered : proc(me: GameObject, other: GameObject, data: rawptr, event: Event),
+    on_collision_left    : proc(me: GameObject, other: GameObject, data: rawptr, event: Event),
 }
-
 
 Image :: struct {
     data : []u8,
@@ -58,6 +61,15 @@ BodyType :: enum {
 Component :: struct {
     disabled : bool
 }
+
+
+TextElement :: struct {
+    using component: Component,
+    text: string,
+    color: [4]u8,
+    font_size: f32
+}
+
 
 Camera2D :: struct {
     using component: Component,
@@ -92,6 +104,7 @@ RectangleRenderable :: struct {
 RigidBody :: struct {
     using component: Component,
     velocity         : Vector2,
+    angular_velocity : f32, // degrees/sec, bound to box2d
     acceleration     : Vector2,
     type             : BodyType,
     disable_gravity  : bool,
@@ -106,12 +119,19 @@ SquareCollider :: struct {
     trigger: bool
 }
 
+TileMap :: struct {
+    using component: Component,
+    width, height : int, 
+    tiles         : [dynamic]^Image // size = width * height, row-major
+}
+
 SpriteRenderable :: struct {
     using component: Component,
     image    : ^Image,
     inverted : bool,
     size     : Vector2,
     offset   : Vector2,
+    parallax : Vector2
 }
 
 SpriteAnimator :: struct {

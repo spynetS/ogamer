@@ -7,12 +7,13 @@ import es "../event-system";
 import "../types";
 
 RENDER :: true
+DEBUG  :: false
 
 texture_cache: map[^types.Image]rl.Texture2D
 camera := rl.Camera2D({{1240/2,720/2},{0,0},0,1});
 
-width :: 1240
-height :: 720
+width :: 1920/1.2
+height :: 1080/1.2
 
 target : rl.RenderTexture
 
@@ -49,10 +50,17 @@ execute :: proc(renderer: ^Renderer) {
 		window_h := f32(rl.GetScreenHeight())
     scale := math.min(window_w / width, window_h / height)
 
-    if RENDER {
+    // if we are in debug mode add debug render commands to render commands
+    if DEBUG {
+        for command in renderer.debug_commands{
+            inject_at(&renderer.commands, len(&renderer.commands)-1, command);
+        }
 
+    }
+
+    if RENDER {
         for command in renderer.commands {
-            switch v in command {
+            #partial switch v in command {
             case InitWindow:
                 rl.SetTargetFPS(144)
             case BeginDraw:
@@ -65,41 +73,24 @@ execute :: proc(renderer: ^Renderer) {
                         renderer.active_camera.rotation,
                         renderer.active_camera.zoom
                    })
+                    camera.target.y = -camera.target.y // Y-up: flip camera target into raylib space
                 }
                 camera.offset = {width/2, height/2}
                 rl.BeginMode2D(camera);
-                rl.DrawText(fmt.ctprintf("%d", rl.GetFPS()),0,-200,32, rl.GRAY);
             case EndDraw:
                 rl.EndMode2D();
                 rl.EndTextureMode();
-                // now render the texture
-                rl.BeginDrawing();
-                rl.ClearBackground(rl.BLACK) // Draws the black bars
-
-			          // Source rect mapping from texture coordinates. 
-			          // Note the negative height flips the Y-axis properly for OpenGL
-			          source_rec := rl.Rectangle{0, 0, f32(target.texture.width), -f32(target.texture.height)}
-			          
-			          // Destination rect centered on the monitor screen window
-			          dest_rec := rl.Rectangle{
-				            (window_w - (width * scale)) * 0.5,
-				            (window_h - (height * scale)) * 0.5,
-				            width * scale,
-				            height * scale,
-			          }
-
-			          rl.DrawTexturePro(target.texture, source_rec, dest_rec, {0, 0}, 0.0, rl.WHITE)
-                rl.EndDrawing();
             case Clear:
                 rl.ClearBackground(rl.Color(v.color));
             case Text:
                 rl.DrawText(fmt.ctprintf("%s", v.text),
                             i32(v.pos.x),
-                            i32(v.pos.y),
+                            i32(-v.pos.y), // Y-up
                             v.font_size,
                             rl.BLACK)
+
             case Rectangle:
-                rec : rl.Rectangle = {v.pos.x,v.pos.y, v.size.x, v.size.y}
+                rec : rl.Rectangle = {v.pos.x,-v.pos.y, v.size.x, v.size.y} // Y-up
                 origin : rl.Vector2 = {
                     v.size.x / 2,
                     v.size.y / 2
@@ -108,7 +99,7 @@ execute :: proc(renderer: ^Renderer) {
                     rl.DrawRectanglePro(
                         rec,
                         origin,
-                        v.rot,
+                        -v.rot, // Y-up: CCW-positive rotation
                         rl.Color(v.color)
                     );
                 }
@@ -141,7 +132,7 @@ execute :: proc(renderer: ^Renderer) {
                 
                 
                 source : rl.Rectangle = {0,0, cast(f32)(v.inverted ? -sprite.width :sprite.width ), cast(f32)sprite.height}
-                dest : rl.Rectangle = {v.pos.x,v.pos.y, v.size.x, v.size.y}
+                dest : rl.Rectangle = {v.pos.x,-v.pos.y, v.size.x, v.size.y} // Y-up
 
                 origin : rl.Vector2 = {
                     v.size.x / 2,
@@ -153,11 +144,42 @@ execute :: proc(renderer: ^Renderer) {
                     source,
                     dest,
                     origin,
-                    v.rot,
+                    -v.rot, // Y-up: CCW-positive rotation
                     rl.Color(get_color(0xffffffff))
                 )
             }
         }
+        // now render the texture
+        rl.BeginDrawing();
+        rl.ClearBackground(rl.BLACK) // Draws the black bars
+
+			  // Source rect mapping from texture coordinates. 
+			  // Note the negative height flips the Y-axis properly for OpenGL
+			  source_rec := rl.Rectangle{0, 0, f32(target.texture.width), -f32(target.texture.height)}
+			  
+			  // Destination rect centered on the monitor screen window
+			  dest_rec := rl.Rectangle{
+				    (window_w - (width * scale)) * 0.5,
+				    (window_h - (height * scale)) * 0.5,
+				    width * scale,
+				    height * scale,
+			  }
+			  rl.DrawTexturePro(target.texture, source_rec, dest_rec, {0, 0}, 0.0, rl.WHITE)
+        // TODO make them also scale with monitor
+        // DRAW UI ELEMENTS 
+        for command in renderer.commands {
+            #partial switch v in command {
+                case UIText:
+                rl.DrawText(fmt.ctprintf("%s", v.text),
+                            i32(v.pos.x),
+                            i32(v.pos.y),
+                            v.font_size,
+                            rl.BLACK)
+            }
+        }
+        
+        rl.EndDrawing();
     }        
+    if DEBUG do clear(&renderer.debug_commands)
     clear(&renderer.commands) // TODO maybe make clearing the commands a seperate function?
 }

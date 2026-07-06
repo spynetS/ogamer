@@ -14,18 +14,21 @@ RenderCommand :: union {
     Rectangle,
     Sprite,
     Text,
+    UIText,
 }
 
 InitWindow :: struct { width, height: int, title: string }
 Clear      :: struct { color: [4]u8 }
 Rectangle  :: struct { pos, size: [2]f32, rot: f32, color: [4]u8, lines: bool}
 Sprite     :: struct { pos, size: [2]f32, rot: f32, inverted: bool, image: ^types.Image }
+UIText     :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string }
 Text       :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string }
 BeginDraw  :: struct {}
 EndDraw    :: struct {}
 
 
 Renderer :: struct {
-    commands: [dynamic]RenderCommand,
-    active_camera: ^types.Camera2D
+    commands       : [dynamic]RenderCommand,
+    debug_commands : [dynamic]RenderCommand,
+    active_camera  : ^types.Camera2D
 }

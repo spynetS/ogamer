@@ -42,6 +42,7 @@ main_loop :: proc (game: ^Game) {
         
         systems.physics_system(&game.ecs,game.io_handler, game.renderer, dt);
         systems.sprite_system(&game.ecs,game.io_handler, game.renderer, dt);  
+        systems.tilemap_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.parent_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.camera_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.sprite_animator_system(&game.ecs,game.io_handler, game.renderer, dt);  
@@ -49,6 +50,7 @@ main_loop :: proc (game: ^Game) {
 
         systems.script_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.render_system(&game.ecs,game.io_handler, game.renderer, dt);  
+        systems.ui_system(&game.ecs,game.io_handler, game.renderer, dt);  
 
         
         append(&game.renderer.commands, end);
@@ -61,13 +63,14 @@ init_game :: proc() -> ^Game {
     game := new(Game);
     game.should_run = true;
     
-    game.renderer= new(rn.Renderer);
+    game.renderer = new(rn.Renderer);
     game.io_handler = new(types.IOHandler);
 
     rn.init_renderer();
     systems.init_physics(&game.ecs);
 
     es.event_queue_init();
+
 
     // Initiation storages for the components
     ecs.add_storage(&game.ecs, ^types.Script);
@@ -79,6 +82,8 @@ init_game :: proc() -> ^Game {
     ecs.add_storage(&game.ecs, ^types.Parent);
     ecs.add_storage(&game.ecs, ^types.Camera2D);
     ecs.add_storage(&game.ecs, ^types.SpriteAnimator);
+    ecs.add_storage(&game.ecs, ^types.TextElement);
+    ecs.add_storage(&game.ecs, ^types.TileMap);
 
 
     // init rendering window
@@ -103,6 +108,8 @@ free_game :: proc(game: ^Game) {
     ecs.delete_storage(&game.ecs, ^types.SpriteRenderable);
     ecs.delete_storage(&game.ecs, ^types.Camera2D);
     ecs.delete_storage(&game.ecs, ^types.SpriteAnimator);
+    ecs.delete_storage(&game.ecs, ^types.TextElement);
+    ecs.delete_storage(&game.ecs, ^types.TileMap);
     systems.deinit_physics();
     rn.deinit_renderer();
     es.event_queue_destroy();
