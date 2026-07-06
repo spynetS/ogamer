@@ -29,6 +29,7 @@ Script :: struct {
     on_start:   proc(gameObject: GameObject, data: rawptr),
     on_update:  proc(gameObject: GameObject, data: rawptr, dt: f32),
     on_destroy: proc(gameObject: GameObject, data: rawptr),
+    on_event  : proc(gameObject: GameObject, event: Event)
 }
 
 

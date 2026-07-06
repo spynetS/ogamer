@@ -32,7 +32,7 @@ execute :: proc(renderer: ^Renderer) {
 
     key := types.KeyboardKey(rl.GetKeyPressed());
     if key != types.KeyboardKey.KEY_NULL {
-        es.emit(es.Event_Key_Pressed({key}));
+        es.emit(types.Event_Key_Pressed({key}));
         append(&types.keys, key);
     }
 
@@ -42,7 +42,7 @@ execute :: proc(renderer: ^Renderer) {
         }
     }    
 
-    if rl.IsWindowReady() && rl.WindowShouldClose() do es.emit(es.Event_Should_Close_Window({}));
+    if rl.IsWindowReady() && rl.WindowShouldClose() do es.emit(types.Event_Should_Close_Window({}));
 
 
     window_w := f32(rl.GetScreenWidth())

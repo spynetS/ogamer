@@ -23,6 +23,12 @@ rigidbody_by_shape_id : map[b2.ShapeId]^types.RigidBody; // TODO use collider co
 shape_id_by_collider  : map[^types.SquareCollider]b2.ShapeId
 collider_by_shape_id  : map[b2.ShapeId]^types.SquareCollider
 body_id_by_collider  : map[^types.SquareCollider]b2.BodyId;
+// The box inputs {offset.x, offset.y, width, height} last used to build a child
+// collider's shape. Lets us rebuild only when the child transform changes.
+child_collider_params : map[^types.SquareCollider][4]f32
+// The box inputs {width, height} last used to build a body's own main shape.
+// Lets us rebuild only when the body's own transform/collider size changes.
+body_shape_params : map[^types.RigidBody][2]f32
 
 init_physics :: proc (e: ^types.ECS) {
     worldDef := b2.DefaultWorldDef();
@@ -38,6 +44,8 @@ deinit_physics :: proc () {
     delete(shape_id_by_collider)
     delete(collider_by_shape_id)
     delete(body_id_by_collider)
+    delete(child_collider_params)
+    delete(body_shape_params)
     b2.DestroyWorld(worldId)
 }
 
@@ -115,18 +123,44 @@ create_body :: proc(e: ^types.ECS, ent: u32){
     id := b2.CreateBody(worldId, body_def);
     b2.Body_SetTransform(id, transform.pos/PIXELS_PER_METER, get_rot(transform.rot))
     body_id_by_rigidbody[rigid] = id
-    
+
+    build_body_shape(id, rigid, transform, collider, has_collider)
+}
+
+body_box_params :: proc(transform: ^types.Transform, collider: ^types.SquareCollider, has_collider: bool) -> [2]f32 {
+    return {
+        transform.size.x + (has_collider ? collider.size.x : 0),
+        transform.size.y + (has_collider ? collider.size.y : 0),
+    }
+}
+
+// (Re)builds the body's own main fixture and registers it in the lookup maps.
+// Destroys the previous main shape first so the geometry tracks the body's
+// transform/collider size instead of being frozen at creation time.
+build_body_shape :: proc(
+    id: b2.BodyId,
+    rigid: ^types.RigidBody,
+    transform: ^types.Transform,
+    collider: ^types.SquareCollider,
+    has_collider: bool,
+) {
+    if old, has := shape_id_by_rigidbody[rigid]; has {
+        b2.DestroyShape(old, true)
+        delete_key(&rigidbody_by_shape_id, old)
+        delete_key(&collider_by_shape_id, old)
+    }
+
     box := b2.MakeBox(
         ((transform.size.x + (has_collider ? collider.size.x : 0)) / 2) / PIXELS_PER_METER,
         ((transform.size.y + (has_collider ? collider.size.y : 0)) / 2) / PIXELS_PER_METER
     )
 
-    shapeDef := b2.DefaultShapeDef() 
+    shapeDef := b2.DefaultShapeDef()
     shapeDef.density = rigid.density == 0 ? 1 : rigid.density
     shapeDef.enableContactEvents = (has_collider);
     shapeDef.enableSensorEvents = true
     shapeDef.isSensor = (has_collider ? collider.trigger : true)
-    shapeId := b2.CreatePolygonShape(body_id_by_rigidbody[rigid], shapeDef, box);
+    shapeId := b2.CreatePolygonShape(id, shapeDef, box);
     rigidbody_by_shape_id[shapeId] = rigid
     shape_id_by_rigidbody[rigid] = shapeId
 
@@ -135,6 +169,8 @@ create_body :: proc(e: ^types.ECS, ent: u32){
         body_id_by_collider[collider] = id
         collider_by_shape_id[shapeId] = collider
     }
+
+    body_shape_params[rigid] = body_box_params(transform, collider, has_collider)
 }
 
 handle_collision :: proc(e: ^types.ECS, events: b2.ContactEvents) {
@@ -151,7 +187,7 @@ handle_collision :: proc(e: ^types.ECS, events: b2.ContactEvents) {
         ea := c_storage.entity_by_comp[ca]
         eb := c_storage.entity_by_comp[cb]
         
-        es.emit(es.Event_Collision_Entered({ra=ra, rb=rb, ca=ca, cb=cb, ea=ea, eb=eb}))
+        es.emit(types.Event_Collision_Entered({ra=ra, rb=rb, ca=ca, cb=cb, ea=ea, eb=eb}))
     }
 
     for i in 0..< events.endCount {
@@ -165,7 +201,7 @@ handle_collision :: proc(e: ^types.ECS, events: b2.ContactEvents) {
         ea := c_storage.entity_by_comp[ca]
         eb := c_storage.entity_by_comp[cb]
         
-        es.emit(es.Event_Collision_Left({ra=ra, rb=rb, ca=ca, cb=cb, ea=ea, eb=eb}))
+        es.emit(types.Event_Collision_Left({ra=ra, rb=rb, ca=ca, cb=cb, ea=ea, eb=eb}))
     }
 
     for i in 0..< events.hitCount {
@@ -179,7 +215,7 @@ handle_collision :: proc(e: ^types.ECS, events: b2.ContactEvents) {
         ea := c_storage.entity_by_comp[ca]
         eb := c_storage.entity_by_comp[cb]
         
-        es.emit(es.Event_Collision_Hit({ra=ra, rb=rb, ca=ca, cb=cb, ea=ea, eb=eb}))
+        es.emit(types.Event_Collision_Hit({ra=ra, rb=rb, ca=ca, cb=cb, ea=ea, eb=eb}))
 
     }
 }
@@ -198,7 +234,7 @@ handle_trigger_collision :: proc(e: ^types.ECS, events: b2.SensorEvents) {
         ea := c_storage.entity_by_comp[ca]
         eb := c_storage.entity_by_comp[cb]
         
-        es.emit(es.Event_Trigger_Entered({ra=ra, rb=rb, ca=ca, cb=cb, ea=ea, eb=eb}))
+        es.emit(types.Event_Trigger_Entered({ra=ra, rb=rb, ca=ca, cb=cb, ea=ea, eb=eb}))
 
     }
 
@@ -213,7 +249,7 @@ handle_trigger_collision :: proc(e: ^types.ECS, events: b2.SensorEvents) {
         ea := c_storage.entity_by_comp[ca]
         eb := c_storage.entity_by_comp[cb]
         
-        es.emit(es.Event_Trigger_Left({ra=ra, rb=rb, ca=ca, cb=cb, ea=ea, eb=eb}))
+        es.emit(types.Event_Trigger_Left({ra=ra, rb=rb, ca=ca, cb=cb, ea=ea, eb=eb}))
     }
 
 }
@@ -249,8 +285,23 @@ toggle_collider :: proc(
 // Attaches a child's SquareCollider to its parent's Box2D body as a shape, the
 // first time we see that collider. Mirrors Unity: a collider on a child
 // GameObject rides on the nearest ancestor's Rigidbody.
+child_box_params :: proc(collider: ^types.SquareCollider, t: ^types.Transform) -> [4]f32 {
+    return {
+        t.local_pos.x,
+        t.local_pos.y,
+        t.size.x + collider.size.x,
+        t.size.y + collider.size.y,
+    }
+}
+
 attach_child_collider :: proc(ecs_: ^types.ECS, entity: u32, collider: ^types.SquareCollider, t: ^types.Transform) {
-    if _, has_shape := shape_id_by_collider[collider]; has_shape do return
+    params := child_box_params(collider, t)
+
+    // Already attached: rebuild the shape only if the child transform changed,
+    // otherwise it keeps a stale offset/size when the child moves or scales.
+    if _, has_shape := shape_id_by_collider[collider]; has_shape {
+        if cached, ok := child_collider_params[collider]; ok && cached == params do return
+    }
 
     parent, has_parent := ecs.get_component(ecs_, entity, types.Parent)
     if !has_parent do return
@@ -262,6 +313,7 @@ attach_child_collider :: proc(ecs_: ^types.ECS, entity: u32, collider: ^types.Sq
     if _, has_body := body_id_by_rigidbody[rigid]; !has_body do return
 
     create_collider(rigid, collider, t)
+    child_collider_params[collider] = params
 }
 
 collider_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
@@ -338,7 +390,13 @@ physics_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer:
         id, has := body_id_by_rigidbody[physics_body];
         if !has {
             create_body(ecs_, entity);
-            id = body_id_by_rigidbody[physics_body]; 
+            id = body_id_by_rigidbody[physics_body];
+        } else {
+            // Rebuild the body's own shape if its transform/collider size changed.
+            params := body_box_params(transform, collider, has_component)
+            if cached, ok := body_shape_params[physics_body]; !ok || cached != params {
+                build_body_shape(id, physics_body, transform, collider, has_component)
+            }
         }
 
 

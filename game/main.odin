@@ -112,16 +112,16 @@ create_player :: proc (e: ^types.ECS) {
             
             for event in es.event_queue_poll() {
                 #partial switch v in event {
-                    case es.Event_SpriteAnimator_End:
+                    case types.Event_SpriteAnimator_End:
                     if v.animator == pd.animator {
                         pd.animator.time=0.1
                         pd.animator.active_animation = 0
                     }
-                    case es.Event_Trigger_Entered:
+                    case types.Event_Trigger_Entered:
                     if v.ca == pd.feet_collider {
                         pd.grounded = true;
                     }
-                    case es.Event_Trigger_Left:
+                    case types.Event_Trigger_Left:
                     if v.ca == pd.feet_collider {
                         pd.grounded = false;
                     }
@@ -175,11 +175,11 @@ create_enemy :: proc(e: ^types.ECS, pos: types.Vector2) {
             ed := cast(^EnemyData)data
             for event in es.event_queue_poll(){
                 #partial switch v in event  {
-                    case es.Event_SpriteAnimator_End:
+                    case types.Event_SpriteAnimator_End:
                     if v.animator == ed.animator && v.animator.active_animation == 1 do ed.animator.active_animation = 0
                     if v.animator == ed.animator && v.animator.active_animation == 2 do  ecs.destroy_entity(go.ecs, go.entity)
 
-                    case es.Event_Trigger_Entered:
+                    case types.Event_Trigger_Entered:
                     fmt.println("ENITY: ", v.ea, v.eb, go.entity)
                     trigger_go,_ := sc.get_gameobject(go.ecs, v.ea)
                     if v.eb == go.entity &&  trigger_go.transform.tag == "weapon" {

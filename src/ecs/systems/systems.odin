@@ -114,7 +114,7 @@ sprite_animator_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, re
 
         if animator._frame_counter <= 0 {
             animator._frame_counter =  animation_length
-            es.emit(es.Event_SpriteAnimator_End({animator}))
+            es.emit(types.Event_SpriteAnimator_End({animator}))
         }
         if animator._time_counter <= 0 {
 

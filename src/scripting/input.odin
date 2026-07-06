@@ -14,7 +14,7 @@ is_key_down :: proc(key: types.KeyboardKey) -> bool {
 is_key_pressed :: proc(key: types.KeyboardKey) -> bool {
     for event in es.event_queue_poll() {
         #partial switch ev in event {
-        case es.Event_Key_Pressed:
+        case types.Event_Key_Pressed:
             if ev.key == key do return true
         }
     }

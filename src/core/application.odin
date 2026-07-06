@@ -26,7 +26,7 @@ main_loop :: proc (game: ^Game) {
         
         for event in es.event_queue_poll() {
             #partial switch v in event {
-                case es.Event_Should_Close_Window:
+                case types.Event_Should_Close_Window:
                 game.should_run = false;
             }
         }
