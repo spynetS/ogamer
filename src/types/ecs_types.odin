@@ -73,7 +73,8 @@ Transform :: struct {
     local_pos  : Vector2,
     size       : Vector2,
     local_size : Vector2,
-    rot        : f32
+    rot        : f32,
+    tag        : string
 }
 
 Parent :: struct {
@@ -108,6 +109,8 @@ SpriteRenderable :: struct {
     using component: Component,
     image    : ^Image,
     inverted : bool,
+    size     : Vector2,
+    offset   : Vector2,
 }
 
 SpriteAnimator :: struct {

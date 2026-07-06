@@ -11,7 +11,7 @@ import "../../types"
 import ecs "../"
 import es "../../event-system"
 
-
+RENDER :: true
 PIXELS_PER_METER :: 50.0 // to sync better box2d physics with pixels
 
 // TODO if collider is disabled the rigidbody should'nt collide!
@@ -159,7 +159,7 @@ handle_collision :: proc(e: ^types.ECS, events: b2.ContactEvents) {
         ra := rigidbody_by_shape_id[e.shapeIdA]
         rb := rigidbody_by_shape_id[e.shapeIdB]
 
-          ca := collider_by_shape_id[e.shapeIdA]
+        ca := collider_by_shape_id[e.shapeIdA]
         cb := collider_by_shape_id[e.shapeIdB]
         
         ea := c_storage.entity_by_comp[ca]
@@ -228,20 +228,7 @@ toggle_collider :: proc(
 ) {
     shape_id, found := shape_id_by_collider[collider]
     if !found do return
-    // is_currently_sensor := b2.Shape_IsSensor(shape_id)
-
-    // if collider.trigger != is_currently_sensor {
-    //     rigid, body_id := rigidbody_by_shape_id[shape_id], body_id_by_collider[collider]
-
-    //     b2.DestroyShape(shape_id,true)
-    //     delete_key(&rigidbody_by_shape_id, shape_id)
-    //     delete_key(&shape_id_by_collider, collider)
-    //     delete_key(&body_id_by_collider, collider)
-    //     delete_key(&collider_by_shape_id, shape_id)
-        
-    //     crebte_child(collider, c_transform, rigid, body_ib)
-    // }
-
+  
     if collider.disabled {
         filter := b2.Shape_GetFilter(shape_id)
         filter.maskBits = 0 
@@ -296,31 +283,33 @@ collider_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer
 
         // Draw the actual box2d shape (not the ecs transform/collider size),
         // so this reflects what box2d is really colliding against.
-        shape_id, has_shape := shape_id_by_collider[collider]
-        if !has_shape do continue
+        if RENDER {
+            shape_id, has_shape := shape_id_by_collider[collider]
+            if !has_shape do continue
 
-        body_id := b2.Shape_GetBody(shape_id)
-        body_t := b2.Body_GetTransform(body_id)
-        poly := b2.Shape_GetPolygon(shape_id)
+            body_id := b2.Shape_GetBody(shape_id)
+            body_t := b2.Body_GetTransform(body_id)
+            poly := b2.Shape_GetPolygon(shape_id)
 
-        min_v := poly.vertices[0]
-        max_v := poly.vertices[0]
-        for j in 1..<int(poly.count) {
-            v := poly.vertices[j]
-            min_v.x = min(min_v.x, v.x); min_v.y = min(min_v.y, v.y)
-            max_v.x = max(max_v.x, v.x); max_v.y = max(max_v.y, v.y)
+            min_v := poly.vertices[0]
+            max_v := poly.vertices[0]
+            for j in 1..<int(poly.count) {
+                v := poly.vertices[j]
+                min_v.x = min(min_v.x, v.x); min_v.y = min(min_v.y, v.y)
+                max_v.x = max(max_v.x, v.x); max_v.y = max(max_v.y, v.y)
+            }
+            size := (max_v - min_v) * PIXELS_PER_METER
+            world_center := b2.TransformPoint(body_t, poly.centroid) * PIXELS_PER_METER
+            rot := b2.Rot_GetAngle(body_t.q) * math.DEG_PER_RAD
+
+            append(&renderer.commands, rn.Rectangle({world_center, size, rot, rn.get_color(0x00ff00ff), true}));
+            append(&renderer.commands, rn.Text({
+                world_center,
+                18,
+                0,
+                fmt.tprintf("<%d>",entity)
+            }))
         }
-        size := (max_v - min_v) * PIXELS_PER_METER
-        world_center := b2.TransformPoint(body_t, poly.centroid) * PIXELS_PER_METER
-        rot := b2.Rot_GetAngle(body_t.q) * math.DEG_PER_RAD
-
-        append(&renderer.commands, rn.Rectangle({world_center, size, rot, rn.get_color(0x00ff00ff), true}));
-        append(&renderer.commands, rn.Text({
-            world_center,
-            18,
-            0,
-            fmt.tprintf("<%d>",entity)
-        }))
     }
 }
 
@@ -371,7 +360,7 @@ physics_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer:
 
                        )
         }))
-//        append(&renderer.commands, rn.Rectangle({transform.pos, transform.size/2, transform.rot, rn.get_color(0x00ff00ff), false}));
+        //        append(&renderer.commands, rn.Rectangle({transform.pos, transform.size/2, transform.rot, rn.get_color(0x00ff00ff), false}));
     }
-        
+    
 }

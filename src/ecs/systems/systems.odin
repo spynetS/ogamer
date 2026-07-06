@@ -59,7 +59,7 @@ sprite_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
         t := trans.dense[trans.sparse[int(entity)]]
         
         
-        cmd := rn.Sprite({t.pos, t.size, t.rot, sprite.inverted, sprite.image})
+        cmd := rn.Sprite({t.pos+sprite.offset, t.size+sprite.size, t.rot, sprite.inverted, sprite.image})
         append(&renderer.commands, cmd);
     }
 }
@@ -87,6 +87,9 @@ sprite_animator_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, re
                 fmt.println("INFO: Adding sprite component to", storage.entities[i], animator, "because it had no sprite_component")
                 sprite, _ := ecss.add_component(ecs, storage.entities[i], types.SpriteRenderable({}))
                 animator.sprite_comp = sprite
+            }
+            else {
+                animator.sprite_comp = sprite_storage.dense[index]
             }
         }
         // if we get a new animation to animate 
