@@ -1,11 +1,14 @@
 package main;
+import b2 "vendor:box2d"
 import "../src/types"
 import sc "../src/scripting"
 import "../src/io"
 import "core:fmt"
 import "../src/ecs"
+import "../src/ecs/systems"
 import rn "../src/renderer"
 import "core:math/linalg"
+import "core:math"
 
 IDLE    :: 0
 RUNNING :: 1
@@ -32,14 +35,20 @@ create_arrow :: proc(e: ^types.ECS, pos, dir: types.Vector2) {
     arrow.transform.pos = pos
     arrow.transform.size = {70,70}
     arrow.transform.tag = "weapon"
+
+    radians := math.atan2(dir.y, dir.x)
+    degrees := radians * math.DEG_PER_RAD  // or: math.to_degrees(radians)
+    arrow.transform.rot = degrees
     image,_ := io.load("./game/assets/sprites/Arrow(Projectile)/Arrow01(32x32).png")
     sc.add_component(arrow, types.SpriteRenderable({image=image}))
     rigid,_ := sc.add_component(arrow, types.RigidBody({type=types.BodyType.dynamicBody}))
-    rigid.velocity = {1000,1000} * dir
-    sc.add_component(arrow, types.SquareCollider({trigger=true}))
+    rigid.velocity = dir*1000
+    sc.add_component(arrow, types.SquareCollider({trigger=true, size={0,-50}}))
+    fmt.println("CREATED ARROW", arrow.entity)
+
     sc.add_component(arrow, types.Script({
         on_trigger_entered = proc(me, other : types.GameObject, data:rawptr, event:types.Event) {
-            ecs.destroy_entity(me.ecs, me.entity)
+            if other.transform.tag == "enemy" do ecs.destroy_entity(me.ecs, me.entity)
         },
     }))
 
@@ -50,6 +59,7 @@ create_player :: proc (e: ^types.ECS) {
     player, _ := sc.new_gameobject(e);
     defer free(player)
     player.transform.size = {100,100}
+    player.transform.tag = "player"
 
     sc.add_component(player, types.Camera2D({zoom=1}));
 
@@ -125,6 +135,10 @@ create_player :: proc (e: ^types.ECS) {
             else {
                 pd.animator.sprite_comp.inverted=rn.get_world_mouse_position().x - go.transform.pos.x < 0
             }
+            if pd.animator.active_animation==ARROW && !sc.is_mouse_down(types.MouseButton.LEFT) {
+                pd.animator.active_animation=IDLE
+                
+            }
             if sc.is_mouse_pressed(types.MouseButton.LEFT)  {
                 pd.animator.time=0.05
                 switch pd.tool_equiped{
@@ -140,7 +154,14 @@ create_player :: proc (e: ^types.ECS) {
             if sc.is_key_pressed(types.KeyboardKey.ONE) do pd.tool_equiped = 0
             if sc.is_key_pressed(types.KeyboardKey.TWO) do pd.tool_equiped = 1
             
-            
+
+            if sc.is_key_pressed(types.KeyboardKey.E) && pd.grounded {
+                game.renderer.active_camera.zoom += 0.1
+            }
+            if sc.is_key_pressed(types.KeyboardKey.Q) && pd.grounded {
+                game.renderer.active_camera.zoom -= 0.1
+            }
+
             if sc.is_key_pressed(types.KeyboardKey.SPACE) && pd.grounded {
                 sc.apply_force(pd.rigid, {0,2500});
             }
@@ -148,6 +169,7 @@ create_player :: proc (e: ^types.ECS) {
                 go.transform.pos = {0,0}
                 game.should_run = false
             }
+            pd.health_text.text = fmt.tprintf("Heath: %d, grounded %d", pd.health, pd.grounded ? 1 : 0);
         },
         on_collision_entered = proc(me: types.GameObject, other: types.GameObject, data:rawptr, event: types.Event) {
             if other.transform.tag == "COIN" {
@@ -166,8 +188,7 @@ create_player :: proc (e: ^types.ECS) {
                 if v.animator == pd.animator {
                     if pd.animator.active_animation == ARROW {
                         dir := linalg.normalize0(rn.get_world_mouse_position()-go.transform.pos)
-                        create_arrow(go.ecs, go.transform.pos, dir);
-                        
+                        create_arrow(go.ecs, go.transform.pos+dir*100, dir);
                     }
                     pd.animator.time=0.1
                     pd.animator.active_animation = IDLE
@@ -176,13 +197,12 @@ create_player :: proc (e: ^types.ECS) {
 
                 if v.ca == pd.feet_collider {
                     pd.grounded = true;
-                    pd.health_text.text = fmt.tprintf("Heath: %d, grounded %d", pd.health, pd.grounded ? 1 : 0);
                 }
 
                 case types.Event_Trigger_Left:
                 if v.ca == pd.feet_collider {
                     pd.grounded = false;
-                    pd.health_text.text = fmt.tprintf("Heath: %d, grounded %d", pd.health, pd.grounded ? 1 : 0);
+
                 }
             }
 

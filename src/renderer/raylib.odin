@@ -1,6 +1,7 @@
 package renderer;
 import rl "vendor:raylib";
 import "core:fmt";
+import "core:slice";
 import "core:math";
 import "core:strings";
 import es "../event-system";
@@ -8,6 +9,7 @@ import "../types";
 
 RENDER :: true
 DEBUG  :: false
+
 
 texture_cache: map[^types.Image]rl.Texture2D
 camera := rl.Camera2D({{1240/2,720/2},{0,0},0,1});
@@ -29,8 +31,98 @@ deinit_renderer :: proc() {
     rl.UnloadTexture(target.texture);
 }
 
-execute :: proc(renderer: ^Renderer) {
+execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
+    #partial switch v in command {
+        case InitWindow:
+        rl.SetTargetFPS(144)
+        case BeginDraw:
+        rl.BeginTextureMode(target);
+        if renderer.active_camera != nil {
+            camera = rl.Camera2D({
+                renderer.active_camera.offset,
+                renderer.active_camera.target,
+                renderer.active_camera.rotation,
+                renderer.active_camera.zoom
+            })
+            camera.target.y = -camera.target.y // Y-up: flip camera target into raylib space
+        }
+        camera.offset = {width/2, height/2}
+        rl.BeginMode2D(camera);
+        case EndDraw:
+        rl.EndMode2D();
+        rl.EndTextureMode();
+        case Clear:
+        rl.ClearBackground(rl.Color(v.color));
+        case Text:
+        rl.DrawText(fmt.ctprintf("%s", v.text),
+                    i32(v.pos.x),
+                    i32(-v.pos.y), // Y-up
+                    v.font_size,
+                    rl.BLACK)
 
+        case Rectangle:
+        rec : rl.Rectangle = {v.pos.x,-v.pos.y, v.size.x, v.size.y} // Y-up
+        origin : rl.Vector2 = {
+            v.size.x / 2,
+            v.size.y / 2
+        };
+        if !v.lines {
+            rl.DrawRectanglePro(
+                rec,
+                origin,
+                -v.rot, // Y-up: CCW-positive rotation
+                rl.Color(v.color)
+            );
+        }
+        else {
+            rec.x -= rec.width/2
+            rec.y -= rec.height/2
+            rl.DrawRectangleLinesEx(
+                rec,
+                1,
+                rl.Color(v.color)
+            );
+        }
+        case Sprite:
+        // tecture cacheing
+        // TODO load this before rendering (make a sperate function to load tectures)
+        if v.image == nil do break
+        sprite, got := texture_cache[v.image]
+        if !got {
+            fmt.println("INFO: load texture")
+            image : rl.Image = {
+                raw_data(v.image.data),
+                v.image.width,
+                v.image.height,
+                v.image.mipmaps,
+                rl.PixelFormat.UNCOMPRESSED_R8G8B8A8
+            }
+            sprite = rl.LoadTextureFromImage(image);
+            texture_cache[v.image] = sprite
+        }
+        
+        
+        source : rl.Rectangle = {0,0, cast(f32)(v.inverted ? -sprite.width :sprite.width ), cast(f32)sprite.height}
+        dest : rl.Rectangle = {v.pos.x,-v.pos.y, v.size.x, v.size.y} // Y-up
+
+        origin : rl.Vector2 = {
+            v.size.x / 2,
+            v.size.y / 2
+        };
+
+        rl.DrawTexturePro(
+            sprite,
+            source,
+            dest,
+            origin,
+            -v.rot, // Y-up: CCW-positive rotation
+            rl.Color(get_color(0xffffffff))
+        )
+    }
+
+}
+
+handle_input :: proc() {
     key := types.KeyboardKey(rl.GetKeyPressed());
     if key != types.KeyboardKey.KEY_NULL {
         es.emit(types.Event_Key_Pressed({key}));
@@ -49,127 +141,63 @@ execute :: proc(renderer: ^Renderer) {
             es.emit(types.Event_MouseButton_Pressed({btn}))
             append(&types.mouse_buttons, btn)
         }
-        if rl.IsMouseButtonReleased(rl_btn) {
-            es.emit(types.Event_MouseButton_Released({btn}))
-            unordered_remove(&types.mouse_buttons, btn)
+    }
+    for i := len(types.mouse_buttons) - 1; i >= 0; i -= 1 {
+        if rl.IsMouseButtonReleased(rl.MouseButton(types.mouse_buttons[i])) {
+            unordered_remove(&types.mouse_buttons, i)
         }
     }
 
-    
+}
+
+layer_of :: proc(command: RenderCommand) -> int {
+    #partial switch v in command {
+        case Rectangle: return v.layer
+        case Sprite: return v.layer
+        case Text: return v.layer
+        case UIText: return v.layer
+    }
+    return -1;
+}
+
+execute :: proc(renderer: ^Renderer) {
+
+    handle_input()
+
     if rl.IsWindowReady() && rl.WindowShouldClose() do es.emit(types.Event_Should_Close_Window({}));
-
-
     window_w := f32(rl.GetScreenWidth())
 		window_h := f32(rl.GetScreenHeight())
     scale := math.min(window_w / width, window_h / height)
 
     // if we are in debug mode add debug render commands to render commands
-    if DEBUG {
-        for command in renderer.debug_commands{
-            inject_at(&renderer.commands, len(&renderer.commands)-1, command);
-        }
+    // if DEBUG {
+    //     for command in renderer.debug_commands{
+    //         inject_at(&renderer.commands, len(&renderer.commands)-1, command);
+    //     }
 
-    }
+    // }
 
     if RENDER {
-        for command in renderer.commands {
-            #partial switch v in command {
-            case InitWindow:
-                rl.SetTargetFPS(144)
-            case BeginDraw:
-                rl.BeginTextureMode(target);
-                if renderer.active_camera != nil {
-                    camera = rl.Camera2D({
-                        renderer.active_camera.offset,
-                        renderer.active_camera.target,
-                        renderer.active_camera.rotation,
-                        renderer.active_camera.zoom
-                   })
-                    camera.target.y = -camera.target.y // Y-up: flip camera target into raylib space
-                }
-                camera.offset = {width/2, height/2}
-                rl.BeginMode2D(camera);
-            case EndDraw:
-                rl.EndMode2D();
-                rl.EndTextureMode();
-            case Clear:
-                rl.ClearBackground(rl.Color(v.color));
-            case Text:
-                rl.DrawText(fmt.ctprintf("%s", v.text),
-                            i32(v.pos.x),
-                            i32(-v.pos.y), // Y-up
-                            v.font_size,
-                            rl.BLACK)
-
-            case Rectangle:
-                rec : rl.Rectangle = {v.pos.x,-v.pos.y, v.size.x, v.size.y} // Y-up
-                origin : rl.Vector2 = {
-                    v.size.x / 2,
-                    v.size.y / 2
-                };
-                if !v.lines {
-                    rl.DrawRectanglePro(
-                        rec,
-                        origin,
-                        -v.rot, // Y-up: CCW-positive rotation
-                        rl.Color(v.color)
-                    );
-                }
-                else {
-                    rec.x -= rec.width/2
-                    rec.y -= rec.height/2
-                    rl.DrawRectangleLinesEx(
-                        rec,
-                        1,
-                        rl.Color(v.color)
-                    );
-                }
-            case Sprite:
-                // tecture cacheing
-                // TODO load this before rendering (make a sperate function to load tectures)
-                if v.image == nil do continue
-                sprite, got := texture_cache[v.image]
-                if !got {
-                    fmt.println("INFO: load texture")
-                    image : rl.Image = {
-                        raw_data(v.image.data),
-                        v.image.width,
-                        v.image.height,
-                        v.image.mipmaps,
-                        rl.PixelFormat.UNCOMPRESSED_R8G8B8A8
-                    }
-                    sprite = rl.LoadTextureFromImage(image);
-                    texture_cache[v.image] = sprite
-                }
-                
-                
-                source : rl.Rectangle = {0,0, cast(f32)(v.inverted ? -sprite.width :sprite.width ), cast(f32)sprite.height}
-                dest : rl.Rectangle = {v.pos.x,-v.pos.y, v.size.x, v.size.y} // Y-up
-
-                origin : rl.Vector2 = {
-                    v.size.x / 2,
-                    v.size.y / 2
-                };
-
-                rl.DrawTexturePro(
-                    sprite,
-                    source,
-                    dest,
-                    origin,
-                    -v.rot, // Y-up: CCW-positive rotation
-                    rl.Color(get_color(0xffffffff))
-                )
-            }
+        // Handle before draw commands
+        for command in renderer.init_commands {
+            execute_command(renderer, command)
         }
+        slice.sort_by(renderer.draw_commands[:], proc(a, b: RenderCommand) -> bool {
+            return layer_of(a) < layer_of(b)
+        })
+        for command in renderer.draw_commands {
+            execute_command(renderer, command)
+        }
+
+        for command in renderer.deinit_commands {
+            execute_command(renderer, command)
+        }
+
+
         // now render the texture
         rl.BeginDrawing();
         rl.ClearBackground(rl.BLACK) // Draws the black bars
-
-			  // Source rect mapping from texture coordinates. 
-			  // Note the negative height flips the Y-axis properly for OpenGL
 			  source_rec := rl.Rectangle{0, 0, f32(target.texture.width), -f32(target.texture.height)}
-			  
-			  // Destination rect centered on the monitor screen window
 			  dest_rec := rl.Rectangle{
 				    (window_w - (width * scale)) * 0.5,
 				    (window_h - (height * scale)) * 0.5,
@@ -181,7 +209,7 @@ execute :: proc(renderer: ^Renderer) {
 
         // TODO make them also scale with monitor
         // DRAW UI ELEMENTS 
-        for command in renderer.commands {
+        for command in renderer.draw_commands {
             #partial switch v in command {
                 case UIText:
                 rl.DrawText(fmt.ctprintf("%s", v.text),
@@ -195,7 +223,9 @@ execute :: proc(renderer: ^Renderer) {
         rl.EndDrawing();
     }        
     if DEBUG do clear(&renderer.debug_commands)
-    clear(&renderer.commands) // TODO maybe make clearing the commands a seperate function?
+    clear(&renderer.init_commands)
+    clear(&renderer.draw_commands)
+    clear(&renderer.deinit_commands)
 }
 
 get_mouse_position :: proc() -> types.Vector2 {

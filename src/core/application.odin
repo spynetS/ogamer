@@ -32,8 +32,8 @@ main_loop :: proc (game: ^Game) {
         }
         
 
-        append(&game.renderer.commands, begin);
-        append(&game.renderer.commands, cmd);
+        rn.add_command(game.renderer, begin);
+        rn.add_command(game.renderer, cmd);
 
         current := time.now()
         dt :f32 = f32(time.duration_seconds(time.Duration(current._nsec-prev._nsec)))
@@ -43,7 +43,7 @@ main_loop :: proc (game: ^Game) {
 
         systems.physics_system(&game.ecs,game.io_handler, game.renderer, dt);
         systems.sprite_system(&game.ecs,game.io_handler, game.renderer, dt);  
-        systems.tilemap_system(&game.ecs,game.io_handler, game.renderer, dt);  
+        systems.tilemap_system(&game.ecs,game.io_handler, game.renderer, dt);
         systems.parent_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.camera_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.sprite_animator_system(&game.ecs,game.io_handler, game.renderer, dt);  
@@ -55,15 +55,15 @@ main_loop :: proc (game: ^Game) {
 
                 
 
-        append(&game.renderer.commands, rn.Rectangle({
-            rn.get_world_mouse_position(),
-				    {50,50},
-            0,
-            rn.get_color(0x181818ff),
-            false
-        }))
+        // append(&game.renderer.commands, rn.Rectangle({
+        //     rn.get_world_mouse_position(),
+				//     {50,50},
+        //     0,
+        //     rn.get_color(0x181818ff),
+        //     false
+        // }))
 
-        append(&game.renderer.commands, end);
+        rn.add_command(game.renderer, end);
         es.event_queue_clear();
         rn.execute(game.renderer);
     }
@@ -98,7 +98,7 @@ init_game :: proc() -> ^Game {
 
     // init rendering window
     init :rn.InitWindow = {800,500,"BLA"};
-    append(&game.renderer.commands, init);
+    rn.add_command(game.renderer, init);
     rn.execute(game.renderer);
 
     return game;
@@ -106,7 +106,10 @@ init_game :: proc() -> ^Game {
 
 free_game :: proc(game: ^Game) {
 
-    delete(game.renderer.commands);
+    delete(game.renderer.debug_commands);
+    delete(game.renderer.deinit_commands);
+    delete(game.renderer.draw_commands);
+    delete(game.renderer.init_commands);
     free(game.renderer);
     free(game.io_handler);
     ecs.delete_storage(&game.ecs, ^types.Script);

@@ -421,12 +421,13 @@ collider_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer
             world_center := b2.TransformPoint(body_t, poly.centroid) * PIXELS_PER_METER
             rot := b2.Rot_GetAngle(body_t.q) * math.DEG_PER_RAD
 
-            append(&renderer.debug_commands, rn.Rectangle({world_center, size, rot, rn.get_color(0x00ff00ff), true}));
+            append(&renderer.debug_commands, rn.Rectangle({world_center, size, rot, rn.get_color(0x00ff00ff), true,0}));
             append(&renderer.debug_commands, rn.Text({
                 world_center,
                 18,
                 0,
-                fmt.tprintf("<%d>",entity)
+                fmt.tprintf("<%d>",entity),
+                0
             }))
         }
     }
@@ -522,9 +523,10 @@ physics_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer:
                         transform.size.x/2/PIXELS_PER_METER,
                         transform.size.y/2/PIXELS_PER_METER,
 
-                       )
+                       ),
+            0
         }))
-        //        append(&renderer.commands, rn.Rectangle({transform.pos, transform.size/2, transform.rot, rn.get_color(0x00ff00ff), false}));
+        append(&renderer.debug_commands, rn.Rectangle({transform.pos, transform.size/4, transform.rot, rn.get_color(0x00ff00ff), false,0}));
     }
     
 }

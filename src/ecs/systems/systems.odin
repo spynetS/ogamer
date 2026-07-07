@@ -38,8 +38,8 @@ render_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
         
         t := trans.dense[trans.sparse[int(entity)]]
         r := render_storage.dense[i]
-        cmd : rn.Rectangle = {t.pos,t.size, t.rot, r.color, true};
-        append(&renderer.commands, cmd);
+        cmd : rn.Rectangle = {t.pos,t.size, t.rot, r.color, true, r.layer};
+        rn.add_command(renderer, cmd);
     }
 }
 
@@ -58,9 +58,9 @@ ui_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.R
 
         color := r.color == 0 ? rn.get_color(0x181818ff) : r.color
 
-        cmd :rn.UIText = {t.pos, 16, t.rot, r.text}
+        cmd :rn.UIText = {t.pos, 16, t.rot, r.text, r.layer}
         
-        append(&renderer.commands, cmd);
+        rn.add_command(renderer, cmd);
     }
 }
 
@@ -97,8 +97,8 @@ tilemap_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: 
             // sit at higher Y, so count rows up from the bottom.
             pos := bottom_left + {f32(col), f32(rows-1-row)} * tile_size
 
-            cmd := rn.Sprite({pos, tile_size, t.rot, false, tile})
-            append(&renderer.commands, cmd);
+            cmd := rn.Sprite({pos, tile_size, t.rot, false, tile, tilemap.layer})
+            rn.add_command(renderer, cmd);
         }
 
     }
@@ -122,8 +122,8 @@ sprite_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
             sprite.offset = renderer.active_camera.target * (-sprite.parallax)
         }
         
-        cmd := rn.Sprite({t.pos+sprite.offset, t.size+sprite.size, t.rot, sprite.inverted, sprite.image})
-        append(&renderer.commands, cmd);
+        cmd := rn.Sprite({t.pos+sprite.offset, t.size+sprite.size, t.rot, sprite.inverted, sprite.image, sprite.layer})
+        rn.add_command(renderer, cmd);
     }
 }
 
@@ -239,8 +239,6 @@ script_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
         defer ecss.free_gameobject(go);
 
         if script.on_update != nil do script.on_update(go^,script.data ,dt);
-        // if we have a on_event function we call it witch each event
-        if script.on_event == nil do continue
         
         // TODO optimize this shit
         for event in es.event_queue_poll() {
@@ -260,9 +258,10 @@ script_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
 
                 case types.Event_Trigger_Entered:
                 if v.ea != go.entity do break
-                other, _ := ecss.get_gameobject(ecs, v.eb);
+                other_id := v.eb
+                other, _ := ecss.get_gameobject(ecs, other_id);
                 defer ecss.free_gameobject(other);
-                fmt.println("SCRIPT TRIGGER", go.entity)
+
                 if script.on_trigger_entered != nil do script.on_trigger_entered(go^, other^, script.data, event)
 
                 case types.Event_Trigger_Left:

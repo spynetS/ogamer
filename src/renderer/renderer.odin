@@ -19,16 +19,30 @@ RenderCommand :: union {
 
 InitWindow :: struct { width, height: int, title: string }
 Clear      :: struct { color: [4]u8 }
-Rectangle  :: struct { pos, size: [2]f32, rot: f32, color: [4]u8, lines: bool}
-Sprite     :: struct { pos, size: [2]f32, rot: f32, inverted: bool, image: ^types.Image }
-UIText     :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string }
-Text       :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string }
+
+Rectangle  :: struct { pos, size: [2]f32, rot: f32, color: [4]u8, lines: bool, layer: int}
+Sprite     :: struct { pos, size: [2]f32, rot: f32, inverted: bool, image: ^types.Image ,layer: int}
+Text       :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string, layer: int}
+UIText     :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string, layer: int}
+
 BeginDraw  :: struct {}
 EndDraw    :: struct {}
 
-
 Renderer :: struct {
-    commands       : [dynamic]RenderCommand,
+    init_commands  : [dynamic]RenderCommand,
+    draw_commands  : [dynamic]RenderCommand,
+    deinit_commands  : [dynamic]RenderCommand,
     debug_commands : [dynamic]RenderCommand,
     active_camera  : ^types.Camera2D
+}
+
+add_command :: proc (renderer: ^Renderer, command: RenderCommand) {
+    #partial switch v in command {
+        case InitWindow, BeginDraw, Clear:
+        append(&renderer.init_commands, command)
+        case EndDraw:
+        append(&renderer.deinit_commands, command)
+        case:
+        append(&renderer.draw_commands, command)
+    }
 }

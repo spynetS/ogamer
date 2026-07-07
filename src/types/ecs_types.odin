@@ -65,10 +65,11 @@ Component :: struct {
 
 
 TextElement :: struct {
-    using component: Component,
-    text: string,
-    color: [4]u8,
-    font_size: f32
+    using component : Component,
+    text            : string,
+    color           : [4]u8,
+    font_size       : f32,
+    layer           : int
 }
 
 
@@ -99,6 +100,7 @@ Parent :: struct {
 RectangleRenderable :: struct {
     using component: Component,
     color : [4]u8,
+    layer: int,
 }
 
 
@@ -122,7 +124,7 @@ SquareCollider :: struct {
 
 TileMap :: struct {
     using component: Component,
-    width, height : int, 
+    width, height, layer : int, 
     tiles         : [dynamic]^Image // size = width * height, row-major
 }
 
@@ -132,7 +134,8 @@ SpriteRenderable :: struct {
     inverted : bool,
     size     : Vector2,
     offset   : Vector2,
-    parallax : Vector2
+    parallax : Vector2,
+    layer    : int,
 }
 
 SpriteAnimator :: struct {

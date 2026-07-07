@@ -37,6 +37,7 @@ create_enemy :: proc(e: ^types.ECS, pos: types.Vector2) {
     enemy, _ := sc.new_gameobject(e);
     defer free(enemy)
     enemy.transform.pos = pos
+    enemy.transform.tag = "enemy"
     enemy.transform.size = {100,100}
 
     
