@@ -41,8 +41,21 @@ execute :: proc(renderer: ^Renderer) {
         if rl.IsKeyReleased(rl.KeyboardKey(types.keys[i])) {
             unordered_remove(&types.keys, i)
         }
-    }    
+    }
+    
+    for rl_btn in rl.MouseButton {
+        btn := types.MouseButton(rl_btn)
+        if rl.IsMouseButtonPressed(rl_btn) {
+            es.emit(types.Event_MouseButton_Pressed({btn}))
+            append(&types.mouse_buttons, btn)
+        }
+        if rl.IsMouseButtonReleased(rl_btn) {
+            es.emit(types.Event_MouseButton_Released({btn}))
+            unordered_remove(&types.mouse_buttons, btn)
+        }
+    }
 
+    
     if rl.IsWindowReady() && rl.WindowShouldClose() do es.emit(types.Event_Should_Close_Window({}));
 
 

@@ -1,5 +1,11 @@
 package types;
 
+Event_MouseButton_Pressed :: struct {
+    button: MouseButton,
+}
+Event_MouseButton_Released :: struct {
+    button: MouseButton,
+}
 Event_Key_Pressed :: struct {
     key: KeyboardKey,
 }
@@ -40,6 +46,10 @@ Event_Should_Close_Window :: struct {
 Event :: union {
     Event_Key_Pressed,
     Event_Key_Released,
+
+    Event_MouseButton_Pressed,
+    Event_MouseButton_Released,
+
 
     Event_Collision_Entered,
     Event_Collision_Left,

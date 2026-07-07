@@ -7,6 +7,13 @@ import "../src/ecs"
 import rn "../src/renderer"
 import "core:math/linalg"
 
+IDLE    :: 0
+RUNNING :: 1
+ATTACK  :: 2
+ARROW   :: 4
+PLAYER_SPEED :: 400
+
+
 PlayerData :: struct {
     collider      : ^types.SquareCollider,
     tool          : types.GameObject,
@@ -105,27 +112,27 @@ create_player :: proc (e: ^types.ECS) {
             rigid := pd.rigid
             collider.disabled = true;
             pd.tool.transform.local_pos = {pd.animator.sprite_comp.inverted ? -60 : 60,0}
-            if sc.is_key_down(types.KeyboardKey.D) && pd.animator.active_animation != 2 {
-                sc.apply_force(rigid, {50,0})
-                pd.animator.active_animation=1
+            if sc.is_key_down(types.KeyboardKey.D) && (pd.animator.active_animation != ATTACK && pd.animator.active_animation != ARROW) {
+                if rigid.velocity.x < PLAYER_SPEED do sc.apply_force(rigid, {50,0})
+                pd.animator.active_animation=RUNNING
                 pd.animator.sprite_comp.inverted=false
             }
-            else if sc.is_key_down(types.KeyboardKey.A) && pd.animator.active_animation != 2 {
-                sc.apply_force(rigid, {-50,0})
-                pd.animator.active_animation=1
+            else if sc.is_key_down(types.KeyboardKey.A) && (pd.animator.active_animation != ATTACK &&  pd.animator.active_animation != ARROW ){
+                if rigid.velocity.x > -PLAYER_SPEED do sc.apply_force(rigid, {-50,0})
+                pd.animator.active_animation=RUNNING
                 pd.animator.sprite_comp.inverted=true
             }
             else {
                 pd.animator.sprite_comp.inverted=rn.get_world_mouse_position().x - go.transform.pos.x < 0
             }
-            if sc.is_key_pressed(types.KeyboardKey.ENTER) && pd.animator.active_animation != 2 {
+            if sc.is_mouse_pressed(types.MouseButton.LEFT)  {
                 pd.animator.time=0.05
                 switch pd.tool_equiped{
                 case 0:
-                    pd.animator.active_animation=2
+                    pd.animator.active_animation=ATTACK
                     collider.disabled = false;
                 case 1:
-                    pd.animator.active_animation=4
+                    pd.animator.active_animation=ARROW
                 }
                 
             }
@@ -157,13 +164,13 @@ create_player :: proc (e: ^types.ECS) {
             #partial switch v in event {
                 case types.Event_SpriteAnimator_End:
                 if v.animator == pd.animator {
-                    if pd.animator.active_animation == 4 {
+                    if pd.animator.active_animation == ARROW {
                         dir := linalg.normalize0(rn.get_world_mouse_position()-go.transform.pos)
                         create_arrow(go.ecs, go.transform.pos, dir);
                         
                     }
                     pd.animator.time=0.1
-                    pd.animator.active_animation = 0
+                    pd.animator.active_animation = IDLE
                 }
                 case types.Event_Trigger_Entered:
 

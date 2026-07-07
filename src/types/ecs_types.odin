@@ -3,7 +3,8 @@ package types;
 Entity :: u32;
 Vector2 :: [2]f32;
 
-keys : [dynamic]KeyboardKey;
+keys          : [dynamic]KeyboardKey;
+mouse_buttons : [dynamic]MouseButton;
 
 Event_Type :: enum {
     RigidBody,
@@ -147,8 +148,19 @@ SpriteAnimator :: struct {
     active_index      : int                // active frame in animation
 }
 
-
 // TAKEN FROM RAYLIB
+
+MouseButton :: enum i32 {
+	LEFT    = 0,                      // Mouse button left
+	RIGHT   = 1,                      // Mouse button right
+	MIDDLE  = 2,                      // Mouse button middle (pressed wheel)
+	SIDE    = 3,                      // Mouse button side (advanced mouse device)
+	EXTRA   = 4,                      // Mouse button extra (advanced mouse device)
+	FORWARD = 5,                      // Mouse button fordward (advanced mouse device)
+	BACK    = 6,                      // Mouse button back (advanced mouse device)
+}
+
+
 KeyboardKey :: enum i32 {
 	KEY_NULL      = 0,   // Key: NULL, used for no key pressed
 	// Alphanumeric keys

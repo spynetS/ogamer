@@ -21,6 +21,7 @@ main :: proc() {
     create_player(&game.ecs);
     create_enemy(&game.ecs, {160,100});
     create_enemy(&game.ecs, {200,100});
+    create_enemy(&game.ecs, {800,150});
 
     create_floor(&game.ecs, {0,-100}, {700,100});
     create_floor(&game.ecs, {900,0}, {700,100});
