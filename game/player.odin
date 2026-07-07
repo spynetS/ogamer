@@ -4,6 +4,8 @@ import sc "../src/scripting"
 import "../src/io"
 import "core:fmt"
 import "../src/ecs"
+import rn "../src/renderer"
+import "core:math/linalg"
 
 PlayerData :: struct {
     collider      : ^types.SquareCollider,
@@ -14,7 +16,28 @@ PlayerData :: struct {
     grounded      : bool,
     health        : int,
     health_text   : ^types.TextElement,
+    tool_equiped  : int,
 }
+
+create_arrow :: proc(e: ^types.ECS, pos, dir: types.Vector2) {
+
+    arrow, _ := sc.new_gameobject(e);
+    arrow.transform.pos = pos
+    arrow.transform.size = {70,70}
+    arrow.transform.tag = "weapon"
+    image,_ := io.load("./game/assets/sprites/Arrow(Projectile)/Arrow01(32x32).png")
+    sc.add_component(arrow, types.SpriteRenderable({image=image}))
+    rigid,_ := sc.add_component(arrow, types.RigidBody({type=types.BodyType.dynamicBody}))
+    rigid.velocity = {1000,1000} * dir
+    sc.add_component(arrow, types.SquareCollider({trigger=true}))
+    sc.add_component(arrow, types.Script({
+        on_trigger_entered = proc(me, other : types.GameObject, data:rawptr, event:types.Event) {
+            ecs.destroy_entity(me.ecs, me.entity)
+        },
+    }))
+
+}
+
 
 create_player :: proc (e: ^types.ECS) {
     player, _ := sc.new_gameobject(e);
@@ -33,7 +56,7 @@ create_player :: proc (e: ^types.ECS) {
     sprite_length[5] = 4
     sprite_length[6] = 4
 
-    sc.add_component(player,types.SpriteRenderable({size={300,300}, offset={0,7}}))
+    sc.add_component(player,types.SpriteRenderable({size={300,300}, offset={0,-7}}))
     animator,_ := sc.add_component(player, types.SpriteAnimator({
         sprites=idle.images,
         sprites_length=sprite_length,
@@ -42,7 +65,7 @@ create_player :: proc (e: ^types.ECS) {
     }))
 
 
-    sc.add_component(player, types.SquareCollider({size={-50,-60}}))
+    sc.add_component(player, types.SquareCollider({size={-50,-30}}))
     rigid, _ := sc.add_component(player, types.RigidBody({type=types.BodyType.dynamicBody, disable_rotation=true}))
 
     tool, _ := sc.new_gameobject(e);
@@ -92,18 +115,32 @@ create_player :: proc (e: ^types.ECS) {
                 pd.animator.active_animation=1
                 pd.animator.sprite_comp.inverted=true
             }
+            else {
+                pd.animator.sprite_comp.inverted=rn.get_world_mouse_position().x - go.transform.pos.x < 0
+            }
             if sc.is_key_pressed(types.KeyboardKey.ENTER) && pd.animator.active_animation != 2 {
                 pd.animator.time=0.05
-                collider.disabled = false;
-
-                fmt.println("TOOL Transform:", pd.tool.transform)
-                pd.animator.active_animation=2
+                switch pd.tool_equiped{
+                case 0:
+                    pd.animator.active_animation=2
+                    collider.disabled = false;
+                case 1:
+                    pd.animator.active_animation=4
+                }
+                
             }
+
+            if sc.is_key_pressed(types.KeyboardKey.ONE) do pd.tool_equiped = 0
+            if sc.is_key_pressed(types.KeyboardKey.TWO) do pd.tool_equiped = 1
+            
             
             if sc.is_key_pressed(types.KeyboardKey.SPACE) && pd.grounded {
                 sc.apply_force(pd.rigid, {0,2500});
             }
-
+            if go.transform.pos.y < -300 {
+                go.transform.pos = {0,0}
+                game.should_run = false
+            }
         },
         on_collision_entered = proc(me: types.GameObject, other: types.GameObject, data:rawptr, event: types.Event) {
             if other.transform.tag == "COIN" {
@@ -120,6 +157,11 @@ create_player :: proc (e: ^types.ECS) {
             #partial switch v in event {
                 case types.Event_SpriteAnimator_End:
                 if v.animator == pd.animator {
+                    if pd.animator.active_animation == 4 {
+                        dir := linalg.normalize0(rn.get_world_mouse_position()-go.transform.pos)
+                        create_arrow(go.ecs, go.transform.pos, dir);
+                        
+                    }
                     pd.animator.time=0.1
                     pd.animator.active_animation = 0
                 }

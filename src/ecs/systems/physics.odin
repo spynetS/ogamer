@@ -15,7 +15,7 @@ RENDER :: true
 PIXELS_PER_METER :: 50.0 // to sync better box2d physics with pixels
 
 // TODO if collider is disabled the rigidbody should'nt collide!
-
+// TODO if transform position is changed in my component it should change in box2d
 worldId               : b2.WorldId;
 body_id_by_rigidbody  : map[^types.RigidBody]b2.BodyId;
 shape_id_by_rigidbody  : map[^types.RigidBody]b2.ShapeId;

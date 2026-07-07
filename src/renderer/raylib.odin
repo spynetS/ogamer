@@ -65,7 +65,6 @@ execute :: proc(renderer: ^Renderer) {
                 rl.SetTargetFPS(144)
             case BeginDraw:
                 rl.BeginTextureMode(target);
-                camera : rl.Camera2D;
                 if renderer.active_camera != nil {
                     camera = rl.Camera2D({
                         renderer.active_camera.offset,
@@ -165,6 +164,8 @@ execute :: proc(renderer: ^Renderer) {
 				    height * scale,
 			  }
 			  rl.DrawTexturePro(target.texture, source_rec, dest_rec, {0, 0}, 0.0, rl.WHITE)
+
+
         // TODO make them also scale with monitor
         // DRAW UI ELEMENTS 
         for command in renderer.commands {
@@ -183,3 +184,14 @@ execute :: proc(renderer: ^Renderer) {
     if DEBUG do clear(&renderer.debug_commands)
     clear(&renderer.commands) // TODO maybe make clearing the commands a seperate function?
 }
+
+get_mouse_position :: proc() -> types.Vector2 {
+    return rl.GetMousePosition();
+}
+
+get_world_mouse_position :: proc() -> types.Vector2 {
+    pos := get_mouse_position()-camera.offset+camera.target
+    pos.y = -pos.y
+    return pos
+}
+

@@ -118,7 +118,7 @@ sprite_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
         if !has_t do continue
         
         t := trans.dense[trans.sparse[int(entity)]]
-        if renderer.active_camera != nil {
+        if renderer.active_camera != nil && sprite.parallax != {0,0}{
             sprite.offset = renderer.active_camera.target * (-sprite.parallax)
         }
         
@@ -238,13 +238,13 @@ script_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
         go, _ := ecss.get_gameobject(ecs, entity);
         defer ecss.free_gameobject(go);
 
-        script.on_update(go^,script.data ,dt);
+        if script.on_update != nil do script.on_update(go^,script.data ,dt);
         // if we have a on_event function we call it witch each event
         if script.on_event == nil do continue
         
         // TODO optimize this shit
         for event in es.event_queue_poll() {
-            script.on_event(go^, script.data, event)
+            if script.on_event != nil do script.on_event(go^, script.data, event)
             #partial switch v in event {
                 case types.Event_Collision_Entered:
                 if v.ea != go.entity do break
@@ -262,6 +262,7 @@ script_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
                 if v.ea != go.entity do break
                 other, _ := ecss.get_gameobject(ecs, v.eb);
                 defer ecss.free_gameobject(other);
+                fmt.println("SCRIPT TRIGGER", go.entity)
                 if script.on_trigger_entered != nil do script.on_trigger_entered(go^, other^, script.data, event)
 
                 case types.Event_Trigger_Left:

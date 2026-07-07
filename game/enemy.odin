@@ -41,7 +41,7 @@ create_enemy :: proc(e: ^types.ECS, pos: types.Vector2) {
 
     
     sc.add_component(enemy, types.RigidBody({type=types.BodyType.dynamicBody, disable_rotation=true}))
-    sc.add_component(enemy, types.SquareCollider({size={-50,-60}}))
+    sc.add_component(enemy, types.SquareCollider({size={-50,-30}}))
     ed: ^EnemyData = new(EnemyData)
     ed.health = 5
 
@@ -54,7 +54,7 @@ create_enemy :: proc(e: ^types.ECS, pos: types.Vector2) {
     io.merge_tilesheet(idle,hurt)
     io.merge_tilesheet(idle,death)
 
-    sc.add_component(enemy,types.SpriteRenderable({size={300,300}, offset={0,7}}))
+    sc.add_component(enemy,types.SpriteRenderable({size={300,300}, offset={0,-7}}))
     ed.animator, _ = sc.add_component(enemy, types.SpriteAnimator({
         sprites=idle.images,
         active_animation=0,

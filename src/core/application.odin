@@ -39,7 +39,8 @@ main_loop :: proc (game: ^Game) {
         dt :f32 = f32(time.duration_seconds(time.Duration(current._nsec-prev._nsec)))
         prev = current
 
-        
+
+
         systems.physics_system(&game.ecs,game.io_handler, game.renderer, dt);
         systems.sprite_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.tilemap_system(&game.ecs,game.io_handler, game.renderer, dt);  
@@ -52,7 +53,16 @@ main_loop :: proc (game: ^Game) {
         systems.render_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.ui_system(&game.ecs,game.io_handler, game.renderer, dt);  
 
-        
+                
+
+        append(&game.renderer.commands, rn.Rectangle({
+            rn.get_world_mouse_position(),
+				    {50,50},
+            0,
+            rn.get_color(0x181818ff),
+            false
+        }))
+
         append(&game.renderer.commands, end);
         es.event_queue_clear();
         rn.execute(game.renderer);

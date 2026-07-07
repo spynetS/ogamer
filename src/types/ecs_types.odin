@@ -30,10 +30,10 @@ Script :: struct {
     on_update            : proc(gameObject: GameObject, data: rawptr, dt: f32),
     on_destroy           : proc(gameObject: GameObject, data: rawptr),
     on_event             : proc(gameObject: GameObject, data: rawptr, event: Event),
-    on_trigger_entered   : proc(me: GameObject, other: GameObject, data: rawptr, event: Event),
-    on_trigger_left      : proc(me: GameObject, other: GameObject, data: rawptr, event: Event),
-    on_collision_entered : proc(me: GameObject, other: GameObject, data: rawptr, event: Event),
-    on_collision_left    : proc(me: GameObject, other: GameObject, data: rawptr, event: Event),
+    on_trigger_entered   : proc(me, other: GameObject, data: rawptr, event: Event),
+    on_trigger_left      : proc(me, other: GameObject, data: rawptr, event: Event),
+    on_collision_entered : proc(me, other: GameObject, data: rawptr, event: Event),
+    on_collision_left    : proc(me, other: GameObject, data: rawptr, event: Event),
 }
 
 Image :: struct {
