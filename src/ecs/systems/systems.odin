@@ -231,7 +231,10 @@ parent_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
 script_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     script_storage, ok := ecss.get_storage(ecs, ^types.Script);
     if !ok do return;
-    for i in 0..<len(script_storage.dense) {
+    // Re-check len each step: a script may destroy entities (e.g. a level
+    // transition tearing down the old level) which swap-removes from dense.
+    // A fixed 0..<len bound could then index past the shrunk array.
+    for i := 0; i < len(script_storage.dense); i += 1 {
         entity := script_storage.entities[i]
         script := script_storage.dense[i];
 

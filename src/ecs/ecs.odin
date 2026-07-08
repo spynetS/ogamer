@@ -103,6 +103,14 @@ destroy_entity :: proc(ecs: ^types.ECS, entity: u32) {
 
     sprite_animator, sprite_animator_ok := get_storage(ecs, ^types.SpriteAnimator)
     if sprite_animator_ok do stor.destroy_entity(sprite_animator, entity)
+
+    // Tilemaps and text were missing from teardown; without this a destroyed
+    // floor/HUD entity keeps its component in storage and stays on screen.
+    tilemap, tilemap_ok := get_storage(ecs, ^types.TileMap)
+    if tilemap_ok do stor.destroy_entity(tilemap, entity)
+
+    text, text_ok := get_storage(ecs, ^types.TextElement)
+    if text_ok do stor.destroy_entity(text, entity)
 }
 
 get_component :: proc(s: ^types.ECS, entity: u32, $T: typeid) -> (^T, bool) {
