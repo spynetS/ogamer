@@ -1,5 +1,6 @@
 package main;
 
+import "../src/ecs"
 import "../src/core"
 import "../src/types"
 import "../src/io"
@@ -15,7 +16,6 @@ main :: proc() {
     game = core.init_game();
     defer core.free_game(game);
 
-    
 
     background,_ := sc.new_gameobject(&game.ecs)
     background.transform.size = {2200,2000}

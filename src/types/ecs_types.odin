@@ -31,10 +31,10 @@ Script :: struct {
     on_update            : proc(gameObject: GameObject, data: rawptr, dt: f32),
     on_destroy           : proc(gameObject: GameObject, data: rawptr),
     on_event             : proc(gameObject: GameObject, data: rawptr, event: Event),
-    on_trigger_entered   : proc(me, other: GameObject, data: rawptr, event: Event),
-    on_trigger_left      : proc(me, other: GameObject, data: rawptr, event: Event),
-    on_collision_entered : proc(me, other: GameObject, data: rawptr, event: Event),
-    on_collision_left    : proc(me, other: GameObject, data: rawptr, event: Event),
+    on_trigger_entered   : proc(me, other: GameObject, data: rawptr, event: Event_Collision_Entered),
+    on_trigger_left      : proc(me, other: GameObject, data: rawptr, event: Event_Collision_Entered),
+    on_collision_entered : proc(me, other: GameObject, data: rawptr, event: Event_Collision_Entered),
+    on_collision_left    : proc(me, other: GameObject, data: rawptr, event: Event_Collision_Entered),
 }
 
 Image :: struct {
@@ -148,6 +148,7 @@ SpriteAnimator :: struct {
     time              : f32,               // time for each frame
     _time_counter     : f32,               // internal counter
     _frame_counter    : int,               // internal counter
+    _first_run        : bool,              // internal first_run holder
     active_index      : int                // active frame in animation
 }
 

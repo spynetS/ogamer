@@ -177,7 +177,8 @@ sprite_animator_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, re
 
         if animator._frame_counter <= 0 {
             animator._frame_counter =  animation_length
-            es.emit(types.Event_SpriteAnimator_End({animator}))
+            if animator._first_run do es.emit(types.Event_SpriteAnimator_End({animator}))
+            else do animator._first_run = true
         }
         if animator._time_counter <= 0 {
 
@@ -251,13 +252,13 @@ script_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
                 if v.ea != go.entity do break
                 other, _ := ecss.get_gameobject(ecs, v.eb);
                 defer ecss.free_gameobject(other);
-                if script.on_collision_entered != nil do script.on_collision_entered(go^, other^, script.data, event)
+                if script.on_collision_entered != nil do script.on_collision_entered(go^, other^, script.data, v)
                 
                 case types.Event_Collision_Left:
                 if v.ea != go.entity do break
                 other, _ := ecss.get_gameobject(ecs, v.eb);
                 defer ecss.free_gameobject(other);
-                if script.on_collision_left != nil do script.on_collision_left(go^, other^, script.data, event)
+                if script.on_collision_left != nil do script.on_collision_left(go^, other^, script.data, v)
 
                 case types.Event_Trigger_Entered:
                 if v.ea != go.entity do break
@@ -265,13 +266,13 @@ script_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
                 other, _ := ecss.get_gameobject(ecs, other_id);
                 defer ecss.free_gameobject(other);
 
-                if script.on_trigger_entered != nil do script.on_trigger_entered(go^, other^, script.data, event)
+                if script.on_trigger_entered != nil do script.on_trigger_entered(go^, other^, script.data, v)
 
                 case types.Event_Trigger_Left:
                 if v.ea != go.entity do break
                 other, _ := ecss.get_gameobject(ecs, v.eb);
                 defer ecss.free_gameobject(other);
-                if script.on_trigger_left != nil do script.on_trigger_left(go^, other^, script.data, event)
+                if script.on_trigger_left != nil do script.on_trigger_left(go^, other^, script.data, v)
                 
             }
         }
