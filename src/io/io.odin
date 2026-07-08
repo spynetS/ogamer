@@ -21,7 +21,16 @@ get :: proc(handler : ^types.IOHandler, file_path: string) -> (^types.Image, boo
     return image, ok
 }
 /** Returns new pointer to new image FREE IT */
-crop :: proc(image: ^types.Image,x0, y0, w, h: i32) -> ^types.Image {
+crop :: proc {
+    crop_path,
+    crop_image
+}
+crop_path :: proc (path: string, x0, y0, w, h: i32) -> ^types.Image{
+    image,_ := load(path);
+    defer free_image(image)
+    return crop_image(image, x0, y0, w, h);
+}
+crop_image :: proc(image: ^types.Image,x0, y0, w, h: i32) -> ^types.Image {
     
     sub : []u8 = make([]u8, w * h * image.channels)
 

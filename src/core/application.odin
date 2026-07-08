@@ -93,6 +93,7 @@ init_game :: proc() -> ^Game {
     ecs.add_storage(&game.ecs, ^types.Camera2D);
     ecs.add_storage(&game.ecs, ^types.SpriteAnimator);
     ecs.add_storage(&game.ecs, ^types.TextElement);
+    ecs.add_storage(&game.ecs, ^types.UiSprite);
     ecs.add_storage(&game.ecs, ^types.TileMap);
 
 
@@ -122,6 +123,7 @@ free_game :: proc(game: ^Game) {
     ecs.delete_storage(&game.ecs, ^types.Camera2D);
     ecs.delete_storage(&game.ecs, ^types.SpriteAnimator);
     ecs.delete_storage(&game.ecs, ^types.TextElement);
+    ecs.delete_storage(&game.ecs, ^types.UiSprite);
     ecs.delete_storage(&game.ecs, ^types.TileMap);
     systems.deinit_physics();
     rn.deinit_renderer();

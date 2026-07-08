@@ -45,9 +45,23 @@ render_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
 
 ui_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
     text_storage, ok := ecss.get_storage(ecs, ^types.TextElement);
-    if !ok do return;
+    sprite_storage, ok3 := ecss.get_storage(ecs, ^types.UiSprite);
     trans, ok2 := ecss.get_storage(ecs, ^types.Transform)
-    if !ok2 do return
+    if !ok || !ok2 || !ok3 do return
+
+    for i in 0..<len(sprite_storage.dense) {
+        entity := sprite_storage.entities[i]
+        t_idx, has_t := stor.has_component(trans, entity)
+        if !has_t do continue
+        
+        t := trans.dense[trans.sparse[int(entity)]]
+        sprite := sprite_storage.dense[i]
+        if sprite.disabled do continue;
+
+        cmd := rn.UISprite({t.pos+sprite.offset, t.size+sprite.size, t.rot, sprite.inverted, sprite.image, sprite.layer})
+        rn.add_command(renderer, cmd);
+    }
+
     for i in 0..<len(text_storage.dense) {
         entity := text_storage.entities[i]
         t_idx, has_t := stor.has_component(trans, entity)
@@ -58,8 +72,7 @@ ui_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.R
 
         color := r.color == 0 ? rn.get_color(0x181818ff) : r.color
 
-        cmd :rn.UIText = {t.pos, 16, t.rot, r.text, r.layer}
-        
+        cmd :rn.UIText = {t.pos, 16, t.rot, r.text, r.color, r.layer}
         rn.add_command(renderer, cmd);
     }
 }
@@ -223,7 +236,7 @@ parent_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
         parent_t := t_storage.dense[t_storage.sparse[int(parent.entity)]]
 
         child_t.pos = parent_t.pos + rotate(child_t.local_pos * parent_t.size/100, parent_t.rot) // divide by 100 because default size is 100?
-        child_t.size = parent_t.size + child_t.local_size
+        child_t.size = parent_t.size + child_t.local_size * parent_t.size/100
         child_t.rot = parent_t.rot
     }
 }

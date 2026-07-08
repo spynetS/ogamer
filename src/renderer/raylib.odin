@@ -156,6 +156,7 @@ layer_of :: proc(command: RenderCommand) -> int {
         case Sprite: return v.layer
         case Text: return v.layer
         case UIText: return v.layer
+        case UISprite: return v.layer
     }
     return -1;
 }
@@ -208,7 +209,11 @@ execute :: proc(renderer: ^Renderer) {
 
 
         // TODO make them also scale with monitor
-        // DRAW UI ELEMENTS 
+        // TODO flip the y coordninate
+        // DRAW UI ELEMENTS
+        slice.sort_by(renderer.draw_commands[:], proc(a, b: RenderCommand) -> bool {
+            return layer_of(a) < layer_of(b)
+        })
         for command in renderer.draw_commands {
             #partial switch v in command {
                 case UIText:
@@ -216,7 +221,42 @@ execute :: proc(renderer: ^Renderer) {
                             i32(v.pos.x),
                             i32(v.pos.y),
                             v.font_size,
-                            rl.BLACK)
+                            rl.Color(v.color))
+                case UISprite:
+                // tecture cacheing
+                // TODO load this before rendering (make a sperate function to load tectures)
+                if v.image == nil do break
+                sprite, got := texture_cache[v.image]
+                if !got {
+                    fmt.println("INFO: load texture")
+                    image : rl.Image = {
+                        raw_data(v.image.data),
+                        v.image.width,
+                        v.image.height,
+                        v.image.mipmaps,
+                        rl.PixelFormat.UNCOMPRESSED_R8G8B8A8
+                    }
+                    sprite = rl.LoadTextureFromImage(image);
+                    texture_cache[v.image] = sprite
+                }
+                
+                
+                source : rl.Rectangle = {0,0, cast(f32)(v.inverted ? -sprite.width :sprite.width ), cast(f32)sprite.height}
+                dest : rl.Rectangle = {v.pos.x,-v.pos.y, v.size.x, v.size.y} // Y-up
+
+                origin : rl.Vector2 = {
+                    v.size.x / 2,
+                    v.size.y / 2
+                };
+
+                rl.DrawTexturePro(
+                    sprite,
+                    source,
+                    dest,
+                    origin,
+                    -v.rot, // Y-up: CCW-positive rotation
+                    rl.Color(get_color(0xffffffff))
+                )
             }
         }
         

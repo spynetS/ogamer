@@ -427,6 +427,7 @@ collider_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer
                 18,
                 0,
                 fmt.tprintf("<%d>",entity),
+                rn.get_color(0),
                 0
             }))
         }
@@ -524,6 +525,7 @@ physics_system :: proc(ecs_: ^types.ECS, io_handler: ^types.IOHandler, renderer:
                         transform.size.y/2/PIXELS_PER_METER,
 
                        ),
+            rn.get_color(0),
             0
         }))
         append(&renderer.debug_commands, rn.Rectangle({transform.pos, transform.size/4, transform.rot, rn.get_color(0x00ff00ff), false,0}));

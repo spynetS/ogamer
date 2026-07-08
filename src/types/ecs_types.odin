@@ -137,6 +137,16 @@ SpriteRenderable :: struct {
     parallax : Vector2,
     layer    : int,
 }
+UiSprite :: struct {
+    using component: Component,
+    image    : ^Image,
+    inverted : bool,
+    size     : Vector2,
+    offset   : Vector2,
+    parallax : Vector2,
+    layer    : int,
+}
+
 
 SpriteAnimator :: struct {
     using component   : Component,

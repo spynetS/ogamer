@@ -27,11 +27,45 @@ PlayerData :: struct {
     health        : int,
     health_text   : ^types.TextElement,
     tool_equiped  : int,
+    health_bar    : types.GameObject,
 }
 
 ArrowData :: struct {
     explode : bool
 }
+
+create_ui :: proc(ecs: ^types.ECS, playerData: ^PlayerData) {
+       // TODO add uisprite
+    health_bar,_ := sc.new_gameobject(&game.ecs)
+    health_bar.transform.size = {150,100}*2
+    health_bar.transform.pos = {150,-100}
+    health_bar_image,_ := io.load("./game/assets/Live Bar.png")
+    sc.add_component(health_bar, types.UiSprite({image=health_bar_image})) 
+    
+    heart1,_ := sc.new_gameobject(&game.ecs)
+    heart1.transform.local_size = {-75,-70}
+    heart1.transform.local_pos = {-20,0}
+    heart1_image := io.crop("./game/assets/Big Heart Idle (18x14).png", 0, 0, 18,14)
+    sc.add_component(heart1, types.UiSprite({image=heart1_image})) 
+    sc.add_child(health_bar,heart1)
+
+    heart2,_ := sc.new_gameobject(&game.ecs)
+    heart2.transform.local_size = {-75,-70}
+    heart2.transform.local_pos = {-2,0}
+    heart2_image := io.crop("./game/assets/Big Heart Idle (18x14).png", 0, 0, 18,14)
+    sc.add_component(heart2, types.UiSprite({image=heart2_image})) 
+    sc.add_child(health_bar,heart2)
+
+    heart3,_ := sc.new_gameobject(&game.ecs)
+    heart3.transform.local_size = {-75,-70}
+    heart3.transform.local_pos = {15,0}
+    heart3_image := io.crop("./game/assets/Big Heart Idle (18x14).png", 0, 0, 18,14)
+    sc.add_component(heart3, types.UiSprite({image=heart3_image})) 
+    sc.add_child(health_bar,heart3)
+
+    playerData.health_bar = health_bar^;
+}
+
 
 create_arrow :: proc(e: ^types.ECS, pos, dir: types.Vector2, exploding:bool=false) {
 
@@ -101,7 +135,10 @@ create_player :: proc (e: ^types.ECS) {
     player.transform.size = {100,100}
     player.transform.tag = "player"
 
-    sc.add_component(player, types.Camera2D({zoom=1}));
+    camera,_ := sc.new_gameobject(e);
+    camera.transform.local_pos = {0,150}
+    sc.add_component(camera, types.Camera2D({zoom=1}));
+    sc.add_child(player,camera)
 
     idle := io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Soldier/Soldier/Soldier.png", {100,100}, {0, 0});
     sprite_length := make([]int, 7)
@@ -134,10 +171,6 @@ create_player :: proc (e: ^types.ECS) {
 
     sc.add_child(player, tool);
 
-    text,_ := sc.new_gameobject(e);
-    health_text,_ := sc.add_component(text, types.TextElement({text="COINS: 0"}))
-    text.transform.pos = {100,100}
-
     feet, _ := sc.new_gameobject(e);
     defer free(feet);
     feet.transform.local_pos = {0,-40}
@@ -147,12 +180,14 @@ create_player :: proc (e: ^types.ECS) {
     sc.add_child(player, feet);
 
     data := new(PlayerData)
-    data.health_text = health_text
     data.collider=collider
+    data.health=2
     data.tool=tool^
     data.feet_collider = feet_collider
     data.rigid=rigid
     data.animator=animator
+
+    create_ui(e, data);
 
     sc.add_component(player, types.Script({
         data=data,
@@ -210,7 +245,13 @@ create_player :: proc (e: ^types.ECS) {
                 go.transform.pos = {0,0}
                 game.should_run = false
             }
-            pd.health_text.text = fmt.tprintf("Heath: %d, grounded %d, tool equiped: %d", pd.health, pd.grounded ? 1 : 0, pd.tool_equiped);
+            // hearts := sc.get_child_components(&pd.health_bar, types.UiSprite)
+            // for child in hearts {
+            //     child.disabled = true
+            // }
+            // for i in 0..<math.min(pd.health,3) {
+            //     hearts[i].disabled = false
+            // }
         },
         on_collision_entered = proc(me: types.GameObject, other: types.GameObject, data:rawptr, event: types.Event_Collision_Entered) {
             if other.transform.tag == "COIN" {
@@ -218,7 +259,6 @@ create_player :: proc (e: ^types.ECS) {
 
                 ecs.destroy_entity(other.ecs, other.entity);
                 (cast(^PlayerData)data).health += 1
-                (cast(^PlayerData)data).health_text.text = fmt.aprintf("COINS: %d", (cast(^PlayerData)data).health)
             }
 
         }, 
