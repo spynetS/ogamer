@@ -161,9 +161,14 @@ SpriteAnimator :: struct {
     _first_run        : bool,              // internal first_run holder
     active_index      : int                // active frame in animation
 }
+// If this is on an entity it will not be destroyed
+// when scene is unloaded
+Persistent :: struct {
+    using component   : Component,
+}
+
 
 // TAKEN FROM RAYLIB
-
 MouseButton :: enum i32 {
 	LEFT    = 0,                      // Mouse button left
 	RIGHT   = 1,                      // Mouse button right

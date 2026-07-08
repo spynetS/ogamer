@@ -1,6 +1,7 @@
 package main;
 import b2 "vendor:box2d"
 import "../src/types"
+import "../src/core"
 import sc "../src/scripting"
 import "../src/io"
 import "core:fmt"
@@ -38,8 +39,9 @@ create_ui :: proc(ecs: ^types.ECS, playerData: ^PlayerData) {
        // TODO add uisprite
     health_bar,_ := sc.new_gameobject(&game.ecs)
     health_bar.transform.size = {150,100}*2
-    health_bar.transform.pos = {150,-100}
+    health_bar.transform.pos = {150,-100}+{50,-50}
     health_bar_image,_ := io.load("./game/assets/Live Bar.png")
+    sc.add_component(health_bar, types.Persistent({}))
     sc.add_component(health_bar, types.UiSprite({image=health_bar_image})) 
     
     heart1,_ := sc.new_gameobject(&game.ecs)
@@ -142,15 +144,17 @@ create_player :: proc (e: ^types.ECS) {
 
     idle := io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Soldier/Soldier/Soldier.png", {100,100}, {0, 0});
     sprite_length := make([]int, 7)
-    sprite_length[0] = 6
-    sprite_length[1] = 8
-    sprite_length[2] = 6
-    sprite_length[3] = 6
-    sprite_length[4] = 9
-    sprite_length[5] = 4
-    sprite_length[6] = 4
+    sprite_length[0] = 6 // idle
+    sprite_length[1] = 8 // running
+    sprite_length[2] = 6 // attack1
+    sprite_length[3] = 6 // attakc2
+    sprite_length[4] = 9 // bow
+    sprite_length[5] = 4 // hit
+    sprite_length[6] = 4 // die
 
-    sc.add_component(player,types.SpriteRenderable({size={300,300}, offset={0,-7}}))
+    sc.add_component(player, types.Persistent({}))
+
+    sc.add_component(player,types.SpriteRenderable({size={300,300}, offset={0,-7}, layer=2}))
     animator,_ := sc.add_component(player, types.SpriteAnimator({
         sprites=idle.images,
         sprites_length=sprite_length,
@@ -214,6 +218,19 @@ create_player :: proc (e: ^types.ECS) {
                 pd.animator.active_animation=IDLE
                 
             }
+            if sc.is_mouse_pressed(types.MouseButton.RIGHT)  {
+                pd.animator.time=0.05
+                switch pd.tool_equiped{
+                case 0:
+                    pd.animator.active_animation=ATTACK+1
+                    collider.disabled = false;
+                case 1,2:
+                    pd.animator.active_animation=ARROW
+                }
+                
+            }
+
+
             if sc.is_mouse_pressed(types.MouseButton.LEFT)  {
                 pd.animator.time=0.05
                 switch pd.tool_equiped{
@@ -240,18 +257,20 @@ create_player :: proc (e: ^types.ECS) {
 
             if sc.is_key_pressed(types.KeyboardKey.SPACE) && pd.grounded {
                 sc.apply_force(pd.rigid, {0,2500});
+                pd.health = 1
+//d                core.change_scene(game,"level2")
             }
             if go.transform.pos.y < -300 {
                 go.transform.pos = {0,0}
-                game.should_run = false
+
             }
-            // hearts := sc.get_child_components(&pd.health_bar, types.UiSprite)
-            // for child in hearts {
-            //     child.disabled = true
-            // }
-            // for i in 0..<math.min(pd.health,3) {
-            //     hearts[i].disabled = false
-            // }
+            hearts := sc.get_child_components(&pd.health_bar, types.UiSprite)
+            for child in hearts {
+                child.disabled = true
+            }
+            for i in 0..<math.min(pd.health,3) {
+                hearts[i].disabled = false
+            }
         },
         on_collision_entered = proc(me: types.GameObject, other: types.GameObject, data:rawptr, event: types.Event_Collision_Entered) {
             if other.transform.tag == "COIN" {

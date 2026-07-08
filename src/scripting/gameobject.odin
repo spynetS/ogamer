@@ -20,7 +20,43 @@ new_gameobject :: proc(ecs_: ^types.ECS) -> (^types.GameObject, bool) {
     return game_object, true
 }
 
-get_gameobject :: proc(ecs_: ^types.ECS, entity: types.Entity) -> (^types.GameObject, bool) {
+get_gameobject :: proc {
+    get_gameobject_entity,
+    get_gameobject_tag,
+}
+
+get_gameobject_tag :: proc (ecs_: ^types.ECS, tag: string) -> (^types.GameObject, bool) {
+    game_object := new(types.GameObject)
+
+    trans_storage,_ := ecs.get_storage(ecs_, ^types.Transform)
+    trans: ^types.Transform;
+    entity: u32;
+    for i in 0..<len(trans_storage.dense) {
+        if trans_storage.dense[i].tag == tag {
+            trans = trans_storage.dense[i]
+            entity = trans_storage.entities[i]
+        }
+    }
+
+    parent, got_parent := ecs.get_component(ecs_, entity, types.Parent);
+    if got_parent {
+        if parent.entity == entity {
+            free(game_object)
+            return nil, false
+        }
+        game_object.parent, _ = get_gameobject(ecs_, parent.entity);
+    }
+    
+    game_object.transform = trans;
+    game_object.entity = entity;
+    game_object.ecs = ecs_;
+
+
+    return game_object, true
+}
+
+
+get_gameobject_entity :: proc(ecs_: ^types.ECS, entity: types.Entity) -> (^types.GameObject, bool) {
     return ecs.get_gameobject(ecs_, entity)
 }
 

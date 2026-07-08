@@ -7,30 +7,62 @@ import "../ecs/systems"
 import "../scripting"
 import es "../event-system"
 import "core:time"
+import "core:fmt"
 
 Game :: struct {
-    should_run: bool,
-    renderer: ^rn.Renderer,
-    ecs: types.ECS,
-    io_handler: ^types.IOHandler
+    should_run        : bool,
+    renderer          : ^rn.Renderer,
+    ecs               : types.ECS,
+    registered_scenes : map[string]^Scene,
+    current_scene     : ^Scene,
+    next_scene        : ^Scene,
+    io_handler        : ^types.IOHandler,
+    clear_color       : [4]u8
 }
+
+Scene :: struct {
+    name: string,
+    load: proc(game: ^Game),
+    unload: proc(game: ^Game)
+}
+
+register_scene :: proc(game: ^Game, scene: ^Scene) {
+    game.registered_scenes[scene.name] = scene
+}
+
+change_scene :: proc(game: ^Game, name: string) {
+    game.next_scene = game.registered_scenes[name]
+}
+
 
 main_loop :: proc (game: ^Game) {
     begin :rn.BeginDraw = {};
     end :rn.EndDraw = {};
-    cmd : rn.Clear = {rn.get_color(0x00aaddff)};
+    cmd : rn.Clear = {game.clear_color}
     
     prev := time.now()
     for game.should_run {
 
-        
+        if game.next_scene != nil {
+            fmt.println("INFO: changing to next scene")
+            if game.current_scene != nil && game.current_scene.unload != nil {
+                game.current_scene.unload(game)
+            }
+            ecs.clear_all_entities(&game.ecs)
+            game.current_scene = game.next_scene
+            game.next_scene = nil
+            game.current_scene.load(game)
+        }
+
+
         for event in es.event_queue_poll() {
             #partial switch v in event {
                 case types.Event_Should_Close_Window:
                 game.should_run = false;
             }
         }
-        
+
+ 
 
         rn.add_command(game.renderer, begin);
         rn.add_command(game.renderer, cmd);
@@ -53,16 +85,6 @@ main_loop :: proc (game: ^Game) {
         systems.render_system(&game.ecs,game.io_handler, game.renderer, dt);  
         systems.ui_system(&game.ecs,game.io_handler, game.renderer, dt);  
 
-                
-
-        // append(&game.renderer.commands, rn.Rectangle({
-        //     rn.get_world_mouse_position(),
-				//     {50,50},
-        //     0,
-        //     rn.get_color(0x181818ff),
-        //     false
-        // }))
-
         rn.add_command(game.renderer, end);
         es.event_queue_clear();
         rn.execute(game.renderer);
@@ -72,7 +94,7 @@ main_loop :: proc (game: ^Game) {
 init_game :: proc() -> ^Game {
     game := new(Game);
     game.should_run = true;
-    
+    game.clear_color = rn.get_color(0x00aaddff)
     game.renderer = new(rn.Renderer);
     game.io_handler = new(types.IOHandler);
 
@@ -94,6 +116,7 @@ init_game :: proc() -> ^Game {
     ecs.add_storage(&game.ecs, ^types.SpriteAnimator);
     ecs.add_storage(&game.ecs, ^types.TextElement);
     ecs.add_storage(&game.ecs, ^types.UiSprite);
+    ecs.add_storage(&game.ecs, ^types.Persistent);
     ecs.add_storage(&game.ecs, ^types.TileMap);
 
 
@@ -125,6 +148,7 @@ free_game :: proc(game: ^Game) {
     ecs.delete_storage(&game.ecs, ^types.TextElement);
     ecs.delete_storage(&game.ecs, ^types.UiSprite);
     ecs.delete_storage(&game.ecs, ^types.TileMap);
+    ecs.delete_storage(&game.ecs, ^types.Persistent);
     systems.deinit_physics();
     rn.deinit_renderer();
     es.event_queue_destroy();

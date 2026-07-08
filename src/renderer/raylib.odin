@@ -8,7 +8,7 @@ import es "../event-system";
 import "../types";
 
 RENDER :: true
-DEBUG  :: false
+DEBUG  :: true
 
 
 texture_cache: map[^types.Image]rl.Texture2D
@@ -171,12 +171,12 @@ execute :: proc(renderer: ^Renderer) {
     scale := math.min(window_w / width, window_h / height)
 
     // if we are in debug mode add debug render commands to render commands
-    // if DEBUG {
-    //     for command in renderer.debug_commands{
-    //         inject_at(&renderer.commands, len(&renderer.commands)-1, command);
-    //     }
+    if DEBUG {
+         for command in renderer.debug_commands{
+             inject_at(&renderer.draw_commands, len(&renderer.draw_commands)-1, command);
+         }
 
-    // }
+     }
 
     if RENDER {
         // Handle before draw commands

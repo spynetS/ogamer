@@ -49,11 +49,14 @@ create_enemy :: proc(e: ^types.ECS, pos: types.Vector2) {
     fmt.println("EnemyData created at:", ed)  // <-- note this address
 
 
-    idle  : ^types.TileSheet = io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Orc/Orc with shadows/Orc_Idle.png", {100,100})
-    hurt  : ^types.TileSheet = io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Orc/Orc with shadows/Orc_Hurt.png", {100,100})
-    death : ^types.TileSheet = io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Orc/Orc with shadows/Orc_Death.png", {100,100})
+    idle   : ^types.TileSheet = io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Orc/Orc with shadows/Orc_Idle.png", {100,100})
+    attack : ^types.TileSheet = io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Orc/Orc with shadows/Orc_Attack02.png", {100,100})
+    hurt   : ^types.TileSheet = io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Orc/Orc with shadows/Orc_Hurt.png", {100,100})
+    death  : ^types.TileSheet = io.new_tilesheet("./game/assets/sprites/Characters(100x100 split)/Orc/Orc with shadows/Orc_Death.png", {100,100})
     io.merge_tilesheet(idle,hurt)
     io.merge_tilesheet(idle,death)
+    io.merge_tilesheet(idle,attack)
+
 
     sc.add_component(enemy,types.SpriteRenderable({size={300,300}, offset={0,-7}}))
     ed.animator, _ = sc.add_component(enemy, types.SpriteAnimator({
@@ -62,7 +65,38 @@ create_enemy :: proc(e: ^types.ECS, pos: types.Vector2) {
         time=0.1
     }))
 
-        
+
+    
+    attack_obj,_ := sc.new_gameobject(e)
+    sc.add_component(attack_obj, types.SquareCollider({size={50,-50}, trigger=true}))
+    sc.add_child(enemy,attack_obj)
+
+    sc.add_component(attack_obj, types.Script({
+        data=ed.animator,
+        on_trigger_entered = proc(me, other: types.GameObject, data: rawptr, event: types.Event_Collision_Entered) {
+            if other.transform.tag == "player" {
+                an := cast(^types.SpriteAnimator)data
+                an.active_animation = 3
+
+                dir := other.transform.pos.x - me.transform.pos.x;
+                an.sprite_comp.inverted = dir < 0
+                
+            }
+        },
+        on_trigger_left = proc(me, other: types.GameObject, data: rawptr, event: types.Event_Collision_Entered) {
+            if other.transform.tag == "player" {
+                an := cast(^types.SpriteAnimator)data
+                an.active_animation = 0
+
+                dir := other.transform.pos.x - me.transform.pos.x;
+                an.sprite_comp.inverted = dir < 0
+                
+            }
+        },
+
+    }))
+
+
     sc.add_component(enemy, types.Script({
         data=ed,
         on_update = proc(go: types.GameObject, data: rawptr, dt: f32 ) {

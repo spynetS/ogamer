@@ -9,8 +9,6 @@ create_floor :: proc (ecs: ^types.ECS, pos, size : types.Vector2) {
     tilesheet := io.new_tilesheet("./game/assets/FREE_Fantasy Forest/Tiles/Tileset Outside.png", {32,32})
 
     floor_tiles := make([dynamic]^types.Image)
-
-
     append(&floor_tiles, tilesheet.images[0][0])
     for j in 0..<(size.x)/100-2  {
         append(&floor_tiles, tilesheet.images[0][1])

@@ -11,6 +11,7 @@ import es "../event-system/"
 // Needed because `systems` imports `ecs`, so `ecs` can't call into it directly.
 on_rigidbody_removed : proc(rigid: ^types.RigidBody)
 on_collider_removed  : proc(collider: ^types.SquareCollider)
+MAX_HIERARCHY_DEPTH :: 50
 
 delete_storage :: proc(storages: ^types.ECS, $T: typeid) {
     storage, ok := get_storage(storages, T)
@@ -50,6 +51,38 @@ has_component :: proc(s: ^types.ECS, entity: u32, $T: typeid) -> (int, bool) {
     storage, ok := get_storage(s,^T);
     if !ok do return 0, false
     return stor.has_component(storage, entity);
+}
+
+// An entity survives clearing if it, or any ancestor in its parent chain,
+// carries a Persistent marker. Walking the whole chain (not just the direct
+// parent) keeps grandchildren and deeper subtrees intact when their root is
+// marked persistent.
+is_persistent :: proc(ecs: ^types.ECS, entity: u32) -> bool {
+    e := entity
+    hops := 0
+    for {
+        if _, has := has_component(ecs, e, types.Persistent); has do return true
+        parent, has_parent := get_component(ecs, e, types.Parent)
+        if !has_parent do return false
+        if parent.entity == e do return false // guard against self-parenting cycle
+        e = parent.entity
+        if hops > MAX_HIERARCHY_DEPTH do return false // or log/assert
+    }
+}
+
+clear_all_entities :: proc(ecs: ^types.ECS) {
+    t_storage, exists := get_storage(ecs, ^types.Transform)
+    if !exists do return
+    i := 0
+    for i < len(t_storage.dense) {
+        entity := t_storage.entities[i]
+        if is_persistent(ecs, entity) {
+            fmt.println("SKIPED", entity)
+            i += 1                 // skip persistent entities, advance
+            continue
+        }
+        destroy_entity(ecs, entity)   // swap-remove: don't advance i
+    }
 }
 
 destroy_entity :: proc(ecs: ^types.ECS, entity: u32) {
@@ -98,6 +131,7 @@ destroy_entity :: proc(ecs: ^types.ECS, entity: u32) {
     parent, parent_ok := get_storage(ecs, ^types.Parent)
     if parent_ok do stor.destroy_entity(parent, entity)
 
+
     camera, camera_ok := get_storage(ecs, ^types.Camera2D)
     if camera_ok do stor.destroy_entity(camera, entity)
 
@@ -111,6 +145,9 @@ destroy_entity :: proc(ecs: ^types.ECS, entity: u32) {
 
     text, text_ok := get_storage(ecs, ^types.TextElement)
     if text_ok do stor.destroy_entity(text, entity)
+
+    uisprite, uisprite_ok := get_storage(ecs, ^types.UiSprite)
+    if uisprite_ok do stor.destroy_entity(uisprite, entity)
 }
 
 get_component :: proc(s: ^types.ECS, entity: u32, $T: typeid) -> (^T, bool) {

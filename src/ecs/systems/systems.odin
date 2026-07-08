@@ -231,8 +231,9 @@ parent_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
         t_idx, has_t := stor.has_component(t_storage, entity)
         if !has_t do continue
         
-        child_t := t_storage.dense[t_storage.sparse[int(entity)]]
-        parent := parent_storage.dense[i]
+        child_t  := t_storage.dense[t_storage.sparse[int(entity)]]
+        parent   := parent_storage.dense[i]
+        if t_storage.sparse[int(parent.entity)] == -1 do continue
         parent_t := t_storage.dense[t_storage.sparse[int(parent.entity)]]
 
         child_t.pos = parent_t.pos + rotate(child_t.local_pos * parent_t.size/100, parent_t.rot) // divide by 100 because default size is 100?
