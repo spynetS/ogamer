@@ -38,7 +38,7 @@ render_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
         
         t := trans.dense[trans.sparse[int(entity)]]
         r := render_storage.dense[i]
-        cmd : rn.Rectangle = {t.pos,t.size, t.rot, r.color, true, r.layer};
+        cmd : rn.Rectangle = {t.pos,t.size, t.rot, r.color, false, r.layer};
         rn.add_command(renderer, cmd);
     }
 }
@@ -287,6 +287,11 @@ script_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
                 other, _ := ecss.get_gameobject(ecs, v.eb);
                 defer ecss.free_gameobject(other);
                 if script.on_trigger_left != nil do script.on_trigger_left(go^, other^, script.data, v)
+
+                case types.Event_SpriteAnimator_End:
+                if go_anim, has := ecss.get_component(go.ecs, go.entity, types.SpriteAnimator); has && go_anim == v.animator {
+                    if script.on_sprite_animator_end != nil do script.on_sprite_animator_end(go^, script.data, v)
+                }
                 
             }
         }

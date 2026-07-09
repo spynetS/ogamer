@@ -25,16 +25,17 @@ GameObject :: struct {
 }
 
 // TODO change this to more
-Script :: struct {
-    data                 : rawptr, // Data is like the scripts data this is used instead of having an opp structure.
-    on_start             : proc(gameObject: GameObject, data: rawptr),
-    on_update            : proc(gameObject: GameObject, data: rawptr, dt: f32),
-    on_destroy           : proc(gameObject: GameObject, data: rawptr),
-    on_event             : proc(gameObject: GameObject, data: rawptr, event: Event),
-    on_trigger_entered   : proc(me, other: GameObject, data: rawptr, event: Event_Collision_Entered),
-    on_trigger_left      : proc(me, other: GameObject, data: rawptr, event: Event_Collision_Entered),
-    on_collision_entered : proc(me, other: GameObject, data: rawptr, event: Event_Collision_Entered),
-    on_collision_left    : proc(me, other: GameObject, data: rawptr, event: Event_Collision_Entered),
+Script  :: struct {
+    data                   : rawptr, // Data is like the scripts data this is used instead of having an opp structure.
+    on_start               : proc(gameObject: GameObject, data: rawptr),
+    on_update              : proc(gameObject: GameObject, data: rawptr, dt: f32),
+    on_destroy             : proc(gameObject: GameObject, data: rawptr),
+    on_event               : proc(gameObject: GameObject, data: rawptr, event: Event),
+    on_sprite_animator_end : proc(gameObject: GameObject, data: rawptr, event: Event_SpriteAnimator_End),
+    on_trigger_entered     : proc(me, other: GameObject, data: rawptr, event: Event_Collision_Entered),
+    on_trigger_left        : proc(me, other: GameObject, data: rawptr, event: Event_Collision_Entered),
+    on_collision_entered   : proc(me, other: GameObject, data: rawptr, event: Event_Collision_Entered),
+    on_collision_left      : proc(me, other: GameObject, data: rawptr, event: Event_Collision_Entered),
 }
 
 Image :: struct {
