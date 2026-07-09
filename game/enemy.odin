@@ -68,6 +68,7 @@ create_enemy :: proc(e: ^types.ECS, pos: types.Vector2) {
 
     
     attack_obj,_ := sc.new_gameobject(e)
+    attack_obj.transform.tag = "attackobj"
     sc.add_component(attack_obj, types.SquareCollider({size={50,-50}, trigger=true}))
     sc.add_child(enemy,attack_obj)
 

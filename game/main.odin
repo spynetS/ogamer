@@ -113,7 +113,7 @@ level2 :=core.Scene({
     load= proc(game: ^core.Game) {
         if player,has := sc.get_gameobject(&game.ecs, "player"); has {
             if rigid, has2 := ecs.get_component(&game.ecs, player.entity, types.RigidBody); has2 {
-                sc.set_position(rigid, {0,-320})
+                sc.set_position(rigid, {0,-300})
             }
             else {
                 create_player(&game.ecs)

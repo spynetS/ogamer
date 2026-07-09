@@ -84,7 +84,7 @@ create_arrow :: proc(e: ^types.ECS, pos, dir: types.Vector2, exploding:bool=fals
     rigid,_ := sc.add_component(arrow, types.RigidBody({type=types.BodyType.dynamicBody}))
     rigid.velocity = dir*1000
     sc.add_component(arrow, types.SquareCollider({trigger=true, size={0,-50}}))
-    fmt.println("CREATED ARROW", arrow.entity)
+    fmt.println("CREATED ARROW", pos)
 
     arrow_data := new(ArrowData)
     arrow_data.explode = exploding
@@ -96,6 +96,7 @@ create_arrow :: proc(e: ^types.ECS, pos, dir: types.Vector2, exploding:bool=fals
             free(data)
         },
         on_trigger_entered = proc(me, other : types.GameObject, data:rawptr, event:types.Event_Collision_Entered) {
+            if other.transform.tag == "attackobj" || other.transform.tag == "player" do return
             data := cast(^ArrowData)data
             if data.explode == true {
                 dir := linalg.normalize0(other.transform.pos-me.transform.pos)
@@ -123,7 +124,8 @@ create_arrow :: proc(e: ^types.ECS, pos, dir: types.Vector2, exploding:bool=fals
 
                 sc.apply_force(event.rb, {700,700}*dir)
             }
-           ecs.destroy_entity(me.ecs, me.entity)
+            
+            ecs.destroy_entity(me.ecs, me.entity)
         },
         
     }))
@@ -196,6 +198,8 @@ create_player :: proc (e: ^types.ECS) {
     sc.add_component(player, types.Script({
         data=data,
         on_update = proc(go: types.GameObject, data: rawptr, dt: f32) {
+            //rn.add_command(game.renderer, rn.Rectangle({rn.get_world_mouse_position(), {50,50}, 0, rn.get_color(0x000000ff), false, 10}))
+            
             pd := cast(^PlayerData)data
             collider := pd.collider
             rigid := pd.rigid
@@ -260,10 +264,7 @@ create_player :: proc (e: ^types.ECS) {
                 pd.health = 1
 //d                core.change_scene(game,"level2")
             }
-            if go.transform.pos.y < -300 {
-                go.transform.pos = {0,0}
 
-            }
             hearts := sc.get_child_components(&pd.health_bar, types.UiSprite)
             for child in hearts {
                 child.disabled = true
@@ -271,6 +272,7 @@ create_player :: proc (e: ^types.ECS) {
             for i in 0..<math.min(pd.health,3) {
                 hearts[i].disabled = false
             }
+            
         },
         on_collision_entered = proc(me: types.GameObject, other: types.GameObject, data:rawptr, event: types.Event_Collision_Entered) {
             if other.transform.tag == "COIN" {
@@ -281,17 +283,22 @@ create_player :: proc (e: ^types.ECS) {
             }
 
         }, 
+        on_sprite_animator_end = proc(go: types.GameObject, data: rawptr, event: types.Event_SpriteAnimator_End){
+            pd := cast(^PlayerData)data
+            if pd.animator.active_animation == ARROW {
+                fmt.println("pos is", go.transform)
+                dir := linalg.normalize0(rn.get_world_mouse_position()-go.transform.pos)
+                create_arrow(go.ecs, go.transform.pos, dir, pd.tool_equiped == 2);
+            }
+            pd.animator.time=0.1
+            pd.animator.active_animation = IDLE
+
+        },
         on_event = proc(go: types.GameObject, data:rawptr, event: types.Event) {
             pd := cast(^PlayerData)data
             #partial switch v in event {
                 case types.Event_SpriteAnimator_End:
                 if v.animator == pd.animator {
-                    if pd.animator.active_animation == ARROW {
-                        dir := linalg.normalize0(rn.get_world_mouse_position()-go.transform.pos)
-                        create_arrow(go.ecs, go.transform.pos+dir*100, dir, pd.tool_equiped == 2);
-                    }
-                    pd.animator.time=0.1
-                    pd.animator.active_animation = IDLE
                 }
                 case types.Event_Trigger_Entered:
 
