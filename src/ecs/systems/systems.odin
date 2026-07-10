@@ -72,7 +72,7 @@ ui_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.R
 
         color := r.color == 0 ? rn.get_color(0x181818ff) : r.color
 
-        cmd :rn.UIText = {t.pos, 16, t.rot, r.text, r.color, r.layer}
+        cmd :rn.UIText = {t.pos, r.font_size, t.rot, r.text, r.color, r.layer}
         rn.add_command(renderer, cmd);
     }
 }
@@ -263,21 +263,23 @@ script_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
             if script.on_event != nil do script.on_event(go^, script.data, event)
             #partial switch v in event {
                 case types.Event_Collision_Entered:
-                if v.ea != go.entity do break
-                other, _ := ecss.get_gameobject(ecs, v.eb);
+                // box2d's shapeIdA/B ordering is arbitrary, so match either side.
+                if v.ea != go.entity && v.eb != go.entity do break
+                fmt.println("ENTERED IN SCRIPT")
+                other, _ := ecss.get_gameobject(ecs, v.ea == go.entity ? v.eb : v.ea);
                 defer ecss.free_gameobject(other);
                 if script.on_collision_entered != nil do script.on_collision_entered(go^, other^, script.data, v)
-                
+
                 case types.Event_Collision_Left:
-                if v.ea != go.entity do break
-                other, _ := ecss.get_gameobject(ecs, v.eb);
+                if v.ea != go.entity && v.eb != go.entity do break
+                other, _ := ecss.get_gameobject(ecs, v.ea == go.entity ? v.eb : v.ea);
                 defer ecss.free_gameobject(other);
                 if script.on_collision_left != nil do script.on_collision_left(go^, other^, script.data, v)
 
                 case types.Event_Trigger_Entered:
-                if v.ea != go.entity do break
+                if v.ea != go.entity && v.eb != go.entity do break
                 other_id := v.eb
-                other, _ := ecss.get_gameobject(ecs, other_id);
+                other, _ := ecss.get_gameobject(ecs, v.ea == go.entity ? v.eb : v.ea);
                 defer ecss.free_gameobject(other);
 
                 if script.on_trigger_entered != nil do script.on_trigger_entered(go^, other^, script.data, v)

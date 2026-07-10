@@ -69,7 +69,7 @@ TextElement :: struct {
     using component : Component,
     text            : string,
     color           : [4]u8,
-    font_size       : f32,
+    font_size       : i32,
     layer           : int
 }
 

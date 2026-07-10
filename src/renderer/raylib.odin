@@ -213,6 +213,7 @@ execute :: proc(renderer: ^Renderer) {
         for command in renderer.draw_commands {
             #partial switch v in command {
                 case UIText:
+                // FIXME memory leak?
                 rl.DrawText(fmt.ctprintf("%s", v.text),
                             i32(v.pos.x),
                             i32(v.pos.y),

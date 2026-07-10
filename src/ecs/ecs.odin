@@ -85,6 +85,12 @@ clear_all_entities :: proc(ecs: ^types.ECS) {
     }
 }
 
+remove_component :: proc(ecs: ^types.ECS, entity: u32, $T: typeid) {
+    storage, storage_ok := get_storage(ecs, ^T)
+    if !storage_ok do return
+    stor.remove_component(storage, entity);
+}
+
 destroy_entity :: proc(ecs: ^types.ECS, entity: u32) {
     script, script_ok := get_storage(ecs, ^types.Script)
     if script_ok {
