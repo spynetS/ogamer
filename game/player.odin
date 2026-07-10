@@ -15,6 +15,7 @@ IDLE    :: 0
 RUNNING :: 1
 ATTACK  :: 2
 ARROW   :: 4
+HIT     :: 5
 PLAYER_SPEED :: 400
 
 
@@ -293,6 +294,14 @@ create_player :: proc (e: ^types.ECS) {
             pd.animator.time=0.1
             pd.animator.active_animation = IDLE
 
+        },
+        on_trigger_entered = proc(go, other: types.GameObject, data: rawptr, event: types.Event_Collision_Entered) {
+            pd := cast(^PlayerData)data
+            if other.transform.tag == "attackobj" {
+                pd.health -= 1
+                pd.animator.active_animation = HIT
+                sc.apply_force(pd.rigid, {-3000,1000})
+            }
         },
         on_event = proc(go: types.GameObject, data:rawptr, event: types.Event) {
             pd := cast(^PlayerData)data

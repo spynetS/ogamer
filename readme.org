@@ -5,34 +5,100 @@ Example
 #+begin_src odin
 package main;
 
-import "core:fmt"
 import "../src/core"
+import "../src/types"
+import "../src/io"
 import "../src/ecs"
 import sc "../src/scripting"
-import ec "../src/ecs/ecs_core"
 import rn "../src/renderer"
 
+import "core:fmt"
 
-main :: proc() {
-    
-    game := core.init_game();
-    defer core.free_game(game);
+PlayerData :: struct {
+    text: ^types.TextElement,
+    animation_counter: int,
+    box: types.GameObject
+}
 
-    go, ok := sc.new_gameobject(&game.ecs)
-    defer free(go);
-    
-    if ok {
-        sc.add_component(go, ec.RectangleRenderable({rn.get_color(0x181818ff)}))
-        sc.add_component(go, ec.RigidBody({{0,0},{0,98}}))
-        sc.add_component(go, ecs.Script({
-            on_update = proc(ecs: ^types.ECS, entity: ec.Entity, dt:f32) {
-                go, _ := sc.get_gameobject(ecs, entity)
-                go.transform.pos.x += 1;
+game: ^core.Game;
+// A scene is created like and entites should be created in the load function
+level := core.Scene({
+    name="level1",
+    load = proc(game: ^core.Game) {
+        // create a gray box
+        ob,_ := sc.new_renderobject(&game.ecs)
+        ob.transform.pos = {-100,0}
+        defer sc.free_gameobject(ob) // frees the entity holder aka gameobject (it does not free the memory for the entity)
+        
+        // we can create a ui text element like this
+        text,_ := sc.new_gameobject(&game.ecs);
+        text.transform.pos = {100,100}
+        defer sc.free_gameobject(text)
+        // we get the "real" component from the return of the procedure
+        textEl,_ := sc.add_component(text, types.TextElement({text="Hello World", font_size=64, color=rn.get_color(0x181818ff)}))
+
+        // we create a data object that our script will use
+        data := new(PlayerData)
+        data.text = textEl
+        data.animation_counter = 0
+        data.box = ob^
+        // creating a player with a
+        // camera
+        // spriteanimation 
+        // a script that listens for the sprite animation end event
+        // and updates the text based on the animation count
+        // we also on each frame update check if the sprite count is 3, if so we move right
+        ob1,_ := sc.new_gameobject(&game.ecs)
+        defer sc.free_gameobject(ob1)
+        ob1.transform.pos = {100,0}
+        sc.add_component(ob1, types.Camera2D({zoom=1}))
+        tilesheet := io.new_tilesheet("./game/assets/Idle (78x58).png",{78,58}) // Memory leak 
+        sc.add_component(ob1, types.SpriteRenderable({size={50,50}}))
+        sc.add_component(ob1, types.SpriteAnimator({sprites=tilesheet.images, time=0.1}))
+        
+        sc.add_component(ob1, types.Script({
+            data = data,
+            on_update = proc(me: types.GameObject, data: rawptr, dt: f32) {
+                pd := cast(^PlayerData)data
+                // input handeling
+                if sc.is_key_pressed(types.KeyboardKey.SPACE) do me.transform.pos += {0, 10}
+                
+                if pd.animation_counter == 3 do me.transform.pos += {1, 0}
+                if pd.animation_counter == 4 {
+                    // add component if it doesnt exist
+                    if _, has := ecs.has_component(pd.box.ecs, pd.box.entity, types.RigidBody); !has{
+                        sc.add_component(&pd.box, types.RigidBody({type=types.BodyType.dynamicBody}))
+                    }
+                }
+                if pd.animation_counter == 8 do ecs.remove_component(me.ecs, me.entity, types.Camera2D)
+            },
+            on_sprite_animator_end = proc(me: types.GameObject, data: rawptr, event:types.Event_SpriteAnimator_End) {
+                pd := cast(^PlayerData)data
+                pd.animation_counter += 1
+                pd.text.text = fmt.tprintf("Animation count: %d", pd.animation_counter)
             }
         }))
+
+        // here we create a sprite which will be a child of our (player)
+        ob2,_ := sc.new_gameobject(&game.ecs)
+        defer sc.free_gameobject(ob2)
+        ob2.transform.local_pos = {-100,0}
+        image,_ := io.load("./game/assets/box.png") // Memory leak
+        sc.add_component(ob2, types.SpriteRenderable({image=image}))
+
+        // add the sprite as child to our player
+        sc.add_child(ob1, ob2)
     }
-    
-    core.main_loop(game);
+})
+
+main :: proc() {
+    game = core.init_game();
+    defer core.free_game(game);
+
+    core.register_scene(game,&level)
+    core.change_scene(game, "level1")
+
+    core.main_loop(game)
 }
 
 #+end_src

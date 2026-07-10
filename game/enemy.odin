@@ -119,7 +119,7 @@ create_enemy :: proc(e: ^types.ECS, pos: types.Vector2) {
                     case types.Event_Trigger_Entered:
                     fmt.println("ENITY: ", v.ea, v.eb, go.entity)
                     trigger_go,_ := sc.get_gameobject(go.ecs, v.ea)
-                    if v.eb == go.entity &&  trigger_go.transform.tag == "weapon" {
+                    if v.eb == go.entity && trigger_go.transform.tag == "weapon" {
                         ed.animator.active_animation = 1
                         ed.animator.time = 0.05
                         ed.health = ed.health - 1

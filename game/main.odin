@@ -200,6 +200,8 @@ level2 :=core.Scene({
         }))
         
 
+        create_boss(&game.ecs)
+
 
     }})
 
@@ -211,7 +213,7 @@ main :: proc() {
     game.clear_color = rn.get_color(0x181818ff)
     core.register_scene(game, &level1)
     core.register_scene(game, &level2)
-    core.change_scene(game, "level1")
+    core.change_scene(game, "level2")
     core.main_loop(game);
 
 }
