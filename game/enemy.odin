@@ -67,35 +67,35 @@ create_enemy :: proc(e: ^types.ECS, pos: types.Vector2) {
 
 
     
-    attack_obj,_ := sc.new_gameobject(e)
-    attack_obj.transform.tag = "attackobj"
-    sc.add_component(attack_obj, types.SquareCollider({size={50,-50}, trigger=true}))
-    sc.add_child(enemy,attack_obj)
+    // attack_obj,_ := sc.new_gameobject(e)
+    // attack_obj.transform.tag = "attackobj"
+    // sc.add_component(attack_obj, types.SquareCollider({size={50,-50}, trigger=true}))
+    // sc.add_child(enemy,attack_obj)
 
-    sc.add_component(attack_obj, types.Script({
-        data=ed.animator,
-        on_trigger_entered = proc(me, other: types.GameObject, data: rawptr, event: types.Event_Collision_Entered) {
-            if other.transform.tag == "player" {
-                an := cast(^types.SpriteAnimator)data
-                an.active_animation = 3
+    // sc.add_component(attack_obj, types.Script({
+    //     data=ed.animator,
+    //     on_trigger_entered = proc(me, other: types.GameObject, data: rawptr, event: types.Event_Collision_Entered) {
+    //         if other.transform.tag == "player" {
+    //             an := cast(^types.SpriteAnimator)data
+    //             an.active_animation = 3
 
-                dir := other.transform.pos.x - me.transform.pos.x;
-                an.sprite_comp.inverted = dir < 0
+    //             dir := other.transform.pos.x - me.transform.pos.x;
+    //             an.sprite_comp.inverted = dir < 0
                 
-            }
-        },
-        on_trigger_left = proc(me, other: types.GameObject, data: rawptr, event: types.Event_Collision_Entered) {
-            if other.transform.tag == "player" {
-                an := cast(^types.SpriteAnimator)data
-                an.active_animation = 0
+    //         }
+    //     },
+    //     on_trigger_left = proc(me, other: types.GameObject, data: rawptr, event: types.Event_Collision_Entered) {
+    //         if other.transform.tag == "player" {
+    //             an := cast(^types.SpriteAnimator)data
+    //             an.active_animation = 0
 
-                dir := other.transform.pos.x - me.transform.pos.x;
-                an.sprite_comp.inverted = dir < 0
+    //             dir := other.transform.pos.x - me.transform.pos.x;
+    //             an.sprite_comp.inverted = dir < 0
                 
-            }
-        },
+    //         }
+    //     },
 
-    }))
+    // }))
 
 
     sc.add_component(enemy, types.Script({

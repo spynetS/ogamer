@@ -8,14 +8,14 @@ import es "../event-system";
 import "../types";
 
 RENDER :: true
-DEBUG  :: true
+DEBUG  :: false
 
 
 texture_cache: map[^types.Image]rl.Texture2D
 camera := rl.Camera2D({{1240/2,720/2},{0,0},0,1});
 
-width :: 1920
-height :: 1080
+width :: 1920/1.2
+height :: 1080/1.2
 
 target : rl.RenderTexture
 uitarget : rl.RenderTexture

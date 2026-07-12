@@ -25,12 +25,13 @@ crop :: proc {
     crop_path,
     crop_image
 }
-crop_path :: proc (path: string, x0, y0, w, h: i32) -> ^types.Image{
-    image,_ := load(path);
+crop_path :: proc (path: string, x0, y0, w, h: i32) -> (^types.Image, bool) {
+    image,ok := load(path);
     defer free_image(image)
+    if !ok do return nil, false
     return crop_image(image, x0, y0, w, h);
 }
-crop_image :: proc(image: ^types.Image,x0, y0, w, h: i32) -> ^types.Image {
+crop_image :: proc(image: ^types.Image,x0, y0, w, h: i32) -> (^types.Image, bool) {
     
     sub : []u8 = make([]u8, w * h * image.channels)
 
@@ -45,7 +46,7 @@ crop_image :: proc(image: ^types.Image,x0, y0, w, h: i32) -> ^types.Image {
     sub_image.height   = h
     sub_image.mipmaps  = image.mipmaps
     sub_image.channels = image.channels
-    return sub_image
+    return sub_image, true
 }
 
 load :: proc(file_path: string) -> (^types.Image, bool) {

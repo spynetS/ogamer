@@ -192,6 +192,7 @@ create_body :: proc(e: ^types.ECS, ent: u32){
     body_id_by_rigidbody[rigid] = id
 
     build_body_shape(id, rigid, transform, collider, has_collider)
+    rigid.created = true
 }
 
 body_box_params :: proc(transform: ^types.Transform, collider: ^types.SquareCollider, has_collider: bool) -> [2]f32 {

@@ -71,39 +71,42 @@ boss_on_trigger_entered ::  proc(go, other: types.GameObject, data: rawptr, even
 
 boss_script :: proc (go: types.GameObject, data: rawptr, dt: f32) {
     bd := cast(^BossData)data;
+    dir := linalg.normalize0(bd.player.transform.pos - go.transform.pos)
+    sprite,_ := ecs.get_component(go.ecs, go.entity, types.SpriteRenderable)
+    sprite.inverted = dir.x > 0
+    
     bd.swing_attack.disabled = true
     #partial switch bd.state {
         case .HIT, .HIT2, .HIT3:
         bd.animator.active_animation = 4
-    case .IDLE:
+        case .IDLE:
         bd.animator.active_animation = 0
-    case .ATTACK:
+        case .ATTACK:
         bd.animator.active_animation = 1
-        bd.swing_attack.size = {-200,-100}
+        bd.swing_attack.size = {-100,-100}
         bd.swing_attack.disabled = false
-    case .JUMPATTACK:
-        dir := linalg.normalize0(bd.player.transform.pos - go.transform.pos)
+        case .JUMPATTACK:
         sc.apply_force(bd.rigidbody, {4000*dir.x,10000}*2)
         bd.animator.active_animation = 2
         bd.state = BossState.JUMPING
 
-    case .JUMP:
+        case .JUMP:
         sc.apply_force(bd.rigidbody, {0,10000})
         bd.animator.active_animation = 2
         bd.state = BossState.JUMPING
 
-    case .JUMPING:
+        case .JUMPING:
         body_id := systems.body_id_by_rigidbody[bd.rigidbody]
         vel := b2.Body_GetLinearVelocity(body_id)
         if vel.y <= 0 {
             bd.state = .FALLING
         }
-    case .HIT_GROUND:
+        case .HIT_GROUND:
         bd.swing_attack.disabled = false
         bd.swing_attack.size = {100,100}
         bd.animator.active_animation = 3
 
-    case .FALLING:
+        case .FALLING:
         bd.animator.active_animation = 3
     }
 }

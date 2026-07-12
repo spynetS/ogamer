@@ -49,21 +49,21 @@ create_ui :: proc(ecs: ^types.ECS, playerData: ^PlayerData) {
     heart1.transform.local_size = {-75,-70}
     heart1.transform.local_pos = {-20,0}
     heart1_image := io.crop("./game/assets/Big Heart Idle (18x14).png", 0, 0, 18,14)
-    sc.add_component(heart1, types.UiSprite({image=heart1_image})) 
+    sc.add_component(heart1, types.UiSprite({image=heart1_image, layer=1})) 
     sc.add_child(health_bar,heart1)
 
     heart2,_ := sc.new_gameobject(&game.ecs)
     heart2.transform.local_size = {-75,-70}
     heart2.transform.local_pos = {-2,0}
     heart2_image := io.crop("./game/assets/Big Heart Idle (18x14).png", 0, 0, 18,14)
-    sc.add_component(heart2, types.UiSprite({image=heart2_image})) 
+    sc.add_component(heart2, types.UiSprite({image=heart2_image, layer=1})) 
     sc.add_child(health_bar,heart2)
 
     heart3,_ := sc.new_gameobject(&game.ecs)
     heart3.transform.local_size = {-75,-70}
     heart3.transform.local_pos = {15,0}
     heart3_image := io.crop("./game/assets/Big Heart Idle (18x14).png", 0, 0, 18,14)
-    sc.add_component(heart3, types.UiSprite({image=heart3_image})) 
+    sc.add_component(heart3, types.UiSprite({image=heart3_image, layer=1})) 
     sc.add_child(health_bar,heart3)
 
     playerData.health_bar = health_bar^;
@@ -188,7 +188,7 @@ create_player :: proc (e: ^types.ECS) {
 
     data := new(PlayerData)
     data.collider=collider
-    data.health=2
+    data.health=3
     data.tool=tool^
     data.feet_collider = feet_collider
     data.rigid=rigid
@@ -262,8 +262,6 @@ create_player :: proc (e: ^types.ECS) {
 
             if sc.is_key_pressed(types.KeyboardKey.SPACE) && pd.grounded {
                 sc.apply_force(pd.rigid, {0,2500});
-                pd.health = 1
-//d                core.change_scene(game,"level2")
             }
 
             hearts := sc.get_child_components(&pd.health_bar, types.UiSprite)
@@ -300,7 +298,8 @@ create_player :: proc (e: ^types.ECS) {
             if other.transform.tag == "attackobj" {
                 pd.health -= 1
                 pd.animator.active_animation = HIT
-                sc.apply_force(pd.rigid, {-3000,1000})
+                dir := linalg.normalize0(other.transform.pos - go.transform.pos)
+                sc.apply_force(pd.rigid, {3000*-dir.x,1000})
             }
         },
         on_event = proc(go: types.GameObject, data:rawptr, event: types.Event) {

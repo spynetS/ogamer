@@ -3,18 +3,20 @@ package file_io;
 import "../types"
 import "core:fmt"
 
-new_tilesheet :: proc {
+new_tilesheet :: proc  {
     new_tilesheet_path,
     new_tilesheet_image
 }
 
-new_tilesheet_path :: proc (path: string, tile_size: [2]i32, box_offset:[2]i32 = {0,0}) -> ^types.TileSheet {
-    image, _ := load(path);
+new_tilesheet_path :: proc (path: string, tile_size: [2]i32, box_offset:[2]i32 = {0,0}) -> (^types.TileSheet, bool) #optional_ok {
+    image, ok := load(path);
     defer free_image(image);
+    if !ok do return nil, false
+
     return new_tilesheet_image(image, tile_size, box_offset);
 }
 
-new_tilesheet_image :: proc (image: ^types.Image, tile_size: [2]i32, box_offset:[2]i32 = {0,0}) -> ^types.TileSheet {
+new_tilesheet_image :: proc (image: ^types.Image, tile_size: [2]i32, box_offset:[2]i32 = {0,0}) -> (^types.TileSheet, bool) #optional_ok {
     columns := image.width / (box_offset.x+ tile_size.x);
     rows    := image.height / (box_offset.y+tile_size.y);
 
@@ -26,11 +28,12 @@ new_tilesheet_image :: proc (image: ^types.Image, tile_size: [2]i32, box_offset:
     for r in 0..<rows {
         ts.images[r] = make([]^types.Image, columns)
         for c in 0..<columns {
-            croped := crop(image, c*(box_offset.x+tile_size.x), (box_offset.y+tile_size.y)*r, tile_size.x, tile_size.y);
+            croped, ok := crop(image, c*(box_offset.x+tile_size.x), (box_offset.y+tile_size.y)*r, tile_size.x, tile_size.y);
+            if !ok do return nil, false
             ts.images[r][c] = croped
         }
     } 
-    return ts
+    return ts, true
 }
 
 copy_image :: proc(dst, src: ^types.Image) {

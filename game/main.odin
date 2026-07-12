@@ -16,6 +16,19 @@ playerData := PlayerData({})
 level1 := core.Scene({
     name="level1",
     load=proc(game: ^core.Game) {
+
+        if player,has := sc.get_gameobject(&game.ecs, "player"); has {
+            if rigid, has2 := ecs.get_component(&game.ecs, player.entity, types.RigidBody); has2 {
+                sc.set_position(rigid, {0,30})
+            }
+            else {
+                create_player(&game.ecs)
+            }
+        }   else {
+            create_player(&game.ecs)
+        }
+
+
         sky,_ := sc.new_gameobject(&game.ecs)
         sky.transform.size = {2000,1900}
         sky.transform.pos = {0,0}
@@ -54,7 +67,7 @@ level1 := core.Scene({
         tree.transform.pos = {-200,100}
         sc.add_component(tree, types.SpriteRenderable({image=tree_tilesheet.images[0][0]})) 
         
-        create_player(&game.ecs);
+
         create_enemy(&game.ecs, {160,100});
         create_enemy(&game.ecs, {200,100});
         create_enemy(&game.ecs, {800,150});
@@ -118,7 +131,6 @@ level2 :=core.Scene({
             else {
                 create_player(&game.ecs)
             }
-
         }
 
         roof,_ := sc.new_gameobject(&game.ecs)
@@ -138,7 +150,7 @@ level2 :=core.Scene({
                 append(&roof_tiles, tilesheet.images[1][1])
             }
             append(&roof_tiles, tilesheet.images[1][2])
-        }
+       }
         append(&roof_tiles, tilesheet.images[2][0])
         for j in 0..<(roof.transform.size.x)/100-2  {
             append(&roof_tiles, tilesheet.images[2][1])
@@ -211,9 +223,10 @@ main :: proc() {
     game = core.init_game();
     defer core.free_game(game);
     game.clear_color = rn.get_color(0x181818ff)
+    create_player(&game.ecs);
     core.register_scene(game, &level1)
     core.register_scene(game, &level2)
-    core.change_scene(game, "level2")
+    core.change_scene(game, "level1")
     core.main_loop(game);
 
 }

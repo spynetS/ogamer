@@ -15,6 +15,7 @@ apply_force :: proc(rigid: ^types.RigidBody, force: [2]f32, point:[2]f32={0,0} )
 // writing transform.pos alone gets overwritten each step; this pushes the move
 // into box2d so it actually sticks (handy for respawns).
 set_position :: proc(rigid: ^types.RigidBody, pos: types.Vector2) {
+    if !rigid.created do return
     bodyId := systems.body_id_by_rigidbody[rigid];
     t := b2.Body_GetTransform(bodyId)
     b2.Body_SetTransform(bodyId, pos/systems.PIXELS_PER_METER, t.q)

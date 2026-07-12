@@ -28,7 +28,8 @@ get_gameobject :: proc {
 get_gameobject_tag :: proc (ecs_: ^types.ECS, tag: string) -> (^types.GameObject, bool) {
     game_object := new(types.GameObject)
 
-    trans_storage,_ := ecs.get_storage(ecs_, ^types.Transform)
+    trans_storage, ok := ecs.get_storage(ecs_, ^types.Transform)
+    if !ok do return nil, false
     trans: ^types.Transform;
     entity: u32;
     for i in 0..<len(trans_storage.dense) {
@@ -46,11 +47,10 @@ get_gameobject_tag :: proc (ecs_: ^types.ECS, tag: string) -> (^types.GameObject
         }
         game_object.parent, _ = get_gameobject(ecs_, parent.entity);
     }
-    
+
     game_object.transform = trans;
     game_object.entity = entity;
     game_object.ecs = ecs_;
-
 
     return game_object, true
 }
