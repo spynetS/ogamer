@@ -8,7 +8,7 @@ import es "../event-system";
 import "../types";
 
 RENDER :: true
-DEBUG  :: true
+DEBUG  :: false
 
 
 texture_cache: map[^types.Image]rl.Texture2D
