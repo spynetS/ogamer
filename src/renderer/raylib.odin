@@ -8,7 +8,7 @@ import es "../event-system";
 import "../types";
 
 RENDER :: true
-DEBUG  :: false
+DEBUG  :: true
 
 
 texture_cache: map[^types.Image]rl.Texture2D
@@ -147,7 +147,7 @@ execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
         else {
             dest: rl.Rectangle = {
                 v.pos.x + v.offset.x,
-                -v.pos.y+v.offset.y,
+                -v.pos.y - v.offset.y,
                 v.size.x,
                 v.size.y,
             }

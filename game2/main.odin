@@ -1,4 +1,4 @@
-package main;
+package game2;
 
 import "../src/core"
 import "../src/types"
@@ -35,24 +35,26 @@ main :: proc() {
     // }))
     core.create_from_map(&game.ecs, _map, {3,3})
 
-    go,_ := sc.new_renderobject(&game.ecs);
-    go.transform.pos.x = -200
-    camera := sc.new_gameobject(&game.ecs)
-    camera.transform.local_pos = {0,200}
-    sc.add_component(camera, types.Camera2D({zoom=1}))
-    sc.add_child(go,camera)
-    rigid,_ := sc.add_component(go, types.RigidBody({type=types.BodyType.dynamicBody, disable_rotation=true}))
-    sc.add_component(go, types.SquareCollider({}))
-    sc.add_component(go, types.Script({
-        data= rigid,
-        on_update = proc(go: types.GameObject, data: rawptr, dt:f32) {
-            rigid:= cast(^types.RigidBody)data
-            if sc.is_key_down(types.KeyboardKey.D) do sc.apply_force(rigid,{100,0})
-            if sc.is_key_down(types.KeyboardKey.A) do sc.apply_force(rigid,{-100,0})
-            if sc.is_key_pressed(types.KeyboardKey.SPACE) do sc.apply_force(rigid,{0,1000})
-        }
-    }))
-    
+    // go,_ := sc.new_renderobject(&game.ecs);
+    // go.transform.pos.x = -200
+    // camera := sc.new_gameobject(&game.ecs)
+    // camera.transform.local_pos = {0,200}
+    // sc.add_component(camera, types.Camera2D({zoom=1}))
+    // sc.add_child(go,camera)
+    // rigid,_ := sc.add_component(go, types.RigidBody({type=types.BodyType.dynamicBody, disable_rotation=true}))
+    // sc.add_component(go, types.SquareCollider({}))
+    // sc.add_component(go, types.Script({
+    //     data= rigid,
+    //     on_update = proc(go: types.GameObject, data: rawptr, dt:f32) {
+    //         rigid:= cast(^types.RigidBody)data
+    //         if sc.is_key_down(types.KeyboardKey.D) do sc.apply_force(rigid,{100,0})
+    //         if sc.is_key_down(types.KeyboardKey.A) do sc.apply_force(rigid,{-100,0})
+    //         if sc.is_key_pressed(types.KeyboardKey.SPACE) do sc.apply_force(rigid,{0,1000})
+    //     }
+    // }))
+
+    create_player(&game.ecs, {-200,0})
+
     core.destroy(_map)
     core.main_loop(game)
 }

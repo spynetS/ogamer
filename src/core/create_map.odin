@@ -59,9 +59,6 @@ create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector
                 if object.class == "collider" {
                     scripting.add_component(go, types.RigidBody({}))
                     scripting.add_component(go, types.SquareCollider({}))
-                    // scripting.add_component(go, types.RectangleRenderable({
-                    //     color = renderer.get_color(0x00ff00aa),
-                    // }))
                 }
                 else {
                     scripting.add_component(go, types.RectangleRenderable({
