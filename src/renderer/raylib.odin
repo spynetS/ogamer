@@ -39,7 +39,7 @@ deinit_renderer :: proc() {
 execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
     #partial switch v in command {
         case InitWindow:
-        rl.SetTargetFPS(144)
+        rl.SetTargetFPS(60)
         case BeginDraw:
         rl.BeginTextureMode(target);
         // if there is no camera we create it
@@ -116,7 +116,7 @@ execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
             cast(f32)sprite.height,
         }
         if v.repeated_x {
-            tile_width := cast(f32)v.image.width*2 // whatever your spacing is
+            tile_width := cast(f32)v.size.x // whatever your spacing is
 
             screenWidth :f32= cast(f32)rl.GetScreenWidth()
             left  := camera.target.x - (screenWidth) / camera.zoom
@@ -129,7 +129,7 @@ execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
                 x := cast(f32)i * tile_width + v.offset.x
                 dest: rl.Rectangle = {
                     x,
-                    -v.pos.y,
+                    -v.pos.y-v.offset.y,
                     v.size.x,
                     v.size.y,
                 }
