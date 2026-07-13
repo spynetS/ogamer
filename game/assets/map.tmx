@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="50" height="20" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="13">
+<map version="1.10" tiledversion="1.12.2" orientation="orthogonal" renderorder="right-down" width="50" height="20" tilewidth="16" tileheight="16" infinite="0" nextlayerid="10" nextobjectid="18">
+ <editorsettings>
+  <export target="map.tmj" format="json"/>
+ </editorsettings>
  <tileset firstgid="1" source="Tileset Outside.tsx"/>
  <tileset firstgid="56" source="Tiles.tsx"/>
  <tileset firstgid="681" source="Background.tsx"/>
@@ -175,15 +178,13 @@
 </data>
  </layer>
  <objectgroup id="9" name="Object Layer 1">
-  <object id="5" gid="1991" x="416.5" y="159.5" width="16" height="16"/>
+  <object id="5" gid="1991" x="416.5" y="159.5" width="16" height="16" visible="0"/>
   <object id="7" gid="571" x="16.75" y="250.75" width="16" height="16">
    <properties>
     <property name="collider" type="bool" value="true"/>
    </properties>
   </object>
   <object id="9" x="-0.25" y="257.25" width="320.25" height="62.75"/>
-  <object id="10" x="186" y="178.667" width="23.3333" height="14.6667"/>
-  <object id="11" x="-175.333" y="104" width="2.66667"/>
-  <object id="12" x="-166" y="351" width="1"/>
+  <object id="16" gid="1991" x="0" y="16" width="16" height="16"/>
  </objectgroup>
 </map>

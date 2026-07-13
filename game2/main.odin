@@ -1,0 +1,51 @@
+package main;
+
+import "../src/core"
+import "../src/types"
+import "../src/io"
+import "../src/ecs"
+import sc "../src/scripting"
+import rn "../src/renderer"
+import "core:fmt"
+
+game: ^core.Game
+
+main :: proc() {
+    //level.load(nil)
+
+    game = core.init_game();
+    defer core.free_game(game);
+
+    _map := core.load_map("./game/assets/map2.tmj")
+
+    
+    fmt.println("MAP:", _map)
+    go := sc.new_gameobject(&game.ecs);
+    //go.transform.pos.x = -1500/2
+    sc.add_component(go, types.Camera2D({zoom=1}))
+    sc.add_component(go, types.Script({
+        on_update = proc(go: types.GameObject, data: rawptr, dt:f32) {
+            if sc.is_key_down(types.KeyboardKey.D) do go.transform.pos += {2,0}
+            if sc.is_key_down(types.KeyboardKey.A) do go.transform.pos -= {2,0}
+        }
+    }))
+    core.create_from_map(&game.ecs, _map, {2,2})
+
+    // go,_ := sc.new_renderobject(&game.ecs);
+    // go.transform.pos.x = -1600/2
+    // sc.add_component(go, types.Camera2D({zoom=1}))
+    // rigid,_ := sc.add_component(go, types.RigidBody({type=types.BodyType.dynamicBody, disable_rotation=true}))
+    // sc.add_component(go, types.SquareCollider({}))
+    // sc.add_component(go, types.Script({
+    //     data= rigid,
+    //     on_update = proc(go: types.GameObject, data: rawptr, dt:f32) {
+    //         rigid:= cast(^types.RigidBody)data
+    //         if sc.is_key_down(types.KeyboardKey.D) do sc.apply_force(rigid,{100,0})
+    //         if sc.is_key_down(types.KeyboardKey.A) do sc.apply_force(rigid,{-100,0})
+    //         if sc.is_key_pressed(types.KeyboardKey.SPACE) do sc.apply_force(rigid,{0,5000})
+    //     }
+    // }))
+    
+    core.destroy(_map)
+    core.main_loop(game)
+}

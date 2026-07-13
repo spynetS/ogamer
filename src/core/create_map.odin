@@ -1,6 +1,7 @@
 package core;
 import "core:fmt"
 import "../scripting"
+import "../renderer"
 import "../types"
 import "../io"
 
@@ -22,21 +23,67 @@ get_tileset :: proc(_map: ^Map, gid: int) -> (TileSet, bool) {
     return result, found
 }
 
-create_from_map :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}) {
-    for layer in _map.layers {
-        if layer.visible == 0 do continue
-        fmt.println("LAYER:", layer)
-        for i in 0..<len(layer.data) {
-            value := layer.data[i] & 0x0FFF_FFFF  // clear h/v/diagonal/rotate flags
-            if tileSet, found := get_tileset(_map, value); found {
-                grid_x := (value - tileSet.firstgid) % tileSet.columns
-                grid_y := (value - tileSet.firstgid) / tileSet.columns
+create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}) {
+    // map height in pixels, scaled — used only for the Y flip
+    map_w := cast(f32)_map.width * cast(f32)_map.tilewidth * tile_scale.x
+    map_h := cast(f32)_map.height * cast(f32)_map.tileheight * tile_scale.y
 
-                x := i % layer.width
-                y := i / layer.width
+    for objectgroup in _map.objectgroups {
+        for object in objectgroup.objects {
+            if !object.visible do continue
+            is_tile := object.gid != -1
 
-                tw  := cast(f32)tileSet.tilewidth   // tile size (may be > grid cell)
-                th  := cast(f32)tileSet.tileheight
+            go := scripting.new_gameobject(ecs)
+
+            x := object.x * tile_scale.x
+            y := object.y * tile_scale.y
+
+            go.transform.size = {object.width, object.height}*tile_scale
+            go.transform.pos = {x-map_w/2, -y+map_h/2}
+
+            
+            if is_tile do go.transform.pos += {object.width/2, object.height/2}*tile_scale
+            else       do go.transform.pos += {object.width/2, -object.height/2}*tile_scale
+
+            if is_tile {
+                gid := object.gid & 0x0FFF_FFFF   // strip flip/rotate flags
+                if tileset, found := get_tileset(_map, gid); found {
+                    grid_x := (gid - tileset.firstgid) % tileset.columns
+                    grid_y := (gid - tileset.firstgid) / tileset.columns
+                    scripting.add_component(go, types.SpriteRenderable({
+                        layer=objectgroup.layer_depth,
+                        image = tileset.tilesheet.images[grid_y][grid_x],
+                    }))
+                }
+            } else {
+                if object.class == "collider" {
+                    scripting.add_component(go, types.RigidBody({}))
+                    scripting.add_component(go, types.SquareCollider({}))
+                    scripting.add_component(go, types.RectangleRenderable({
+                        color = renderer.get_color(0x00ff00aa),
+                    }))
+                }
+                else {
+                    scripting.add_component(go, types.RectangleRenderable({
+                        color = renderer.get_color(0x181818aa),
+                        
+                    }))
+                }
+            }
+        }
+    }
+}
+
+position_gameobject :: proc (
+    go: ^types.GameObject,
+    map_pos:types.Vector2,
+    size: types.Vector2,
+    tileset: TileSet,
+    _map: ^Map,
+    tile_scale: types.Vector2 = {1,1}) {
+    
+                tw  := cast(f32)tileset.tilewidth // tile size (may be > grid cell)
+                th  := cast(f32)tileset.tileheight
                 
                 mtw := cast(f32)_map.tilewidth      // grid cell size
                 mth := cast(f32)_map.tileheight
@@ -47,23 +94,86 @@ create_from_map :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 
                 mtw *= tile_scale.x
                 mth *= tile_scale.y
 
-                fx := cast(f32)x;  fy := cast(f32)y
-                fw := cast(f32)layer.width;  fh := cast(f32)layer.height
+                fx := cast(f32)map_pos.x;  fy := cast(f32)map_pos.y
+                fw := cast(f32)size.x;  fh := cast(f32)size.y
 
-                go, _ := scripting.new_gameobject(ecs)
                 go.transform.size = {tw, th}
 
                 // Tiled = bottom-left cell anchor, Y-down. Ours = center anchor, Y-up.
                 go.transform.pos.x = fx*mtw - fw*mtw/2 + tw/2
                 go.transform.pos.y = fh*mth/2 - (fy+1)*mth + th/2
+}
+
+create_tiles :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}) {
+        for layer in _map.layers {
+        if layer.visible == false do continue
+        fmt.println("LAYER:", layer)
+        for i in 0..<len(layer.data) {
+            value := layer.data[i] & 0x0FFF_FFFF  // clear h/v/diagonal/rotate flags
+            if tileSet, found := get_tileset(_map, value); found {
+                grid_x := (value - tileSet.firstgid) % tileSet.columns
+                grid_y := (value - tileSet.firstgid) / tileSet.columns
+
+                x := i % layer.width
+                y := i / layer.width
+                
+                go := scripting.new_gameobject(ecs)
+                position_gameobject(go,
+                                    {cast(f32)x,cast(f32)y},
+                                    {cast(f32)layer.width,cast(f32)layer.height},
+                                    tileSet,
+                                    _map,
+                                    tile_scale)
 
                 scripting.add_component(go, types.SpriteRenderable({
                     image = tileSet.tilesheet.images[grid_y][grid_x],
-                    parallax=layer.parallax
+                    layer=layer.layer_depth,
+                    parallax=-layer.parallax
                 }))
 
             }
         }
     }
+}
+
+
+
+create_imagelayer :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}) {
+    map_w := cast(f32)_map.width * cast(f32)_map.tilewidth * tile_scale.x
+    map_h := cast(f32)_map.height * cast(f32)_map.tileheight * tile_scale.y
+    for imagelayer in _map.imagelayers {
+        if !imagelayer.visible do continue
+        // TODO implement repeat
+        go := scripting.new_gameobject(ecs)
+        defer free(go)
+
+        x := imagelayer.offsetx * tile_scale.x
+        y := -imagelayer.offsety * tile_scale.y
+
+        go.transform.pos = {
+            x-map_w/2,
+            y-map_h/2
+        } 
+        go.transform.size = {
+            cast(f32)imagelayer.imagewidth,
+            cast(f32)imagelayer.imageheight
+        } * tile_scale
+
+        go.transform.pos += {imagelayer.imagewidth/2, imagelayer.imageheight/2}*tile_scale
+
+        image, loaded := io.load(imagelayer.image)
+        if !loaded do panic("ASd")
+        scripting.add_component(go, types.SpriteRenderable({
+            image=image,
+            layer=imagelayer.layer_depth,
+            parallax=-imagelayer.parallax
+        }))
+    }
+}
+
+create_from_map :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}) {
+    create_tiles(ecs, _map, tile_scale)
+    create_objectgroup(ecs, _map, tile_scale)
+    create_imagelayer(ecs,_map, tile_scale)
 }
 
