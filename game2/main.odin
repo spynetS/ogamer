@@ -16,17 +16,21 @@ main :: proc() {
     game = core.init_game();
     defer core.free_game(game);
 
-    _map := core.load_map("./game/assets/map2.tmj")
+    _map := core.load_map("./game2/map.tmj")
 
     
     fmt.println("MAP:", _map)
     go := sc.new_gameobject(&game.ecs);
-    go.transform.pos.x = -1500/2
+    //go.transform.pos.x = -1500/2
+    go.transform.pos.y = 200
     sc.add_component(go, types.Camera2D({zoom=1}))
     sc.add_component(go, types.Script({
         on_update = proc(go: types.GameObject, data: rawptr, dt:f32) {
-            if sc.is_key_down(types.KeyboardKey.D) do go.transform.pos += {2,0}
-            if sc.is_key_down(types.KeyboardKey.A) do go.transform.pos -= {2,0}
+            if sc.is_key_down(types.KeyboardKey.D) do go.transform.pos += {20,0}
+            if sc.is_key_down(types.KeyboardKey.A) do go.transform.pos -= {20,0}
+            if sc.is_key_down(types.KeyboardKey.Q) do game.renderer.active_camera.zoom -= 0.01
+            if sc.is_key_down(types.KeyboardKey.E) do game.renderer.active_camera.zoom += 0.01
+
         }
     }))
     core.create_from_map(&game.ecs, _map, {2,2})

@@ -110,7 +110,7 @@ tilemap_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: 
             // sit at higher Y, so count rows up from the bottom.
             pos := bottom_left + {f32(col), f32(rows-1-row)} * tile_size
 
-            cmd := rn.Sprite({pos, tile_size, t.rot, false, tile, tilemap.layer})
+            cmd := rn.Sprite({pos, {0,0}, tile_size, t.rot, false, tile, tilemap.layer, false, false})
             rn.add_command(renderer, cmd);
         }
 
@@ -135,7 +135,7 @@ sprite_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
             sprite.offset = renderer.active_camera.target * (-sprite.parallax)
         }
         
-        cmd := rn.Sprite({t.pos+sprite.offset, t.size+sprite.size, t.rot, sprite.inverted, sprite.image, sprite.layer})
+        cmd := rn.Sprite({t.pos, sprite.offset, t.size+sprite.size, t.rot, sprite.inverted, sprite.image, sprite.layer, sprite.repeated_x, sprite.repeated_y})
         rn.add_command(renderer, cmd);
     }
 }

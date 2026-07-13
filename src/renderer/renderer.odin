@@ -22,7 +22,7 @@ InitWindow :: struct { width, height: int, title: string }
 Clear      :: struct { color: [4]u8 }
 
 Rectangle  :: struct { pos, size: [2]f32, rot: f32, color: [4]u8, lines: bool, layer: int}
-Sprite     :: struct { pos, size: [2]f32, rot: f32, inverted: bool, image: ^types.Image ,layer: int}
+Sprite     :: struct { pos, offset, size: [2]f32, rot: f32, inverted: bool, image: ^types.Image ,layer: int, repeated_x: bool, repeated_y: bool}
 UISprite   :: struct { pos, size: [2]f32, rot: f32, inverted: bool, image: ^types.Image ,layer: int}
 Text       :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string, color: [4]u8, layer: int}
 UIText     :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string, color: [4]u8, layer: int}

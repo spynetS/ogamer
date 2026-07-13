@@ -114,7 +114,7 @@ load_tsx :: proc(tileset: ^TileSet, path: string) {
 
 load_layer :: proc(layer: json.Object, layer_depth: int) -> Layer {
 
-    _layer := Layer({visible=true, layer_depth=layer_depth});
+    _layer := Layer({visible=true, layer_depth=layer_depth, parallax={1,1}});
     if v,ok := layer["width"].(json.Float); ok do _layer.width = cast(int)v
     if v,ok := layer["height"].(json.Float); ok do _layer.height = cast(int)v
     if v,ok := layer["name"].(json.String); ok do _layer.name = v
@@ -133,7 +133,7 @@ load_layer :: proc(layer: json.Object, layer_depth: int) -> Layer {
 }
 load_imagelayer :: proc(layer: json.Object, path: string, layer_depth: int) -> ImageLayer {
 
-    _layer := ImageLayer({visible=true,layer_depth = layer_depth});
+    _layer := ImageLayer({visible=true,layer_depth = layer_depth,parallax={1,1}});
     if v,ok := layer["width"].(json.Float); ok do _layer.width = cast(int)v
     if v,ok := layer["height"].(json.Float); ok do _layer.height = cast(int)v
     if v,ok := layer["id"].(json.String); ok do _layer.name = v

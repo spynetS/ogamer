@@ -128,7 +128,7 @@ create_tiles :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {
                 scripting.add_component(go, types.SpriteRenderable({
                     image = tileSet.tilesheet.images[grid_y][grid_x],
                     layer=layer.layer_depth,
-                    parallax=-layer.parallax
+                    parallax=layer.parallax-1
                 }))
 
             }
@@ -162,12 +162,13 @@ create_imagelayer :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2
         go.transform.pos += {imagelayer.imagewidth/2, imagelayer.imageheight/2}*tile_scale
 
         image, loaded := io.load(imagelayer.image)
-        image.repeated = true // FIXME 
-        if !loaded do panic("ASd")
+
         scripting.add_component(go, types.SpriteRenderable({
             image=image,
             layer=imagelayer.layer_depth,
-            parallax=-imagelayer.parallax
+            parallax = imagelayer.parallax-1,
+            repeated_x = imagelayer.repeatx,
+            repeated_y = imagelayer.repeaty
         }))
     }
 }
