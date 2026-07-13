@@ -231,7 +231,7 @@ load_map :: proc(path: string) -> ^Map {
         _map.tilewidth = cast(int)v["tilewidth"].(json.Float)
         _map.tileheight = cast(int)v["tileheight"].(json.Float)
 
-        layer_depth := 0
+        layer_depth := -len(v["layers"].(json.Array))
         for layer in v["layers"].(json.Array) {
             switch layer.(json.Object)["type"].(json.String)  {
             case "tilelayer": append(&_map.layers,load_layer(layer.(json.Object), layer_depth))
