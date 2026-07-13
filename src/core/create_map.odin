@@ -23,7 +23,7 @@ get_tileset :: proc(_map: ^Map, gid: int) -> (TileSet, bool) {
     return result, found
 }
 
-create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}, on_create: proc(Object) = nil) {
+create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}, on_create: proc(Object, types.Transform) = nil) {
     // map height in pixels, scaled — used only for the Y flip
     map_w := cast(f32)_map.width * cast(f32)_map.tilewidth * tile_scale.x
     map_h := cast(f32)_map.height * cast(f32)_map.tileheight * tile_scale.y
@@ -32,7 +32,7 @@ create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector
         for object in objectgroup.objects {
             if !object.visible do continue
             is_tile := object.gid != -1
-
+            // FIXME maybe not create a entity if not necceary
             go := scripting.new_gameobject(ecs)
 
             x := object.x * tile_scale.x
@@ -60,7 +60,7 @@ create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector
                 scripting.add_component(go, types.RigidBody({}))
                 scripting.add_component(go, types.SquareCollider({}))
             }
-            on_create(object)
+            on_create(object, go.transform^)
         }
     }
 }
@@ -164,7 +164,7 @@ create_imagelayer :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2
     }
 }
 
-create_from_map :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}, on_create: proc(Object) = nil) {
+create_from_map :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}, on_create: proc(Object, types.Transform) = nil) {
     create_tiles(ecs, _map, tile_scale)
     create_objectgroup(ecs, _map, tile_scale, on_create)
     create_imagelayer(ecs,_map, tile_scale)

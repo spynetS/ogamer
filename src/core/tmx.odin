@@ -11,9 +11,7 @@ import "core:fmt"
 import "core:encoding/xml"
 import "core:encoding/json"
 
-// TODO make a common struct with values many of theise use (like position, visible etc)
-
-
+// TODO make a common struct with values many of theise use (like position, visible etcp)
 Value :: union {
 	i64, 
 	f64, 
@@ -46,32 +44,35 @@ Object :: struct {
     layer_depth: int,
     properties: [dynamic]Property
 }
-ObjectGroup :: struct {
-    id, width, height: int,
+
+LayerBase :: struct {
+    id: int,
     name: string,
-    draworder: string,
+
     visible: bool,
     parallax: types.Vector2,
+    layer_depth: int,
+}
+
+ObjectGroup :: struct {
+    using base: LayerBase,
+
+    width, height: int,
+    draworder: string,
     objects: [dynamic]Object,
-    layer_depth: int
-    
+        
 }
 ImageLayer :: struct {
-    id, name, image: string,
+    using base: LayerBase, 
+    image: string,
     width, height: int,
     imagewidth, imageheight, x, y, offsetx, offsety: f32,
     repeatx, repeaty: bool,
-    visible: bool,
-    parallax: types.Vector2,
-        layer_depth: int
 }
 Layer :: struct {
-    id, name: string,
+    using base: LayerBase,
     width, height: int,
-    visible: bool,
-    parallax: types.Vector2,
     data: [dynamic]int,
-    layer_depth: int
 }
 Map :: struct {
     orientation, renderorder: string, // TODO implement
@@ -279,83 +280,6 @@ load_map :: proc(path: string) -> ^Map {
     }
 
     return _map
-}
-
-load_tmx :: proc(path: string) -> ^Map {
-    tmx_map := new(Map);
-    doc, error := xml.load_from_file(path)
-    indexes : [dynamic]int
-    layer := Layer({})
-    tileset := TileSet({})
-    for element in doc.elements {
-        if element.ident == "map" {
-            for attr in element.attribs {
-                switch attr.key{
-                case "orientation": tmx_map.orientation = fmt.tprintf(attr.val)
-                case "renderorder": tmx_map.renderorder = fmt.tprintf(attr.val)
-                case "width": if val,ok := strconv.parse_f32(attr.val); ok do tmx_map.width = val
-                case "height": if val,ok := strconv.parse_f32(attr.val); ok do tmx_map.height = val
-                case "tilewidth": if val,ok := strconv.parse_int(attr.val); ok do tmx_map.tilewidth = val
-                case "tileheight": if val,ok := strconv.parse_int(attr.val); ok do tmx_map.tileheight = val
-                case "infinite": if val,ok := strconv.parse_int(attr.val); ok do tmx_map.infinite = val
-                case "nextlayerid": if val,ok := strconv.parse_int(attr.val); ok do tmx_map.nextlayerid = val
-                case "nextobjectid": if val,ok := strconv.parse_int(attr.val); ok do tmx_map.nextobjectid = val
-                }
-            }
-        }
-        if element.ident == "layer" {
-            indexes = make([dynamic]int) // we allocate memory for the data 
-            layer.visible = true // default value
-            for attr in element.attribs {
-                switch attr.key{
-                case "id": layer.id = fmt.tprintf(attr.val)
-                case "name": layer.name = fmt.tprintf(attr.val)
-                case "width" : if val,ok := strconv.parse_int(fmt.tprintf(attr.val)); ok do layer.width = val
-                case "height": if val,ok := strconv.parse_int(attr.val); ok do layer.height = val
-                case "visible": if val,ok := strconv.parse_int(attr.val); ok do layer.visible = val == 1 ? true : false
-                case "parallaxx": if val,ok := strconv.parse_f32(attr.val); ok do layer.parallax.x = val
-                case "parallaxy": if val,ok := strconv.parse_f32(attr.val); ok do layer.parallax.y = val
-                }
-            }
-        }
-        if element.ident == "tileset" {
-            for attr in element.attribs {
-                switch attr.key {
-                case "firstgid": if val,ok := strconv.parse_int(attr.val); ok do tileset.firstgid = val
-                case "source":
-                    // FIXME
-                    here := filepath.dir(path)
-                    _path,_ := filepath.join({here, attr.val})
-                    fmt.println("LOAD TSX:", _path)
-                    load_tsx(&tileset,_path)
-                }
-            }
-            append(&tmx_map.tilesets, tileset)
-            tileset = TileSet({})
-        }
-        if element.ident == "data" {
-            #partial switch v in element.value[0] {
-                case string:
-                values := strings.split(v, ",")
-                for value in values{
-                    // CSV rows have trailing commas + newlines, so tokens like
-                    // "\n0" appear; trim whitespace or parse_int drops them
-                    // (which silently dropped the first tile of every row).
-                    trimmed := strings.trim_space(value)
-                    if trimmed == "" do continue
-                    if value, could := strconv.parse_int(trimmed); could  {
-                        append(&indexes, value)
-                    }
-                }
-                delete(values)
-            }
-            layer.data = indexes
-            append(&tmx_map.layers, layer)
-            layer = Layer({})
-        }
-    }
-    xml.destroy(doc)
-    return tmx_map
 }
 
 
