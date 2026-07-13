@@ -144,6 +144,8 @@ load_imagelayer :: proc(layer: json.Object, path: string, layer_depth: int) -> I
          _layer.image = _path
     }
     if v,ok := layer["visible"].(json.Boolean); ok do _layer.visible = v
+    if v,ok := layer["repeatx"].(json.Boolean); ok do _layer.repeatx = v
+    if v,ok := layer["repeaty"].(json.Boolean); ok do _layer.repeaty = v
     if v,ok := layer["parallaxx"].(json.Float); ok do _layer.parallax.x = cast(f32)v
     if v,ok := layer["parallaxy"].(json.Float); ok do _layer.parallax.y = cast(f32)v
     if v,ok := layer["x"].(json.Float); ok do _layer.x = cast(f32)v

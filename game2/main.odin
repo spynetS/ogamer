@@ -21,7 +21,7 @@ main :: proc() {
     
     fmt.println("MAP:", _map)
     go := sc.new_gameobject(&game.ecs);
-    //go.transform.pos.x = -1500/2
+    go.transform.pos.x = -1500/2
     sc.add_component(go, types.Camera2D({zoom=1}))
     sc.add_component(go, types.Script({
         on_update = proc(go: types.GameObject, data: rawptr, dt:f32) {
@@ -49,3 +49,4 @@ main :: proc() {
     core.destroy(_map)
     core.main_loop(game)
 }
+

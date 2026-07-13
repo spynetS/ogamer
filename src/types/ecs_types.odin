@@ -41,7 +41,9 @@ Script  :: struct {
 
 Image :: struct {
     data : []u8,
-    width, height, mipmaps, channels : i32
+    width, height, mipmaps, channels : i32,
+    repeated: bool
+    
 }
 
 TileSheet :: struct {

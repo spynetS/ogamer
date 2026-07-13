@@ -109,23 +109,28 @@ execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
             texture_cache[v.image] = sprite
         }
         
-        
-        source : rl.Rectangle = {0,0, cast(f32)(v.inverted ? -sprite.width :sprite.width ), cast(f32)sprite.height}
-        dest : rl.Rectangle = {v.pos.x,-v.pos.y, v.size.x, v.size.y} // Y-up
+        // TODO make them wrap if its repeated!!!
+        for x: i32 = 0; x < rl.GetScreenWidth(); x += cast(i32)v.image.width {
+            source : rl.Rectangle = {0,0, cast(f32)(v.inverted ? -sprite.width :sprite.width ), cast(f32)sprite.height}
+            dest : rl.Rectangle = {v.pos.x+cast(f32)x*2,-v.pos.y, v.size.x, v.size.y} // Y-up
 
-        origin : rl.Vector2 = {
-            v.size.x / 2,
-            v.size.y / 2
-        };
+            origin : rl.Vector2 = {
+                v.size.x / 2,
+                v.size.y / 2
+            };
 
-        rl.DrawTexturePro(
-            sprite,
-            source,
-            dest,
-            origin,
-            -v.rot, // Y-up: CCW-positive rotation
-            rl.Color(get_color(0xffffffff))
-        )
+
+
+            rl.DrawTexturePro(
+                sprite,
+                source,
+                dest,
+                origin,
+                -v.rot, // Y-up: CCW-positive rotation
+                rl.Color(get_color(0xffffffff))
+            )
+            if !v.image.repeated do break
+        }
     }
 
 }

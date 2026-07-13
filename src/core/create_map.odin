@@ -162,6 +162,7 @@ create_imagelayer :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2
         go.transform.pos += {imagelayer.imagewidth/2, imagelayer.imageheight/2}*tile_scale
 
         image, loaded := io.load(imagelayer.image)
+        image.repeated = true // FIXME 
         if !loaded do panic("ASd")
         scripting.add_component(go, types.SpriteRenderable({
             image=image,
