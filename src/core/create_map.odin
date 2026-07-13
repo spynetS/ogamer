@@ -23,7 +23,7 @@ get_tileset :: proc(_map: ^Map, gid: int) -> (TileSet, bool) {
     return result, found
 }
 
-create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}) {
+create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}, on_create: proc(Object) = nil) {
     // map height in pixels, scaled — used only for the Y flip
     map_w := cast(f32)_map.width * cast(f32)_map.tilewidth * tile_scale.x
     map_h := cast(f32)_map.height * cast(f32)_map.tileheight * tile_scale.y
@@ -55,18 +55,12 @@ create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector
                         image = tileset.tilesheet.images[grid_y][grid_x],
                     }))
                 }
-            } else {
-                if object.class == "collider" {
-                    scripting.add_component(go, types.RigidBody({}))
-                    scripting.add_component(go, types.SquareCollider({}))
-                }
-                else {
-                    scripting.add_component(go, types.RectangleRenderable({
-                        color = renderer.get_color(0x181818aa),
-                        
-                    }))
-                }
             }
+            if object.class == "collider" {
+                scripting.add_component(go, types.RigidBody({}))
+                scripting.add_component(go, types.SquareCollider({}))
+            }
+            on_create(object)
         }
     }
 }
@@ -170,9 +164,9 @@ create_imagelayer :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2
     }
 }
 
-create_from_map :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}) {
+create_from_map :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}, on_create: proc(Object) = nil) {
     create_tiles(ecs, _map, tile_scale)
-    create_objectgroup(ecs, _map, tile_scale)
+    create_objectgroup(ecs, _map, tile_scale, on_create)
     create_imagelayer(ecs,_map, tile_scale)
 }
 

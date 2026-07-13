@@ -11,7 +11,20 @@ import "core:fmt"
 import "core:encoding/xml"
 import "core:encoding/json"
 
+// TODO make a common struct with values many of theise use (like position, visible etc)
 
+
+Value :: union {
+	i64, 
+	f64, 
+	bool, 
+	string, 
+}
+
+Property :: struct {
+    name, type: string,
+    value: Value
+}
 
 Image :: struct {
     source: string,
@@ -30,7 +43,8 @@ Object :: struct {
     visible: bool,
     name: string,
     class: string, // or type?
-    layer_depth: int
+    layer_depth: int,
+    properties: [dynamic]Property
 }
 ObjectGroup :: struct {
     id, width, height: int,
@@ -171,9 +185,25 @@ load_object :: proc (value: json.Object, layer_depth: int) -> Object {
     if v,ok := value["visible"].(json.Boolean); ok do object.visible = v
     if v,ok := value["x"].(json.Float); ok do object.x = cast(f32)v
     if v,ok := value["y"].(json.Float); ok do object.y = cast(f32)v
-
+    if v,ok := value["properties"].(json.Array); ok {
+        for el in v {
+            prop := Property({})
+            #partial switch val in el {
+                case json.Object:
+                #partial switch type in val["value"] {
+                    case json.Integer : prop.value=type
+                    case json.Float   : prop.value=type
+                    case json.Boolean : prop.value=type
+                    case json.String  : prop.value=type
+                }
+                prop.name = val["name"].(json.String)
+                prop.type = val["type"].(json.String)
+            }
+            append(&object.properties, prop)
+        }
+    }
+    
     // TODO add properties
-
     return object
 
 }

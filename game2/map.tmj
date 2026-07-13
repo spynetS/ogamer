@@ -105,6 +105,43 @@
                  "width":32,
                  "x":416,
                  "y":192
+                }, 
+                {
+                 "gid":223,
+                 "height":16,
+                 "id":7,
+                 "name":"",
+                 "opacity":1,
+                 "properties":[
+                        {
+                         "name":"enemy",
+                         "type":"bool",
+                         "value":true
+                        }, 
+                        {
+                         "name":"test",
+                         "type":"float",
+                         "value":10
+                        }],
+                 "rotation":0,
+                 "type":"box",
+                 "visible":true,
+                 "width":16,
+                 "x":256,
+                 "y":240
+                }, 
+                {
+                 "height":0,
+                 "id":9,
+                 "name":"",
+                 "opacity":1,
+                 "point":true,
+                 "rotation":0,
+                 "type":"player",
+                 "visible":true,
+                 "width":0,
+                 "x":227.922555346785,
+                 "y":202.59782697492
                 }],
          "opacity":1,
          "type":"objectgroup",
@@ -175,7 +212,7 @@
          "y":0
         }],
  "nextlayerid":10,
- "nextobjectid":7,
+ "nextobjectid":10,
  "orientation":"orthogonal",
  "renderorder":"right-down",
  "tiledversion":"1.12.2",
@@ -188,6 +225,10 @@
         {
          "firstgid":221,
          "source":"Trees.tsx"
+        }, 
+        {
+         "firstgid":223,
+         "source":"box.tsx"
         }],
  "tilewidth":16,
  "type":"map",
