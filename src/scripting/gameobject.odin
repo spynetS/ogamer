@@ -8,11 +8,11 @@ import "../types"
 
 import "core:math/rand"
 
-new_gameobject :: proc(ecs_: ^types.ECS) -> (^types.GameObject, bool) {
+new_gameobject :: proc(ecs_: ^types.ECS) -> (^types.GameObject, bool) #optional_ok {
     game_object := new(types.GameObject)
 
     t_storage, ok := ecs.get_storage(ecs_, ^types.Transform)
-    entity := types.Entity(rand.int_max(32000))
+    entity := types.Entity(ecs.get_new_entity(ecs_))
 
     game_object.entity = entity
     game_object.ecs = ecs_
@@ -25,7 +25,7 @@ get_gameobject :: proc {
     get_gameobject_tag,
 }
 
-get_gameobject_tag :: proc (ecs_: ^types.ECS, tag: string) -> (^types.GameObject, bool) {
+get_gameobject_tag :: proc (ecs_: ^types.ECS, tag: string) -> (^types.GameObject, bool) #optional_ok {
     game_object := new(types.GameObject)
 
     trans_storage, ok := ecs.get_storage(ecs_, ^types.Transform)
@@ -56,7 +56,7 @@ get_gameobject_tag :: proc (ecs_: ^types.ECS, tag: string) -> (^types.GameObject
 }
 
 
-get_gameobject_entity :: proc(ecs_: ^types.ECS, entity: types.Entity) -> (^types.GameObject, bool) {
+get_gameobject_entity :: proc(ecs_: ^types.ECS, entity: types.Entity) -> (^types.GameObject, bool) #optional_ok {
     return ecs.get_gameobject(ecs_, entity)
 }
 
@@ -66,7 +66,7 @@ new_renderobject :: proc(e: ^types.ECS) -> (^types.GameObject, bool){
     return go, created
 }
 
-add_component :: proc(game_object: ^types.GameObject, component: $T) -> (^T, bool) {
+add_component :: proc(game_object: ^types.GameObject, component: $T) -> (^T, bool) #optional_ok {
     return ecs.add_component(game_object.ecs, game_object.entity, component);
 }
 

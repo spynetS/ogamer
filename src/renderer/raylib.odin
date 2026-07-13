@@ -256,6 +256,12 @@ execute :: proc(renderer: ^Renderer) {
                 )
             }
         }
+        rl.DrawText(fmt.ctprintf("%d", rl.GetFPS()),
+                    100,
+                    100,
+                    24,
+                    rl.Color(0x000000ff))
+
         rl.EndTextureMode();
         
         // now render the texture

@@ -13,6 +13,7 @@ Event_Type :: enum {
 
 ECS :: struct {
     storages: map[typeid]rawptr, // rawptr -> ^ComponentStorage(T)
+    entities: u32
 }
 
 

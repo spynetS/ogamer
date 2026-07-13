@@ -6,13 +6,13 @@ import "core:fmt"
 
 import "../types"
 
-add :: proc(handler : ^types.IOHandler, file_path: string) -> (^types.Image, bool){
+add :: proc(handler : ^types.IOHandler, file_path: string) -> (^types.Image, bool) #optional_ok{
     image, ok := load(file_path)
     if ok do handler.images[file_path] = image
     return image, true
 }
 
-get :: proc(handler : ^types.IOHandler, file_path: string) -> (^types.Image, bool){
+get :: proc(handler : ^types.IOHandler, file_path: string) -> (^types.Image, bool) #optional_ok{
     if handler == nil do return nil, false
     image, ok := handler.images[file_path]
     if !ok {
@@ -25,13 +25,13 @@ crop :: proc {
     crop_path,
     crop_image
 }
-crop_path :: proc (path: string, x0, y0, w, h: i32) -> (^types.Image, bool) {
+crop_path :: proc (path: string, x0, y0, w, h: i32) -> (^types.Image, bool) #optional_ok {
     image,ok := load(path);
     defer free_image(image)
     if !ok do return nil, false
     return crop_image(image, x0, y0, w, h);
 }
-crop_image :: proc(image: ^types.Image,x0, y0, w, h: i32) -> (^types.Image, bool) {
+crop_image :: proc(image: ^types.Image,x0, y0, w, h: i32) -> (^types.Image, bool) #optional_ok {
     
     sub : []u8 = make([]u8, w * h * image.channels)
 
@@ -49,7 +49,7 @@ crop_image :: proc(image: ^types.Image,x0, y0, w, h: i32) -> (^types.Image, bool
     return sub_image, true
 }
 
-load :: proc(file_path: string) -> (^types.Image, bool) {
+load :: proc(file_path: string) -> (^types.Image, bool) #optional_ok {
     width, height, channels : i32;
     c := strings.clone_to_cstring(file_path)
     defer delete(c) // allocates, so free it

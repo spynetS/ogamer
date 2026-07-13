@@ -33,6 +33,11 @@ get_storage :: proc(s: ^types.ECS, $T: typeid) -> (^stor.ComponentStorage(T), bo
     return cast(^stor.ComponentStorage(T))ptr, ok
 }
 
+get_new_entity :: proc(ecs: ^types.ECS) -> types.Entity {
+    ecs.entities += 1
+    return ecs.entities
+}
+
 /**
 It will copy the memory and allocate new for the component!
 */

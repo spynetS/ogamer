@@ -20,9 +20,20 @@ TileSet :: struct {
     image: Image,
     tilesheet: ^types.TileSheet
 }
+Object :: struct {
+    id, gid: int,
+    x, y, width, height: f32
+}
+ObjectGroup :: struct {
+    id: int,
+    name: string,
+    objects: [dynamic]Object
+    
+}
 Layer :: struct {
     id, name: string,
-    width, height: int,
+    width, height, visible: int,
+    parallax: types.Vector2,
     data: [dynamic]int
 }
 Map :: struct {
@@ -37,6 +48,9 @@ load_tsx :: proc(tileset: TileSet, path: string) -> TileSet{
     fmt.println("INFO: loading tsx:",path)
     tmx_set := tileset
     doc, error := xml.load_from_file(path)
+
+
+
     for element in doc.elements {
         if element.ident == "tileset" {
             for attr in element.attribs {
@@ -67,6 +81,7 @@ load_tsx :: proc(tileset: TileSet, path: string) -> TileSet{
             
         }
     }
+    
     xml.destroy(doc)
     fmt.println("result:", tmx_set)
     return tmx_set
@@ -96,12 +111,16 @@ load_tmx :: proc(path: string) -> ^Map {
         }
         if element.ident == "layer" {
             indexes = make([dynamic]int) // we allocate memory for the data 
+            layer.visible = 1 // default value
             for attr in element.attribs {
                 switch attr.key{
                 case "id": layer.id = fmt.tprintf(attr.val)
                 case "name": layer.name = fmt.tprintf(attr.val)
                 case "width" : if val,ok := strconv.parse_int(fmt.tprintf(attr.val)); ok do layer.width = val
                 case "height": if val,ok := strconv.parse_int(attr.val); ok do layer.height = val
+                case "visible": if val,ok := strconv.parse_int(attr.val); ok do layer.visible = val
+                case "parallaxx": if val,ok := strconv.parse_f32(attr.val); ok do layer.parallax.x = val
+                case "parallaxy": if val,ok := strconv.parse_f32(attr.val); ok do layer.parallax.y = val
                 }
             }
         }
@@ -138,37 +157,11 @@ load_tmx :: proc(path: string) -> ^Map {
             }
             layer.data = indexes
             append(&tmx_map.layers, layer)
+            layer = Layer({})
         }
     }
     xml.destroy(doc)
     return tmx_map
-}
-
-create_tilemap :: proc(_map: ^Map) -> types.TileMap {
-    tmap := types.TileMap({})
-    tmap.width = _map.width
-    tmap.height = _map.height
-
-    
-    // tilesheet := io.new_tilesheet("./game/assets/FREE_Fantasy Forest/Tiles/Tileset Outside.png", {32,32})
-    // floor_tiles := make([dynamic]^types.Image)
-    // fmt.println("len", len(tilesheet.images), len(tilesheet.images[0]))
-    // for layer in _map.layers {
-    //     for value in layer.data {
-    //         if value == 0 do append(&floor_tiles, nil)
-    //         else {
-    //             x := (value-1) % (_map.tileSet.columns);
-    //             y := (value-1) / (_map.tileSet.columns);
-    //             fmt.println(value-1,x,y)
-    //             append(&floor_tiles, tilesheet.images[y][x])
-    //         }
-    //     }
-    // }
-
-
-
-    // tmap.tiles = floor_tiles
-    return tmap
 }
 
 
