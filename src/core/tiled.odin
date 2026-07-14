@@ -109,7 +109,7 @@ load_tsx :: proc(tileset: ^TileSet, path: string) {
                 case "source":
                     here := filepath.dir(path)
                     src,_ := filepath.join({here, attr.val})
-                    tmx_set.image.source = fmt.tprintf(src) // TODO add path folder
+                    tmx_set.image.source = fmt.tprintf(src)
                     delete(src)
                     created : bool
                     tmx_set.tilesheet, created = io.new_tilesheet(tmx_set.image.source, {cast(i32)tmx_set.tilewidth, cast(i32)tmx_set.tileheight})
@@ -239,7 +239,6 @@ load_tileset :: proc(tileset: json.Object, path: string) -> TileSet {
         _path,_ := filepath.join({here, v})
         // CHECK IF JSON OR TMX
         load_tsx(&_tileset, _path)
-        // delete(here)
         delete(_path)
     } 
     return _tileset
@@ -299,6 +298,8 @@ destroy :: proc(_map: ^Map) {
     for tileset in _map.tilesets {
         if tileset.tilesheet != nil do io.free_tilesheet(tileset.tilesheet)
     }
+    
+    
 
     delete(_map.tilesets)
     delete(_map.layers)
