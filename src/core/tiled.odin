@@ -92,7 +92,6 @@ load_tsx :: proc(tileset: ^TileSet, path: string) {
     doc, error := xml.load_from_file(path)
 
 
-
     for element in doc.elements {
         if element.ident == "tileset" {
             for attr in element.attribs {
@@ -111,6 +110,7 @@ load_tsx :: proc(tileset: ^TileSet, path: string) {
                     here := filepath.dir(path)
                     src,_ := filepath.join({here, attr.val})
                     tmx_set.image.source = fmt.tprintf(src) // TODO add path folder
+                    delete(src)
                     created : bool
                     tmx_set.tilesheet, created = io.new_tilesheet(tmx_set.image.source, {cast(i32)tmx_set.tilewidth, cast(i32)tmx_set.tileheight})
                     if !created do panic("asd")
@@ -238,7 +238,7 @@ load_tileset :: proc(tileset: json.Object, path: string) -> TileSet {
         here := filepath.dir(path)
         _path,_ := filepath.join({here, v})
         // CHECK IF JSON OR TMX
-        //load_tsx(&_tileset, _path)
+        load_tsx(&_tileset, _path)
         // delete(here)
         delete(_path)
     } 
@@ -253,7 +253,9 @@ load_map :: proc(path: string) -> ^Map {
 	  }
 	  defer delete(data)
     _map:= new(Map)
+    // gives "Conditional jump or move depends on uninitialised value(s)" from valgrind
     value, error := json.parse(data)
+
     #partial switch v in value {
         case json.Object:
         _map.width = cast(f32)v["width"].(json.Float)
