@@ -135,77 +135,73 @@ sprite_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^
             sprite.offset = renderer.active_camera.target * (-sprite.parallax)
         }
         
-        cmd := rn.Sprite({t.pos, sprite.offset, t.size+sprite.size, t.rot, sprite.inverted, sprite.image, sprite.layer, sprite.repeated_x, sprite.repeated_y})
+        cmd := rn.Sprite({t.pos, sprite.offset, t.size+sprite.size, t.rot, sprite.inverted, sprite.sprite, sprite.layer, sprite.repeated_x, sprite.repeated_y})
         rn.add_command(renderer, cmd);
     }
 }
 
 sprite_animator_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.Renderer, dt: f32) {
-    storage, ok := ecss.get_storage(ecs, ^types.SpriteAnimator);
-    sprite_storage, ok2 := ecss.get_storage(ecs, ^types.SpriteRenderable);
-    if !ok || !ok2 do return;
-    
+    storage,        ok  := ecss.get_storage(ecs, ^types.SpriteAnimator)
+    sprite_storage, ok2 := ecss.get_storage(ecs, ^types.SpriteRenderable)
+    if !ok || !ok2 do return
+
     for i in 0..<len(storage.dense) {
         animator := storage.dense[i]
-        if animator.disabled do continue;
-        animation_length := 0
-        if animator._active_animation == animator.active_animation {
-            if animator.sprites_length == nil || animator.sprites_length[animator.active_animation] == 0 {
-                animation_length = len(animator.sprites[animator._active_animation])
-            }            
-            else do animation_length = animator.sprites_length[animator._active_animation]
-        }
-        // if we dont have a sprite_component and there is no component create it and add it
+        if animator.disabled do continue
+
+        // Lazily attach a SpriteRenderable to write frames into.
         if animator.sprite_comp == nil {
             index, has_sprite := ecss.has_component(ecs, storage.entities[i], types.SpriteRenderable)
-            if !has_sprite {
-                // if we don't have a sprite create it?
+            if has_sprite {
+                animator.sprite_comp = sprite_storage.dense[index]
+            } else {
                 fmt.println("INFO: Adding sprite component to", storage.entities[i], animator, "because it had no sprite_component")
                 sprite, _ := ecss.add_component(ecs, storage.entities[i], types.SpriteRenderable({}))
                 animator.sprite_comp = sprite
             }
-            else {
-                animator.sprite_comp = sprite_storage.dense[index]
-            }
         }
-        // if we get a new animation to animate 
+
+        // Switch to a newly requested animation.
         if animator.active_animation != animator._active_animation {
-            if animator.active_animation >= len(animator.sprites){
-                fmt.println("WARNING: active_animation", animator._active_animation, "out of bounds")
+            if animator.active_animation < 0 || animator.active_animation >= len(animator.sprites) {
+                fmt.println("WARNING: active_animation", animator.active_animation, "out of bounds")
+                continue
             }
-            else {
-
-                animator._active_animation = animator.active_animation
-                if animator.sprites_length == nil || animator.sprites_length[animator.active_animation] == 0 {
-                    animation_length = len(animator.sprites[animator._active_animation])
-                }            
-                else do animation_length = animator.sprites_length[animator._active_animation]
-
-                animator._frame_counter = animation_length-1
-                animator.active_index = 0
-                animator._time_counter = animator.time
-
-            }
+            animator._active_animation = animator.active_animation
+            animator._frame_counter    = animation_length(animator) - 1
+            animator.active_index      = 0
+            animator._time_counter     = animator.time
         }
 
+        length := animation_length(animator)
+        if length <= 0 do continue // nothing to play; guards the modulo below
+
+        // End-of-cycle bookkeeping.
         if animator._frame_counter <= 0 {
-            animator._frame_counter =  animation_length
+            animator._frame_counter = length
             if animator._first_run do es.emit(types.Event_SpriteAnimator_End({animator}))
-            else do animator._first_run = true
+            else                   do animator._first_run = true
         }
+
+        // Advance the frame timer.
         if animator._time_counter <= 0 {
-
-
-            animator._time_counter = animator.time
-            animator.active_index = (animator.active_index + 1) % animation_length
-            animator.sprite_comp.image = animator.sprites[animator._active_animation][animator.active_index]
-            animator._frame_counter -= 1
+            animator._time_counter      = animator.time
+            animator.active_index       = (animator.active_index + 1) % length
+            animator.sprite_comp.sprite = animator.sprites[animator._active_animation][animator.active_index]
+            animator._frame_counter    -= 1
+        } else {
+            animator._time_counter -= dt
         }
-        else {
-            animator._time_counter -= dt;
-        }
-
     }
+}
+
+// Frames in the current animation: the explicit length if set, else the slice length.
+animation_length :: proc(animator: ^types.SpriteAnimator) -> int {
+    anim := animator._active_animation
+    if animator.sprites_length == nil || animator.sprites_length[anim] == 0 {
+        return len(animator.sprites[anim])
+    }
+    return animator.sprites_length[anim]
 }
 
 

@@ -85,7 +85,7 @@ Map :: struct {
     imagelayers: [dynamic]ImageLayer
 }
 
-load_tsx :: proc(tileset: ^TileSet, path: string) {
+load_tsx :: proc(handler: ^types.IOHandler, tileset: ^TileSet, path: string) {
     // FIXME real path
     fmt.println("INFO: loading tsx:",path)
     tmx_set := tileset
@@ -113,7 +113,7 @@ load_tsx :: proc(tileset: ^TileSet, path: string) {
                     delete(src)
                     created : bool
                     // freed in destroy map
-                    tmx_set.tilesheet, created = io.new_tilesheet(tmx_set.image.source, {cast(i32)tmx_set.tilewidth, cast(i32)tmx_set.tileheight})
+                    tmx_set.tilesheet, created = io.new_tilesheet(handler, tmx_set.image.source, {cast(i32)tmx_set.tilewidth, cast(i32)tmx_set.tileheight})
                     if !created do panic("asd")
                     fmt.println("TILESHEET: ", tmx_set.image.source, tmx_set.tilesheet, created)
 
@@ -134,7 +134,7 @@ load_layer :: proc(layer: json.Object, layer_depth: int) -> Layer {
     _layer := Layer({visible=true, layer_depth=layer_depth, parallax={1,1}});
     if v,ok := layer["width"].(json.Float); ok do _layer.width = cast(int)v
     if v,ok := layer["height"].(json.Float); ok do _layer.height = cast(int)v
-    if v,ok := layer["name"].(json.String); ok do _layer.name = v
+    if v,ok := layer["name"].(json.String); ok do _layer.name = fmt.tprintf(v)
     if v,ok := layer["visible"].(json.Boolean); ok do _layer.visible = v
     if v,ok := layer["parallaxx"].(json.Float); ok do _layer.parallax.x = cast(f32)v
     if v,ok := layer["parallaxy"].(json.Float); ok do _layer.parallax.y = cast(f32)v
@@ -153,13 +153,14 @@ load_imagelayer :: proc(layer: json.Object, path: string, layer_depth: int) -> I
     _layer := ImageLayer({visible=true,layer_depth = layer_depth,parallax={1,1}});
     if v,ok := layer["width"].(json.Float); ok do _layer.width = cast(int)v
     if v,ok := layer["height"].(json.Float); ok do _layer.height = cast(int)v
-    if v,ok := layer["id"].(json.String); ok do _layer.name = v
-    if v,ok := layer["name"].(json.String); ok do _layer.name = v
+    if v,ok := layer["id"].(json.String); ok do _layer.name = fmt.tprintf(v)
+    if v,ok := layer["name"].(json.String); ok do _layer.name = fmt.tprintf(v)
     if v,ok := layer["image"].(json.String); ok {
         here := filepath.dir(path)
         _path,_ := filepath.join({here, v})
-        _layer.image = _path
-            }
+        _layer.image = fmt.tprintf(_path)
+        delete(_path)
+    }
     if v,ok := layer["visible"].(json.Boolean); ok do _layer.visible = v
     if v,ok := layer["repeatx"].(json.Boolean); ok do _layer.repeatx = v
     if v,ok := layer["repeaty"].(json.Boolean); ok do _layer.repeaty = v
@@ -179,8 +180,8 @@ load_imagelayer :: proc(layer: json.Object, path: string, layer_depth: int) -> I
 load_object :: proc (value: json.Object, layer_depth: int) -> Object {
     object := Object({gid=-1, visible=true, layer_depth = layer_depth})
 
-    if v,ok := value["name"].(json.String); ok do object.name = v
-    if v,ok := value["type"].(json.String); ok do object.class = v
+    if v,ok := value["name"].(json.String); ok do object.name  = fmt.tprintf(v)
+    if v,ok := value["type"].(json.String); ok do object.class = fmt.tprintf(v)
     if v,ok := value["gid"].(json.Float); ok do object.gid = cast(int)v
     if v,ok := value["id"].(json.Float); ok do object.id = cast(int)v
     if v,ok := value["width"].(json.Float); ok do object.width = cast(f32)v
@@ -215,8 +216,8 @@ load_object :: proc (value: json.Object, layer_depth: int) -> Object {
 load_objectgroup :: proc(layer: json.Object, layer_depth: int) -> ObjectGroup {
 
     objectgroup := ObjectGroup({visible=true, layer_depth = layer_depth});
-    if v,ok := layer["draworder"].(json.String); ok do objectgroup.draworder = v
-    if v,ok := layer["name"].(json.String); ok do objectgroup.name = v
+    if v,ok := layer["draworder"].(json.String); ok do objectgroup.draworder = fmt.tprintf(v)
+    if v,ok := layer["name"].(json.String); ok do objectgroup.name = fmt.tprintf(v)
     if v,ok := layer["id"].(json.Float); ok do objectgroup.id = cast(int)v
     if v,ok := layer["visible"].(json.Boolean); ok do objectgroup.visible = v
     if v,ok := layer["parallaxx"].(json.Float); ok do objectgroup.parallax.x = cast(f32)v
@@ -232,20 +233,20 @@ load_objectgroup :: proc(layer: json.Object, layer_depth: int) -> ObjectGroup {
     return objectgroup
 }
 
-load_tileset :: proc(tileset: json.Object, path: string) -> TileSet {
+load_tileset :: proc(handler: ^types.IOHandler, tileset: json.Object, path: string) -> TileSet {
     _tileset := TileSet({})
     if v,ok := tileset["firstgid"].(json.Float); ok do _tileset.firstgid = cast(int)v
     if v,ok := tileset["source"].(json.String); ok {
         here := filepath.dir(path)
         _path,_ := filepath.join({here, v})
         // CHECK IF JSON OR TMX
-        load_tsx(&_tileset, _path)
+        load_tsx(handler, &_tileset, _path)
         delete(_path)
     } 
     return _tileset
 }
 
-load_map :: proc(path: string) -> ^Map {
+load_map :: proc(handler: ^types.IOHandler, path: string) -> ^Map {
     data, read_err := os.read_entire_file(path, context.allocator)
 	  if read_err != nil {
 		    fmt.eprintfln("Failed to load the file: %v", read_err)
@@ -278,7 +279,7 @@ load_map :: proc(path: string) -> ^Map {
             layer_depth += 1
         }
         for tileset in v["tilesets"].(json.Array) {
-            append(&_map.tilesets,load_tileset(tileset.(json.Object), path))
+            append(&_map.tilesets,load_tileset(handler, tileset.(json.Object), path))
         }
 
         case:
@@ -299,16 +300,9 @@ destroy :: proc(_map: ^Map) {
         }
         delete(objectgroup.objects)
     }
-    for imagelayer in _map.imagelayers {
-        delete(imagelayer.image)
-    }
-
-
-    for tileset in _map.tilesets {
-        if tileset.tilesheet != nil do io.free_tilesheet(tileset.tilesheet)
-    }
-
-
+    // for imagelayer in _map.imagelayers {
+    //     delete(imagelayer.image)
+    // }
 
     delete(_map.tilesets)
     delete(_map.layers)

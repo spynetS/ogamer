@@ -2,12 +2,14 @@ package core;
 
 import rn "../renderer"
 import "../ecs"
+import "../io"
 import "../types"
 import "../ecs/systems"
 import "../scripting"
 import es "../event-system"
 import "core:time"
 import "core:fmt"
+import "core:mem/virtual"
 
 DEBUG :: false
 
@@ -106,7 +108,10 @@ init_game :: proc() -> ^Game {
     game.renderer = new(rn.Renderer);
     game.io_handler = new(types.IOHandler);
 
+    _ = virtual.arena_init_growing(&game.io_handler.arena)
+
     rn.init_renderer();
+    rn.assets= game.io_handler
     systems.init_physics(&game.ecs);
 
     es.event_queue_init();
@@ -138,12 +143,11 @@ init_game :: proc() -> ^Game {
 
 free_game :: proc(game: ^Game) {
 
-    delete(game.renderer.debug_commands);
-    delete(game.renderer.deinit_commands);
-    delete(game.renderer.draw_commands);
-    delete(game.renderer.init_commands);
-    free(game.renderer);
-    free(game.io_handler);
+    for path, image in game.io_handler.textures {
+        fmt.println(path)
+    }
+
+
     ecs.delete_storage(&game.ecs, ^types.Script);
     ecs.delete_storage(&game.ecs, ^types.Parent);
     ecs.delete_storage(&game.ecs, ^types.Transform);
@@ -161,6 +165,13 @@ free_game :: proc(game: ^Game) {
     rn.deinit_renderer();
     es.event_queue_destroy();
 
+    
+    delete(game.renderer.debug_commands);
+    delete(game.renderer.deinit_commands);
+    delete(game.renderer.draw_commands);
+    delete(game.renderer.init_commands);
+    free(game.renderer);
+    io.free_handler(game.io_handler)
     delete(game.ecs.storages);
     free(game);
 }

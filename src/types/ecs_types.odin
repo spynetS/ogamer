@@ -1,4 +1,5 @@
 package types;
+import "core:mem/virtual"
 
 Entity :: u32;
 Vector2 :: [2]f32;
@@ -42,19 +43,26 @@ Script  :: struct {
 Image :: struct {
     data : []u8,
     width, height, mipmaps, channels : i32,
-    
+}
+
+UV :: distinct [2][2]f32
+
+Texture_ID :: distinct string
+Sprite :: struct {
+    texture: Texture_ID,
+    uv: UV
 }
 
 TileSheet :: struct {
-    images: [][]^Image,
+    sprites: [][]Sprite,
     size: [2]i32 // the width and height for each tile
 }
 
 IOHandler :: struct {
-    images : map[string]^Image
+    textures: map[Texture_ID]^Image,
+    id_counter: u32,
+    arena: virtual.Arena
 }
-
-
 
 BodyType :: enum {
     staticBody = 0,
@@ -129,12 +137,12 @@ SquareCollider :: struct {
 TileMap :: struct {
     using component: Component,
     width, height, layer : int, 
-    tiles         : [dynamic]^Image // size = width * height, row-major
+    tiles         : [dynamic]Sprite // size = width * height, row-major
 }
 
 SpriteRenderable :: struct {
     using component : Component,
-    image           : ^Image,
+    sprite          : Sprite,
     inverted        : bool,
     size            : Vector2,
     offset          : Vector2,
@@ -157,7 +165,7 @@ UiSprite :: struct {
 SpriteAnimator :: struct {
     using component   : Component,
     sprite_comp       : ^SpriteRenderable, // sprite component to be actived on
-    sprites           : [][]^Image,        // image matrix
+    sprites           : [][]Sprite,        // image matrix
     sprites_length    : []int,             // the "real" length of each animation
     active_animation  : int,               // the row in the sprites matrix
     _active_animation : int,               // internal row in the sprites matrix
