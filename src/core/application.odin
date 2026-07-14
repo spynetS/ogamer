@@ -9,6 +9,8 @@ import es "../event-system"
 import "core:time"
 import "core:fmt"
 
+DEBUG :: false
+
 Game :: struct {
     should_run        : bool,
     renderer          : ^rn.Renderer,
@@ -36,6 +38,8 @@ change_scene :: proc(game: ^Game, name: string) {
 
 
 main_loop :: proc (game: ^Game) {
+
+
     begin :rn.BeginDraw = {};
     end :rn.EndDraw = {};
     cmd : rn.Clear = {game.clear_color}
@@ -88,10 +92,14 @@ main_loop :: proc (game: ^Game) {
         rn.add_command(game.renderer, end);
         es.event_queue_clear();
         rn.execute(game.renderer);
+
+        if DEBUG do game.should_run = false
+
     }
 }
 
 init_game :: proc() -> ^Game {
+    if DEBUG do rn.RENDER = false
     game := new(Game);
     game.should_run = true;
     game.clear_color = rn.get_color(0x00aaddff)

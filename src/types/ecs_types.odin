@@ -41,7 +41,8 @@ Script  :: struct {
 
 Image :: struct {
     data : []u8,
-    width, height, mipmaps, channels : i32
+    width, height, mipmaps, channels : i32,
+    
 }
 
 TileSheet :: struct {
@@ -132,13 +133,15 @@ TileMap :: struct {
 }
 
 SpriteRenderable :: struct {
-    using component: Component,
-    image    : ^Image,
-    inverted : bool,
-    size     : Vector2,
-    offset   : Vector2,
-    parallax : Vector2,
-    layer    : int,
+    using component : Component,
+    image           : ^Image,
+    inverted        : bool,
+    size            : Vector2,
+    offset          : Vector2,
+    parallax        : Vector2,
+    layer           : int,
+    repeated_x      : bool,
+    repeated_y      : bool,
 }
 UiSprite :: struct {
     using component: Component,

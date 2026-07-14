@@ -13,7 +13,7 @@
          "opacity":1,
          "parallaxx":0.1,
          "type":"imagelayer",
-         "visible":true,
+         "visible":false,
          "x":0,
          "y":0
         }, 
@@ -227,6 +227,12 @@
                  "id":5,
                  "name":"",
                  "opacity":1,
+                 "properties":[
+                        {
+                         "name":"collider",
+                         "type":"bool",
+                         "value":true
+                        }],
                  "rotation":0,
                  "type":"collider",
                  "visible":true,

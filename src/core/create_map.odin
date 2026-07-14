@@ -23,7 +23,7 @@ get_tileset :: proc(_map: ^Map, gid: int) -> (TileSet, bool) {
     return result, found
 }
 
-create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}) {
+create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}, on_create: proc(Object, types.Transform) = nil) {
     // map height in pixels, scaled — used only for the Y flip
     map_w := cast(f32)_map.width * cast(f32)_map.tilewidth * tile_scale.x
     map_h := cast(f32)_map.height * cast(f32)_map.tileheight * tile_scale.y
@@ -32,9 +32,10 @@ create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector
         for object in objectgroup.objects {
             if !object.visible do continue
             is_tile := object.gid != -1
-
+            // FIXME maybe not create a entity if not necceary
             go := scripting.new_gameobject(ecs)
-
+            defer scripting.free_gameobject(go)
+            
             x := object.x * tile_scale.x
             y := object.y * tile_scale.y
 
@@ -55,21 +56,12 @@ create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector
                         image = tileset.tilesheet.images[grid_y][grid_x],
                     }))
                 }
-            } else {
-                if object.class == "collider" {
-                    scripting.add_component(go, types.RigidBody({}))
-                    scripting.add_component(go, types.SquareCollider({}))
-                    scripting.add_component(go, types.RectangleRenderable({
-                        color = renderer.get_color(0x00ff00aa),
-                    }))
-                }
-                else {
-                    scripting.add_component(go, types.RectangleRenderable({
-                        color = renderer.get_color(0x181818aa),
-                        
-                    }))
-                }
             }
+            if object.class == "collider" {
+                scripting.add_component(go, types.RigidBody({}))
+                scripting.add_component(go, types.SquareCollider({}))
+            }
+            on_create(object, go.transform^)
         }
     }
 }
@@ -105,12 +97,13 @@ position_gameobject :: proc (
 }
 
 create_tiles :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}) {
-        for layer in _map.layers {
+    for layer in _map.layers {
         if layer.visible == false do continue
         fmt.println("LAYER:", layer)
         for i in 0..<len(layer.data) {
             value := layer.data[i] & 0x0FFF_FFFF  // clear h/v/diagonal/rotate flags
             if tileSet, found := get_tileset(_map, value); found {
+                if tileSet.columns == 0 do continue
                 grid_x := (value - tileSet.firstgid) % tileSet.columns
                 grid_y := (value - tileSet.firstgid) / tileSet.columns
 
@@ -118,6 +111,8 @@ create_tiles :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {
                 y := i / layer.width
                 
                 go := scripting.new_gameobject(ecs)
+                defer scripting.free_gameobject(go)
+                
                 position_gameobject(go,
                                     {cast(f32)x,cast(f32)y},
                                     {cast(f32)layer.width,cast(f32)layer.height},
@@ -128,10 +123,10 @@ create_tiles :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {
                 scripting.add_component(go, types.SpriteRenderable({
                     image = tileSet.tilesheet.images[grid_y][grid_x],
                     layer=layer.layer_depth,
-                    parallax=-layer.parallax
+                    parallax=layer.parallax-1
                 }))
 
-            }
+             }
         }
     }
 }
@@ -145,7 +140,7 @@ create_imagelayer :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2
         if !imagelayer.visible do continue
         // TODO implement repeat
         go := scripting.new_gameobject(ecs)
-        defer free(go)
+        defer scripting.free_gameobject(go)
 
         x := imagelayer.offsetx * tile_scale.x
         y := -imagelayer.offsety * tile_scale.y
@@ -160,20 +155,23 @@ create_imagelayer :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2
         } * tile_scale
 
         go.transform.pos += {imagelayer.imagewidth/2, imagelayer.imageheight/2}*tile_scale
-
+        // memory leak
         image, loaded := io.load(imagelayer.image)
-        if !loaded do panic("ASd")
+ 
         scripting.add_component(go, types.SpriteRenderable({
             image=image,
             layer=imagelayer.layer_depth,
-            parallax=-imagelayer.parallax
+            parallax = imagelayer.parallax-1,
+            repeated_x = imagelayer.repeatx,
+            repeated_y = imagelayer.repeaty
         }))
     }
 }
 
-create_from_map :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}) {
+create_from_map :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}, on_create: proc(Object, types.Transform) = nil) {
+
     create_tiles(ecs, _map, tile_scale)
-    create_objectgroup(ecs, _map, tile_scale)
+    create_objectgroup(ecs, _map, tile_scale, on_create)
     create_imagelayer(ecs,_map, tile_scale)
 }
 

@@ -7,7 +7,7 @@ import "core:strings";
 import es "../event-system";
 import "../types";
 
-RENDER :: true
+RENDER := true
 DEBUG  :: false
 
 
@@ -39,7 +39,7 @@ deinit_renderer :: proc() {
 execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
     #partial switch v in command {
         case InitWindow:
-        rl.SetTargetFPS(144)
+        rl.SetTargetFPS(60)
         case BeginDraw:
         rl.BeginTextureMode(target);
         // if there is no camera we create it
@@ -92,8 +92,8 @@ execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
             );
         }
         case Sprite:
-        // tecture cacheing
-        // TODO load this before rendering (make a sperate function to load tectures)
+        // texture cacheing
+        // TODO load this before rendering (make a sperate function to load textures)
         if v.image == nil do break
         sprite, got := texture_cache[v.image]
         if !got {
@@ -109,23 +109,59 @@ execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
             texture_cache[v.image] = sprite
         }
         
-        
-        source : rl.Rectangle = {0,0, cast(f32)(v.inverted ? -sprite.width :sprite.width ), cast(f32)sprite.height}
-        dest : rl.Rectangle = {v.pos.x,-v.pos.y, v.size.x, v.size.y} // Y-up
+        source: rl.Rectangle = {
+            0,
+            0,
+            cast(f32)(v.inverted ? -sprite.width : sprite.width),
+            cast(f32)sprite.height,
+        }
+        if v.repeated_x {
+            tile_width := cast(f32)v.size.x // whatever your spacing is
 
-        origin : rl.Vector2 = {
-            v.size.x / 2,
-            v.size.y / 2
-        };
+            screenWidth :f32= cast(f32)rl.GetScreenWidth()
+            left  := camera.target.x - (screenWidth) / camera.zoom
+            right := camera.target.x + (screenWidth) / camera.zoom
+            // still subtract the sprite offset, exactly like before
+            start := cast(i32)math.floor((left  - v.offset.x) / tile_width) - 1
+            end   := cast(i32)math.ceil ((right - v.offset.x) / tile_width) + 1
 
-        rl.DrawTexturePro(
-            sprite,
-            source,
-            dest,
-            origin,
-            -v.rot, // Y-up: CCW-positive rotation
-            rl.Color(get_color(0xffffffff))
-        )
+            for i := start; i <= end; i += 1 {
+                x := cast(f32)i * tile_width + v.offset.x
+                dest: rl.Rectangle = {
+                    x,
+                    -v.pos.y-v.offset.y,
+                    v.size.x,
+                    v.size.y,
+                }
+
+                rl.DrawTexturePro(
+                    sprite,
+                    source,
+                    dest,
+                    {v.size.x/2, v.size.y/2},
+                    -v.rot,
+                    rl.WHITE,
+                )
+            }
+        }
+        else {
+            dest: rl.Rectangle = {
+                v.pos.x + v.offset.x,
+                -v.pos.y - v.offset.y,
+                v.size.x,
+                v.size.y,
+            }
+
+            rl.DrawTexturePro(
+                sprite,
+                source,
+                dest,
+                {v.size.x/2, v.size.y/2},
+                -v.rot,
+                rl.WHITE,
+            )
+            
+        }
     }
 
 }
@@ -180,11 +216,11 @@ execute :: proc(renderer: ^Renderer) {
 
     // if we are in debug mode add debug render commands to render commands
     if DEBUG {
-         for command in renderer.debug_commands{
-             inject_at(&renderer.draw_commands, len(&renderer.draw_commands)-1, command);
-         }
+        for command in renderer.debug_commands{
+            inject_at(&renderer.draw_commands, len(&renderer.draw_commands)-1, command);
+        }
 
-     }
+    }
 
     if RENDER {
         // Handle before draw commands

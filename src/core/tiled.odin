@@ -11,7 +11,18 @@ import "core:fmt"
 import "core:encoding/xml"
 import "core:encoding/json"
 
+// TODO make a common struct with values many of theise use (like position, visible etcp)
+Value :: union {
+	i64, 
+	f64, 
+	bool, 
+	string, 
+}
 
+Property :: struct {
+    name, type: string,
+    value: Value
+}
 
 Image :: struct {
     source: string,
@@ -30,34 +41,39 @@ Object :: struct {
     visible: bool,
     name: string,
     class: string, // or type?
-    layer_depth: int
+    layer_depth: int,
+    properties: [dynamic]Property,
+    point: bool
 }
-ObjectGroup :: struct {
-    id, width, height: int,
+
+LayerBase :: struct {
+    id: int,
     name: string,
-    draworder: string,
+
     visible: bool,
     parallax: types.Vector2,
+    layer_depth: int,
+}
+
+ObjectGroup :: struct {
+    using base: LayerBase,
+
+    width, height: int,
+    draworder: string,
     objects: [dynamic]Object,
-    layer_depth: int
-    
+        
 }
 ImageLayer :: struct {
-    id, name, image: string,
+    using base: LayerBase, 
+    image: string,
     width, height: int,
     imagewidth, imageheight, x, y, offsetx, offsety: f32,
     repeatx, repeaty: bool,
-    visible: bool,
-    parallax: types.Vector2,
-        layer_depth: int
 }
 Layer :: struct {
-    id, name: string,
+    using base: LayerBase,
     width, height: int,
-    visible: bool,
-    parallax: types.Vector2,
     data: [dynamic]int,
-    layer_depth: int
 }
 Map :: struct {
     orientation, renderorder: string, // TODO implement
@@ -74,7 +90,6 @@ load_tsx :: proc(tileset: ^TileSet, path: string) {
     fmt.println("INFO: loading tsx:",path)
     tmx_set := tileset
     doc, error := xml.load_from_file(path)
-
 
 
     for element in doc.elements {
@@ -94,8 +109,10 @@ load_tsx :: proc(tileset: ^TileSet, path: string) {
                 case "source":
                     here := filepath.dir(path)
                     src,_ := filepath.join({here, attr.val})
-                    tmx_set.image.source = fmt.tprintf(src) // TODO add path folder
+                    tmx_set.image.source = fmt.tprintf(src)
+                    delete(src)
                     created : bool
+                    // freed in destroy map
                     tmx_set.tilesheet, created = io.new_tilesheet(tmx_set.image.source, {cast(i32)tmx_set.tilewidth, cast(i32)tmx_set.tileheight})
                     if !created do panic("asd")
                     fmt.println("TILESHEET: ", tmx_set.image.source, tmx_set.tilesheet, created)
@@ -114,7 +131,7 @@ load_tsx :: proc(tileset: ^TileSet, path: string) {
 
 load_layer :: proc(layer: json.Object, layer_depth: int) -> Layer {
 
-    _layer := Layer({visible=true, layer_depth=layer_depth});
+    _layer := Layer({visible=true, layer_depth=layer_depth, parallax={1,1}});
     if v,ok := layer["width"].(json.Float); ok do _layer.width = cast(int)v
     if v,ok := layer["height"].(json.Float); ok do _layer.height = cast(int)v
     if v,ok := layer["name"].(json.String); ok do _layer.name = v
@@ -133,7 +150,7 @@ load_layer :: proc(layer: json.Object, layer_depth: int) -> Layer {
 }
 load_imagelayer :: proc(layer: json.Object, path: string, layer_depth: int) -> ImageLayer {
 
-    _layer := ImageLayer({visible=true,layer_depth = layer_depth});
+    _layer := ImageLayer({visible=true,layer_depth = layer_depth,parallax={1,1}});
     if v,ok := layer["width"].(json.Float); ok do _layer.width = cast(int)v
     if v,ok := layer["height"].(json.Float); ok do _layer.height = cast(int)v
     if v,ok := layer["id"].(json.String); ok do _layer.name = v
@@ -141,9 +158,11 @@ load_imagelayer :: proc(layer: json.Object, path: string, layer_depth: int) -> I
     if v,ok := layer["image"].(json.String); ok {
         here := filepath.dir(path)
         _path,_ := filepath.join({here, v})
-         _layer.image = _path
-    }
+        _layer.image = _path
+            }
     if v,ok := layer["visible"].(json.Boolean); ok do _layer.visible = v
+    if v,ok := layer["repeatx"].(json.Boolean); ok do _layer.repeatx = v
+    if v,ok := layer["repeaty"].(json.Boolean); ok do _layer.repeaty = v
     if v,ok := layer["parallaxx"].(json.Float); ok do _layer.parallax.x = cast(f32)v
     if v,ok := layer["parallaxy"].(json.Float); ok do _layer.parallax.y = cast(f32)v
     if v,ok := layer["x"].(json.Float); ok do _layer.x = cast(f32)v
@@ -167,11 +186,28 @@ load_object :: proc (value: json.Object, layer_depth: int) -> Object {
     if v,ok := value["width"].(json.Float); ok do object.width = cast(f32)v
     if v,ok := value["height"].(json.Float); ok do object.height = cast(f32)v
     if v,ok := value["visible"].(json.Boolean); ok do object.visible = v
+    if v,ok := value["point"].(json.Boolean); ok do object.point = v
     if v,ok := value["x"].(json.Float); ok do object.x = cast(f32)v
     if v,ok := value["y"].(json.Float); ok do object.y = cast(f32)v
-
+    if v,ok := value["properties"].(json.Array); ok {
+        for el in v {
+            prop := Property({})
+            #partial switch val in el {
+                case json.Object:
+                #partial switch type in val["value"] {
+                    case json.Integer : prop.value=type
+                    case json.Float   : prop.value=type
+                    case json.Boolean : prop.value=type
+                    case json.String  : prop.value=type
+                }
+                prop.name = val["name"].(json.String)
+                prop.type = val["type"].(json.String)
+            }
+            append(&object.properties, prop)
+        }
+    }
+    
     // TODO add properties
-
     return object
 
 }
@@ -204,6 +240,7 @@ load_tileset :: proc(tileset: json.Object, path: string) -> TileSet {
         _path,_ := filepath.join({here, v})
         // CHECK IF JSON OR TMX
         load_tsx(&_tileset, _path)
+        delete(_path)
     } 
     return _tileset
 }
@@ -216,7 +253,9 @@ load_map :: proc(path: string) -> ^Map {
 	  }
 	  defer delete(data)
     _map:= new(Map)
+    // gives "Conditional jump or move depends on uninitialised value(s)" from valgrind
     value, error := json.parse(data)
+
     #partial switch v in value {
         case json.Object:
         _map.width = cast(f32)v["width"].(json.Float)
@@ -229,7 +268,7 @@ load_map :: proc(path: string) -> ^Map {
         _map.tilewidth = cast(int)v["tilewidth"].(json.Float)
         _map.tileheight = cast(int)v["tileheight"].(json.Float)
 
-        layer_depth := 0
+        layer_depth := -len(v["layers"].(json.Array))
         for layer in v["layers"].(json.Array) {
             switch layer.(json.Object)["type"].(json.String)  {
             case "tilelayer": append(&_map.layers,load_layer(layer.(json.Object), layer_depth))
@@ -245,85 +284,8 @@ load_map :: proc(path: string) -> ^Map {
         case:
         fmt.println("WARNING: no real map")
     }
-
+    json.destroy_value(value)
     return _map
-}
-
-load_tmx :: proc(path: string) -> ^Map {
-    tmx_map := new(Map);
-    doc, error := xml.load_from_file(path)
-    indexes : [dynamic]int
-    layer := Layer({})
-    tileset := TileSet({})
-    for element in doc.elements {
-        if element.ident == "map" {
-            for attr in element.attribs {
-                switch attr.key{
-                case "orientation": tmx_map.orientation = fmt.tprintf(attr.val)
-                case "renderorder": tmx_map.renderorder = fmt.tprintf(attr.val)
-                case "width": if val,ok := strconv.parse_f32(attr.val); ok do tmx_map.width = val
-                case "height": if val,ok := strconv.parse_f32(attr.val); ok do tmx_map.height = val
-                case "tilewidth": if val,ok := strconv.parse_int(attr.val); ok do tmx_map.tilewidth = val
-                case "tileheight": if val,ok := strconv.parse_int(attr.val); ok do tmx_map.tileheight = val
-                case "infinite": if val,ok := strconv.parse_int(attr.val); ok do tmx_map.infinite = val
-                case "nextlayerid": if val,ok := strconv.parse_int(attr.val); ok do tmx_map.nextlayerid = val
-                case "nextobjectid": if val,ok := strconv.parse_int(attr.val); ok do tmx_map.nextobjectid = val
-                }
-            }
-        }
-        if element.ident == "layer" {
-            indexes = make([dynamic]int) // we allocate memory for the data 
-            layer.visible = true // default value
-            for attr in element.attribs {
-                switch attr.key{
-                case "id": layer.id = fmt.tprintf(attr.val)
-                case "name": layer.name = fmt.tprintf(attr.val)
-                case "width" : if val,ok := strconv.parse_int(fmt.tprintf(attr.val)); ok do layer.width = val
-                case "height": if val,ok := strconv.parse_int(attr.val); ok do layer.height = val
-                case "visible": if val,ok := strconv.parse_int(attr.val); ok do layer.visible = val == 1 ? true : false
-                case "parallaxx": if val,ok := strconv.parse_f32(attr.val); ok do layer.parallax.x = val
-                case "parallaxy": if val,ok := strconv.parse_f32(attr.val); ok do layer.parallax.y = val
-                }
-            }
-        }
-        if element.ident == "tileset" {
-            for attr in element.attribs {
-                switch attr.key {
-                case "firstgid": if val,ok := strconv.parse_int(attr.val); ok do tileset.firstgid = val
-                case "source":
-                    // FIXME
-                    here := filepath.dir(path)
-                    _path,_ := filepath.join({here, attr.val})
-                    fmt.println("LOAD TSX:", _path)
-                    load_tsx(&tileset,_path)
-                }
-            }
-            append(&tmx_map.tilesets, tileset)
-            tileset = TileSet({})
-        }
-        if element.ident == "data" {
-            #partial switch v in element.value[0] {
-                case string:
-                values := strings.split(v, ",")
-                for value in values{
-                    // CSV rows have trailing commas + newlines, so tokens like
-                    // "\n0" appear; trim whitespace or parse_int drops them
-                    // (which silently dropped the first tile of every row).
-                    trimmed := strings.trim_space(value)
-                    if trimmed == "" do continue
-                    if value, could := strconv.parse_int(trimmed); could  {
-                        append(&indexes, value)
-                    }
-                }
-                delete(values)
-            }
-            layer.data = indexes
-            append(&tmx_map.layers, layer)
-            layer = Layer({})
-        }
-    }
-    xml.destroy(doc)
-    return tmx_map
 }
 
 
@@ -331,8 +293,26 @@ destroy :: proc(_map: ^Map) {
     for layer in _map.layers {
         delete(layer.data)
     }
-    
-    delete(_map.layers)
-    free(_map)
+    for objectgroup in _map.objectgroups {
+        for object in objectgroup.objects {
+            delete(object.properties)
+        }
+        delete(objectgroup.objects)
+    }
+    for imagelayer in _map.imagelayers {
+        delete(imagelayer.image)
+    }
 
+
+    for tileset in _map.tilesets {
+        if tileset.tilesheet != nil do io.free_tilesheet(tileset.tilesheet)
+    }
+
+
+
+    delete(_map.tilesets)
+    delete(_map.layers)
+    delete(_map.objectgroups)
+    delete(_map.imagelayers)
+    free(_map)
 }
