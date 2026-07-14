@@ -94,7 +94,7 @@ execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
             );
         }
         case Sprite:
-        if assets == nil do break
+        if assets == nil || v.sprite.texture == "" do break
         sprite := v.sprite;
         texture := assets.textures[sprite.texture]
         rl_texture, found := texture_cache[texture]; 
@@ -118,9 +118,10 @@ execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
         source: rl.Rectangle = {
             cast(f32)(sprite.uv[0].x * tw),
             cast(f32)(sprite.uv[0].y * th),
-            cast(f32)((sprite.uv[1].x - sprite.uv[0].x) * tw),
+            cast(f32)((sprite.uv[1].x - sprite.uv[0].x) * tw) * cast(f32) (v.inverted ? -1 : 1),
             cast(f32)((sprite.uv[1].y - sprite.uv[0].y) * th),
         }
+        
 
         if v.repeated_x {
             tile_width := cast(f32)v.size.x // whatever your spacing is
