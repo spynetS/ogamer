@@ -85,7 +85,7 @@ Map :: struct {
     imagelayers: [dynamic]ImageLayer
 }
 
-load_tsx :: proc(tileset: ^TileSet, path: string) {
+load_tsx :: proc(handler: ^types.IOHandler, tileset: ^TileSet, path: string) {
     // FIXME real path
     fmt.println("INFO: loading tsx:",path)
     tmx_set := tileset
@@ -113,7 +113,7 @@ load_tsx :: proc(tileset: ^TileSet, path: string) {
                     delete(src)
                     created : bool
                     // freed in destroy map
-                    tmx_set.tilesheet, created = io.new_tilesheet(tmx_set.image.source, {cast(i32)tmx_set.tilewidth, cast(i32)tmx_set.tileheight})
+                    tmx_set.tilesheet, created = io.new_tilesheet(handler, tmx_set.image.source, {cast(i32)tmx_set.tilewidth, cast(i32)tmx_set.tileheight})
                     if !created do panic("asd")
                     fmt.println("TILESHEET: ", tmx_set.image.source, tmx_set.tilesheet, created)
 
@@ -232,20 +232,20 @@ load_objectgroup :: proc(layer: json.Object, layer_depth: int) -> ObjectGroup {
     return objectgroup
 }
 
-load_tileset :: proc(tileset: json.Object, path: string) -> TileSet {
+load_tileset :: proc(handler: ^types.IOHandler, tileset: json.Object, path: string) -> TileSet {
     _tileset := TileSet({})
     if v,ok := tileset["firstgid"].(json.Float); ok do _tileset.firstgid = cast(int)v
     if v,ok := tileset["source"].(json.String); ok {
         here := filepath.dir(path)
         _path,_ := filepath.join({here, v})
         // CHECK IF JSON OR TMX
-        load_tsx(&_tileset, _path)
+        load_tsx(handler, &_tileset, _path)
         delete(_path)
     } 
     return _tileset
 }
 
-load_map :: proc(path: string) -> ^Map {
+load_map :: proc(handler: ^types.IOHandler, path: string) -> ^Map {
     data, read_err := os.read_entire_file(path, context.allocator)
 	  if read_err != nil {
 		    fmt.eprintfln("Failed to load the file: %v", read_err)
@@ -278,7 +278,7 @@ load_map :: proc(path: string) -> ^Map {
             layer_depth += 1
         }
         for tileset in v["tilesets"].(json.Array) {
-            append(&_map.tilesets,load_tileset(tileset.(json.Object), path))
+            append(&_map.tilesets,load_tileset(handler, tileset.(json.Object), path))
         }
 
         case:
@@ -307,7 +307,6 @@ destroy :: proc(_map: ^Map) {
     for tileset in _map.tilesets {
         if tileset.tilesheet != nil do io.free_tilesheet(tileset.tilesheet)
     }
-
 
 
     delete(_map.tilesets)

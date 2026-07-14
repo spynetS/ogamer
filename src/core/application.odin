@@ -2,6 +2,7 @@ package core;
 
 import rn "../renderer"
 import "../ecs"
+import "../io"
 import "../types"
 import "../ecs/systems"
 import "../scripting"
@@ -138,12 +139,11 @@ init_game :: proc() -> ^Game {
 
 free_game :: proc(game: ^Game) {
 
-    delete(game.renderer.debug_commands);
-    delete(game.renderer.deinit_commands);
-    delete(game.renderer.draw_commands);
-    delete(game.renderer.init_commands);
-    free(game.renderer);
-    free(game.io_handler);
+    for path, image in game.io_handler.images {
+        fmt.println(path)
+    }
+
+
     ecs.delete_storage(&game.ecs, ^types.Script);
     ecs.delete_storage(&game.ecs, ^types.Parent);
     ecs.delete_storage(&game.ecs, ^types.Transform);
@@ -161,6 +161,13 @@ free_game :: proc(game: ^Game) {
     rn.deinit_renderer();
     es.event_queue_destroy();
 
+    
+    delete(game.renderer.debug_commands);
+    delete(game.renderer.deinit_commands);
+    delete(game.renderer.draw_commands);
+    delete(game.renderer.init_commands);
+    free(game.renderer);
+    free(game.io_handler);
     delete(game.ecs.storages);
     free(game);
 }

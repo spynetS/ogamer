@@ -42,8 +42,8 @@ Script  :: struct {
 Image :: struct {
     data : []u8,
     width, height, mipmaps, channels : i32,
-    
 }
+Image_ID :: string
 
 TileSheet :: struct {
     images: [][]^Image,
@@ -51,10 +51,10 @@ TileSheet :: struct {
 }
 
 IOHandler :: struct {
-    images : map[string]^Image
+    images : map[Image_ID]^Image,
+    id_counter: u32
+    
 }
-
-
 
 BodyType :: enum {
     staticBody = 0,

@@ -8,8 +8,8 @@ new_tilesheet :: proc  {
     new_tilesheet_image
 }
 
-new_tilesheet_path :: proc (path: string, tile_size: [2]i32, box_offset:[2]i32 = {0,0}) -> (^types.TileSheet, bool) #optional_ok {
-    image, ok := load(path);
+new_tilesheet_path :: proc (handler: ^types.IOHandler, path: string, tile_size: [2]i32, box_offset:[2]i32 = {0,0}) -> (^types.TileSheet, bool) #optional_ok {
+    image, ok := load(handler, path);
     defer free_image(image);
     if !ok do return nil, false
 
