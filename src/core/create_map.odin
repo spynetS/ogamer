@@ -1,5 +1,6 @@
 package core;
 import "core:fmt"
+import "core:mem/virtual"
 import "../scripting"
 import "../renderer"
 import "../types"
@@ -122,13 +123,36 @@ create_tiles :: proc (game: ^Game, _map: ^Map, tile_scale: types.Vector2 = {1,1}
                                     tileSet,
                                     _map,
                                     tile_scale)
+                // if the tileset has a specgic tile we can we have to do some more stuff
+                // TODO pigs dont work
+                if tile, found := tileSet.tiles[value-tileSet.firstgid]; found {
+                    fmt.println("FOUND ANIMATION")
+                    switch tile in tile{
+                    case Animation:
+                        size := len(tile.frames)
+                        sprites := make([][]types.Sprite, 1, allocator=virtual.arena_allocator(&game.io_handler.arena))
+                        sprites[0] = make([]types.Sprite, size, allocator=virtual.arena_allocator(&game.io_handler.arena))
+                        for i in 0..<size {
+                            gid := tile.frames[i].tileid
+                            grid_x := (gid) % tileSet.columns
+                            grid_y := (gid) / tileSet.columns
+                            sprite := tileSet.tilesheet.sprites[grid_y][grid_x]
+                            sprites[0][i] = sprite
+                        }
+                        scripting.add_component(go, types.SpriteAnimator({
+                            sprites=sprites,
+                            time=1/cast(f32)tile.frames[0].duration,
+                        }))
+                    }
 
-                scripting.add_component(go, types.SpriteRenderable({
-                    sprite = tileSet.tilesheet.sprites[grid_y][grid_x],
-                    layer=layer.layer_depth,
-                    parallax=layer.parallax-1
-                }))
-
+                }
+                else {
+                    scripting.add_component(go, types.SpriteRenderable({
+                        sprite = tileSet.tilesheet.sprites[grid_y][grid_x],
+                        layer=layer.layer_depth,
+                        parallax=layer.parallax-1
+                    }))
+                }
              }
         }
     }
@@ -171,7 +195,7 @@ create_imagelayer :: proc(game: ^Game, _map: ^Map, tile_scale: types.Vector2 = {
 }
 
 create_from_map :: proc (game: ^Game, _map: ^Map, tile_scale: types.Vector2 = {1,1}, on_create: proc(Object, types.Transform) = nil) {
-
+    if _map == nil do return
     create_tiles(game, _map, tile_scale)
     create_objectgroup(game, _map, tile_scale, on_create)
     create_imagelayer(game,_map, tile_scale)

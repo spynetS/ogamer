@@ -38,8 +38,8 @@ create_player :: proc(pos: types.Vector2) {
 
 main :: proc() {
     game = core.init_game();
+    _map := core.load_map(game.io_handler, "./game2/map/map.tmj")
 
-    _map := core.load_map(game.io_handler, "./game2/map.tmj")
     defer core.destroy(_map)
     defer core.free_game(game);
 
@@ -47,7 +47,7 @@ main :: proc() {
     core.create_from_map(
         game,
         _map,
-        {3,3},
+        {1.5,1.5},
         on_create = proc (obj: core.Object, transform: types.Transform){
             if obj.class == "player" do create_player(transform.pos)
         })

@@ -13,10 +13,10 @@ import "core:encoding/json"
 
 // TODO make a common struct with values many of theise use (like position, visible etcp)
 Value :: union {
-	i64, 
-	f64, 
-	bool, 
-	string, 
+	  i64, 
+	  f64, 
+	  bool, 
+	  string, 
 }
 
 Property :: struct {
@@ -28,12 +28,19 @@ Image :: struct {
     source: string,
     width, height: int
 }
-
+Animation :: struct {
+    frames: [dynamic]Frame
+}
+// Add objects in future
+Tile :: union {
+    Animation
+}
 TileSet :: struct {
     name: string,
-    firstgid, tilewidth, tileheight, tilecount, columns: int,
+    firstgid, tilewidth, tileheight, tilecount, columns, margin, spacing: int,
     image: Image,
-    tilesheet: ^types.TileSheet
+    tilesheet: ^types.TileSheet,
+    tiles: map[int]Tile
 }
 Object :: struct {
     id, gid: int,
@@ -61,7 +68,7 @@ ObjectGroup :: struct {
     width, height: int,
     draworder: string,
     objects: [dynamic]Object,
-        
+    
 }
 ImageLayer :: struct {
     using base: LayerBase, 
@@ -85,48 +92,63 @@ Map :: struct {
     imagelayers: [dynamic]ImageLayer
 }
 
-load_tsx :: proc(handler: ^types.IOHandler, tileset: ^TileSet, path: string) {
-    // FIXME real path
-    fmt.println("INFO: loading tsx:",path)
-    tmx_set := tileset
-    doc, error := xml.load_from_file(path)
+Frame :: struct {
+    tileid: int,
+    duration: int
+}
 
+load_tileset_file :: proc(handler: ^types.IOHandler, tileset: ^TileSet, path: string) {
+    data, read_err := os.read_entire_file(path, context.allocator)
+	  if read_err != nil {
+		    fmt.eprintfln("Failed to load the file: %v", read_err)
+		    return
+	  }
+	  defer delete(data)
+    // gives "Conditional jump or move depends on uninitialised value(s)" from valgrind
+    value, error := json.parse(data)
+    if error != .None {
+        fmt.println("WARNING: file", path, "is not a json file")
+    }
+    
+    #partial switch type in value{
+    case json.Object:
+        if v, ok := type["columns"].(json.Float); ok do tileset.columns = int(v);
+        if v, ok := type["tilewidth"].(json.Float); ok do tileset.tilewidth = int(v);
+        if v, ok := type["tileheight"].(json.Float); ok do tileset.tileheight = int(v);
+        if v, ok := type["margin"].(json.Float); ok do tileset.margin = int(v);
+        if v, ok := type["spacing"].(json.Float); ok do tileset.spacing = int(v);
+        if v, ok := type["tilecount"].(json.Float); ok do tileset.tilecount = int(v);
+        if v, ok := type["tileheight"].(json.Float); ok do tileset.tileheight = int(v);
+        if v, ok := type["name"].(json.String); ok do tileset.name = fmt.tprintf(v);
+        if v, ok := type["tiles"].(json.Array); ok {
+            for tile in v {
+                if id, ok := tile.(json.Object)["id"].(json.Float); ok {
+                    id := cast(int) id
+                    if frames, ok := tile.(json.Object)["animation"].(json.Array); ok {
+                        anim := Animation({}) 
+                        for frame in frames {
 
-    for element in doc.elements {
-        if element.ident == "tileset" {
-            for attr in element.attribs {
-                switch attr.key{
-                case "name": tmx_set.name = fmt.tprintf(attr.val)
-                case "tilewidth": if val,ok := strconv.parse_int(attr.val); ok do tmx_set.tilewidth = val
-                case "tileheight": if val,ok := strconv.parse_int(attr.val); ok do tmx_set.tileheight = val
-                case "columns": if val,ok := strconv.parse_int(attr.val); ok do tmx_set.columns = val
+                            #partial switch f in frame {
+                                case json.Object:
+                                append(&anim.frames, Frame({tileid=cast(int)f["tileid"].(json.Float), duration=cast(int)f["duration"].(json.Float)}))
+                            }
+
+                        }
+                        tileset.tiles[id] = anim
+                    }
                 }
             }
         }
-        if element.ident == "image" {
-            for attr in element.attribs {
-                switch attr.key{
-                case "source":
-                    here := filepath.dir(path)
-                    src,_ := filepath.join({here, attr.val})
-                    tmx_set.image.source = fmt.tprintf(src)
-                    delete(src)
-                    created : bool
-                    // freed in destroy map
-                    tmx_set.tilesheet, created = io.new_tilesheet(handler, tmx_set.image.source, {cast(i32)tmx_set.tilewidth, cast(i32)tmx_set.tileheight})
-                    if !created do panic("asd")
-                    fmt.println("TILESHEET: ", tmx_set.image.source, tmx_set.tilesheet, created)
-
-                case "width": if val,ok := strconv.parse_int(attr.val); ok do tmx_set.image.width = val
-                case "height": if val,ok := strconv.parse_int(attr.val); ok do tmx_set.image.height = val
-                }
-            }
-            
+        if v, ok := type["image"].(json.String); ok {
+            here := filepath.dir(path)
+            src,_ := filepath.join({here, v})
+            defer delete(src)
+            tileset.image.source = fmt.tprintf(src)
+            tileset.tilesheet = io.new_tilesheet(handler, tileset.image.source, {cast(i32)tileset.tilewidth, cast(i32)tileset.tileheight})
         }
     }
     
-    xml.destroy(doc)
-    fmt.println("result:", tmx_set)
+
 }
 
 load_layer :: proc(layer: json.Object, layer_depth: int) -> Layer {
@@ -239,8 +261,8 @@ load_tileset :: proc(handler: ^types.IOHandler, tileset: json.Object, path: stri
     if v,ok := tileset["source"].(json.String); ok {
         here := filepath.dir(path)
         _path,_ := filepath.join({here, v})
-        // CHECK IF JSON OR TMX
-        load_tsx(handler, &_tileset, _path)
+
+        load_tileset_file(handler, &_tileset, _path)
         delete(_path)
     } 
     return _tileset
@@ -300,13 +322,12 @@ destroy :: proc(_map: ^Map) {
         }
         delete(objectgroup.objects)
     }
-    // for imagelayer in _map.imagelayers {
-    //     delete(imagelayer.image)
-    // }
 
+    // TODO free tiles in tileset
     delete(_map.tilesets)
     delete(_map.layers)
     delete(_map.objectgroups)
     delete(_map.imagelayers)
     free(_map)
 }
+
