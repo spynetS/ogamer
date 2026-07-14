@@ -27,8 +27,10 @@ create_objectgroup :: proc(game: ^Game, _map: ^Map, tile_scale: types.Vector2 = 
     // map height in pixels, scaled — used only for the Y flip
     map_w := cast(f32)_map.width * cast(f32)_map.tilewidth * tile_scale.x
     map_h := cast(f32)_map.height * cast(f32)_map.tileheight * tile_scale.y
-
+    
+    fmt.println(_map.objectgroups)
     for objectgroup in _map.objectgroups {
+        fmt.println(objectgroup)
         for object in objectgroup.objects {
             if !object.visible do continue
             is_tile := object.gid != -1
@@ -53,13 +55,14 @@ create_objectgroup :: proc(game: ^Game, _map: ^Map, tile_scale: types.Vector2 = 
                     grid_y := (gid - tileset.firstgid) / tileset.columns
                     scripting.add_component(go, types.SpriteRenderable({
                         layer=objectgroup.layer_depth,
-                        image = tileset.tilesheet.images[grid_y][grid_x],
+                        sprite = tileset.tilesheet.sprites[grid_y][grid_x],
                     }))
                 }
             }
             if object.class == "collider" {
                 scripting.add_component(go, types.RigidBody({}))
                 scripting.add_component(go, types.SquareCollider({}))
+                fmt.println("COLLIDER")
             }
             on_create(object, go.transform^)
         }
@@ -121,7 +124,7 @@ create_tiles :: proc (game: ^Game, _map: ^Map, tile_scale: types.Vector2 = {1,1}
                                     tile_scale)
 
                 scripting.add_component(go, types.SpriteRenderable({
-                    image = tileSet.tilesheet.images[grid_y][grid_x],
+                    sprite = tileSet.tilesheet.sprites[grid_y][grid_x],
                     layer=layer.layer_depth,
                     parallax=layer.parallax-1
                 }))
@@ -155,10 +158,10 @@ create_imagelayer :: proc(game: ^Game, _map: ^Map, tile_scale: types.Vector2 = {
         } * tile_scale
 
         go.transform.pos += {imagelayer.imagewidth/2, imagelayer.imageheight/2}*tile_scale
-        image, loaded := io.load(game.io_handler, imagelayer.image)
+        sprite, loaded := io.load(game.io_handler, imagelayer.image)
  
         scripting.add_component(go, types.SpriteRenderable({
-            image=image,
+            sprite=sprite,
             layer=imagelayer.layer_depth,
             parallax = imagelayer.parallax-1,
             repeated_x = imagelayer.repeatx,

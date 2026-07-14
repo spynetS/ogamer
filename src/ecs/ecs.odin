@@ -3,6 +3,7 @@ package ecs;
 import stor "./storage"
 import "../types"
 import "core:fmt"
+
 import es "../event-system/"
 
 // Hooks invoked with the component pointer right before that component's memory

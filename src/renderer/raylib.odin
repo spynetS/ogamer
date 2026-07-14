@@ -5,11 +5,13 @@ import "core:slice";
 import "core:math";
 import "core:strings";
 import es "../event-system";
+import io "../io";
 import "../types";
 
 RENDER := true
 DEBUG  :: false
 
+assets :^types.IOHandler= nil
 
 texture_cache: map[^types.Image]rl.Texture2D
 camera := rl.Camera2D({{1240/2,720/2},{0,0},0,1});
@@ -92,29 +94,34 @@ execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
             );
         }
         case Sprite:
-        // texture cacheing
-        // TODO load this before rendering (make a sperate function to load textures)
-        if v.image == nil do break
-        sprite, got := texture_cache[v.image]
-        if !got {
+        if assets == nil do break
+        sprite := v.sprite;
+        texture := assets.textures[sprite.texture]
+        rl_texture, found := texture_cache[texture]; 
+        // if its not cached we add it to cache
+        if !found {
             fmt.println("INFO: load texture")
             image : rl.Image = {
-                raw_data(v.image.data),
-                v.image.width,
-                v.image.height,
-                v.image.mipmaps,
+                raw_data(texture.data),
+                texture.width,
+                texture.height,
+                texture.mipmaps,
                 rl.PixelFormat.UNCOMPRESSED_R8G8B8A8
             }
-            sprite = rl.LoadTextureFromImage(image);
-            texture_cache[v.image] = sprite
+            rl_texture = rl.LoadTextureFromImage(image);
+            texture_cache[texture] = rl_texture
         }
+
+        tw := cast(f32)texture.width
+        th := cast(f32)texture.height
         
         source: rl.Rectangle = {
-            0,
-            0,
-            cast(f32)(v.inverted ? -sprite.width : sprite.width),
-            cast(f32)sprite.height,
+            cast(f32)(sprite.uv[0].x * tw),
+            cast(f32)(sprite.uv[0].y * th),
+            cast(f32)((sprite.uv[1].x - sprite.uv[0].x) * tw),
+            cast(f32)((sprite.uv[1].y - sprite.uv[0].y) * th),
         }
+
         if v.repeated_x {
             tile_width := cast(f32)v.size.x // whatever your spacing is
 
@@ -135,7 +142,7 @@ execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
                 }
 
                 rl.DrawTexturePro(
-                    sprite,
+                    rl_texture,
                     source,
                     dest,
                     {v.size.x/2, v.size.y/2},
@@ -144,7 +151,7 @@ execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
                 )
             }
         }
-        else {
+        else{
             dest: rl.Rectangle = {
                 v.pos.x + v.offset.x,
                 -v.pos.y - v.offset.y,
@@ -153,15 +160,15 @@ execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
             }
 
             rl.DrawTexturePro(
-                sprite,
+                rl_texture,
                 source,
                 dest,
                 {v.size.x/2, v.size.y/2},
                 -v.rot,
                 rl.WHITE,
             )
-            
         }
+
     }
 
 }

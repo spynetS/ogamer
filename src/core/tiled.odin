@@ -134,7 +134,7 @@ load_layer :: proc(layer: json.Object, layer_depth: int) -> Layer {
     _layer := Layer({visible=true, layer_depth=layer_depth, parallax={1,1}});
     if v,ok := layer["width"].(json.Float); ok do _layer.width = cast(int)v
     if v,ok := layer["height"].(json.Float); ok do _layer.height = cast(int)v
-    if v,ok := layer["name"].(json.String); ok do _layer.name = v
+    if v,ok := layer["name"].(json.String); ok do _layer.name = fmt.tprintf(v)
     if v,ok := layer["visible"].(json.Boolean); ok do _layer.visible = v
     if v,ok := layer["parallaxx"].(json.Float); ok do _layer.parallax.x = cast(f32)v
     if v,ok := layer["parallaxy"].(json.Float); ok do _layer.parallax.y = cast(f32)v
@@ -153,13 +153,14 @@ load_imagelayer :: proc(layer: json.Object, path: string, layer_depth: int) -> I
     _layer := ImageLayer({visible=true,layer_depth = layer_depth,parallax={1,1}});
     if v,ok := layer["width"].(json.Float); ok do _layer.width = cast(int)v
     if v,ok := layer["height"].(json.Float); ok do _layer.height = cast(int)v
-    if v,ok := layer["id"].(json.String); ok do _layer.name = v
-    if v,ok := layer["name"].(json.String); ok do _layer.name = v
+    if v,ok := layer["id"].(json.String); ok do _layer.name = fmt.tprintf(v)
+    if v,ok := layer["name"].(json.String); ok do _layer.name = fmt.tprintf(v)
     if v,ok := layer["image"].(json.String); ok {
         here := filepath.dir(path)
         _path,_ := filepath.join({here, v})
-        _layer.image = _path
-            }
+        _layer.image = fmt.tprintf(_path)
+        delete(_path)
+    }
     if v,ok := layer["visible"].(json.Boolean); ok do _layer.visible = v
     if v,ok := layer["repeatx"].(json.Boolean); ok do _layer.repeatx = v
     if v,ok := layer["repeaty"].(json.Boolean); ok do _layer.repeaty = v
@@ -179,8 +180,8 @@ load_imagelayer :: proc(layer: json.Object, path: string, layer_depth: int) -> I
 load_object :: proc (value: json.Object, layer_depth: int) -> Object {
     object := Object({gid=-1, visible=true, layer_depth = layer_depth})
 
-    if v,ok := value["name"].(json.String); ok do object.name = v
-    if v,ok := value["type"].(json.String); ok do object.class = v
+    if v,ok := value["name"].(json.String); ok do object.name  = fmt.tprintf(v)
+    if v,ok := value["type"].(json.String); ok do object.class = fmt.tprintf(v)
     if v,ok := value["gid"].(json.Float); ok do object.gid = cast(int)v
     if v,ok := value["id"].(json.Float); ok do object.id = cast(int)v
     if v,ok := value["width"].(json.Float); ok do object.width = cast(f32)v
@@ -215,8 +216,8 @@ load_object :: proc (value: json.Object, layer_depth: int) -> Object {
 load_objectgroup :: proc(layer: json.Object, layer_depth: int) -> ObjectGroup {
 
     objectgroup := ObjectGroup({visible=true, layer_depth = layer_depth});
-    if v,ok := layer["draworder"].(json.String); ok do objectgroup.draworder = v
-    if v,ok := layer["name"].(json.String); ok do objectgroup.name = v
+    if v,ok := layer["draworder"].(json.String); ok do objectgroup.draworder = fmt.tprintf(v)
+    if v,ok := layer["name"].(json.String); ok do objectgroup.name = fmt.tprintf(v)
     if v,ok := layer["id"].(json.Float); ok do objectgroup.id = cast(int)v
     if v,ok := layer["visible"].(json.Boolean); ok do objectgroup.visible = v
     if v,ok := layer["parallaxx"].(json.Float); ok do objectgroup.parallax.x = cast(f32)v
@@ -299,15 +300,9 @@ destroy :: proc(_map: ^Map) {
         }
         delete(objectgroup.objects)
     }
-    for imagelayer in _map.imagelayers {
-        delete(imagelayer.image)
-    }
-
-
-    for tileset in _map.tilesets {
-        if tileset.tilesheet != nil do io.free_tilesheet(tileset.tilesheet)
-    }
-
+    // for imagelayer in _map.imagelayers {
+    //     delete(imagelayer.image)
+    // }
 
     delete(_map.tilesets)
     delete(_map.layers)

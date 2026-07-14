@@ -4,57 +4,33 @@ import "vendor:stb/image"
 import "core:strings"
 
 import "../types"
+import "core:mem/virtual"
 
-add :: proc(handler : ^types.IOHandler, file_path: string) -> (^types.Image, bool) #optional_ok{
-    image, ok := load_path(file_path)
-    if ok do handler.images[file_path] = image
-    return image, true
-}
-
-get :: proc(handler : ^types.IOHandler, file_id: types.Image_ID) -> (^types.Image, bool) #optional_ok{
-    if handler == nil do return nil, false
-    image, ok := handler.images[file_id]
-    if !ok {
-        image = load_path(file_id)
-        handler.images[file_id] = image
-        return image, true
-    }
-    return image, ok
-}
-/** Returns new pointer to new image FREE IT */
-crop :: proc {
-    crop_path,
-    crop_image
-}
-crop_path :: proc (path: string, x0, y0, w, h: i32) -> (^types.Image, bool) #optional_ok {
-    image,ok := load_path(path);
-    defer free_image(image)
-    if !ok do return nil, false
-    return crop_image(image, x0, y0, w, h);
-}
-crop_image :: proc(image: ^types.Image,x0, y0, w, h: i32) -> (^types.Image, bool) #optional_ok {
+// get :: proc(handler : ^types.IOHandler, file_id: types.Sprite) -> (^types.Image, bool) #optional_ok{
+//     if handler == nil do return nil, false
+//     image, ok := handler.images[file_id]
+//     if !ok {
+//         image = load_path(file_id)
+//         handler.images[file_id] = image
+//         return image, true
+//     }
+//     return image, ok
+// }
+load :: proc(handler: ^types.IOHandler, file_path: string, uv: types.UV = {{0,0},{1,1}}) -> (types.Sprite, bool) #optional_ok {
+    texture, ok := load_path(handler, file_path)
+    if !ok do return types.Sprite({}), false
     
-    sub : []u8 = make([]u8, w * h * image.channels)
+    texture_id := types.Texture_ID(file_path)
+    handler.textures[texture_id] = texture
 
-    for y in 0..<h {
-        src_offset := ((y0 + y) * image.width + x0) * image.channels
-        dst_offset := y * w * image.channels
-        copy(sub[dst_offset:dst_offset + w*image.channels], image.data[src_offset:src_offset + w*image.channels])
-    }
-    sub_image : ^types.Image = new(types.Image);
-    sub_image.data     = sub
-    sub_image.width    = w
-    sub_image.height   = h
-    sub_image.mipmaps  = image.mipmaps
-    sub_image.channels = image.channels
-    return sub_image, true
+    return types.Sprite({
+        texture = texture_id,
+        uv = uv
+    }), true
+    
 }
 
-load :: proc(handler: ^types.IOHandler, file_path: string) -> (^types.Image, bool) #optional_ok {
-    return get(handler, file_path)
-}
-
-load_path :: proc(file_path: string) -> (^types.Image, bool) #optional_ok {
+load_path :: proc(handler: ^types.IOHandler, file_path: string) -> (^types.Image, bool) #optional_ok {
     width, height, channels : i32;
     c := strings.clone_to_cstring(file_path)
     defer delete(c) // allocates, so free it
@@ -64,8 +40,8 @@ load_path :: proc(file_path: string) -> (^types.Image, bool) #optional_ok {
 
     size := width*height*channels
 
-    image := new(types.Image)
-    image.data = make([]u8, size)
+    image := new(types.Image, allocator=virtual.arena_allocator(&handler.arena))
+    image.data = make([]u8, size, allocator=virtual.arena_allocator(&handler.arena))
     copy(image.data[0:size],data[0:size])
     image.width = width
     image.height = height
@@ -75,8 +51,9 @@ load_path :: proc(file_path: string) -> (^types.Image, bool) #optional_ok {
     return image, true
 }
 
-free_image :: proc (image: ^types.Image) {
-    delete(image.data)
-    free(image)
+free_handler :: proc(handler: ^types.IOHandler) {
+    virtual.arena_destroy(&handler.arena)
+    delete(handler.textures)
+    free(handler)
 }
 
