@@ -124,7 +124,6 @@ create_tiles :: proc (game: ^Game, _map: ^Map, tile_scale: types.Vector2 = {1,1}
                                     _map,
                                     tile_scale)
                 // if the tileset has a specgic tile we can we have to do some more stuff
-                // TODO pigs dont work
                 if tile, found := tileSet.tiles[value-tileSet.firstgid]; found {
                     fmt.println("FOUND ANIMATION")
                     switch tile in tile{
@@ -141,7 +140,7 @@ create_tiles :: proc (game: ^Game, _map: ^Map, tile_scale: types.Vector2 = {1,1}
                         }
                         scripting.add_component(go, types.SpriteAnimator({
                             sprites=sprites,
-                            time=1/cast(f32)tile.frames[0].duration,
+                            time=10/cast(f32)tile.frames[0].duration,
                         }))
                     }
 

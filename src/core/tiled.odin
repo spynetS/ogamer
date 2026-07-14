@@ -147,7 +147,7 @@ load_tileset_file :: proc(handler: ^types.IOHandler, tileset: ^TileSet, path: st
             tileset.tilesheet = io.new_tilesheet(handler, tileset.image.source, {cast(i32)tileset.tilewidth, cast(i32)tileset.tileheight})
         }
     }
-    
+    json.destroy_value(value)
 
 }
 
@@ -313,6 +313,7 @@ load_map :: proc(handler: ^types.IOHandler, path: string) -> ^Map {
 
 
 destroy :: proc(_map: ^Map) {
+    if _map == nil do return
     for layer in _map.layers {
         delete(layer.data)
     }
@@ -323,7 +324,14 @@ destroy :: proc(_map: ^Map) {
         delete(objectgroup.objects)
     }
 
-    // TODO free tiles in tileset
+    for tileset in _map.tilesets {
+        for _, tile in tileset.tiles {
+            #partial switch t in tile {
+                case Animation: delete(t.frames)
+            }
+        }
+        delete(tileset.tiles)
+    }
     delete(_map.tilesets)
     delete(_map.layers)
     delete(_map.objectgroups)
