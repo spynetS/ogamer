@@ -34,7 +34,8 @@ create_objectgroup :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector
             is_tile := object.gid != -1
             // FIXME maybe not create a entity if not necceary
             go := scripting.new_gameobject(ecs)
-
+            defer scripting.free_gameobject(go)
+            
             x := object.x * tile_scale.x
             y := object.y * tile_scale.y
 
@@ -96,12 +97,13 @@ position_gameobject :: proc (
 }
 
 create_tiles :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}) {
-        for layer in _map.layers {
+    for layer in _map.layers {
         if layer.visible == false do continue
         fmt.println("LAYER:", layer)
         for i in 0..<len(layer.data) {
             value := layer.data[i] & 0x0FFF_FFFF  // clear h/v/diagonal/rotate flags
             if tileSet, found := get_tileset(_map, value); found {
+                if tileSet.columns == 0 do continue
                 grid_x := (value - tileSet.firstgid) % tileSet.columns
                 grid_y := (value - tileSet.firstgid) / tileSet.columns
 
@@ -109,6 +111,8 @@ create_tiles :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {
                 y := i / layer.width
                 
                 go := scripting.new_gameobject(ecs)
+                defer scripting.free_gameobject(go)
+                
                 position_gameobject(go,
                                     {cast(f32)x,cast(f32)y},
                                     {cast(f32)layer.width,cast(f32)layer.height},
@@ -122,7 +126,7 @@ create_tiles :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {
                     parallax=layer.parallax-1
                 }))
 
-            }
+             }
         }
     }
 }
@@ -136,7 +140,7 @@ create_imagelayer :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2
         if !imagelayer.visible do continue
         // TODO implement repeat
         go := scripting.new_gameobject(ecs)
-        defer free(go)
+        defer scripting.free_gameobject(go)
 
         x := imagelayer.offsetx * tile_scale.x
         y := -imagelayer.offsety * tile_scale.y
@@ -151,9 +155,9 @@ create_imagelayer :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2
         } * tile_scale
 
         go.transform.pos += {imagelayer.imagewidth/2, imagelayer.imageheight/2}*tile_scale
-
+        // memory leak
         image, loaded := io.load(imagelayer.image)
-
+ 
         scripting.add_component(go, types.SpriteRenderable({
             image=image,
             layer=imagelayer.layer_depth,
@@ -165,6 +169,7 @@ create_imagelayer :: proc(ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2
 }
 
 create_from_map :: proc (ecs: ^types.ECS, _map: ^Map, tile_scale: types.Vector2 = {1,1}, on_create: proc(Object, types.Transform) = nil) {
+
     create_tiles(ecs, _map, tile_scale)
     create_objectgroup(ecs, _map, tile_scale, on_create)
     create_imagelayer(ecs,_map, tile_scale)

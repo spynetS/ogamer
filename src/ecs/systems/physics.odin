@@ -45,6 +45,7 @@ init_physics :: proc (e: ^types.ECS) {
 }
 
 deinit_physics :: proc () {
+    delete(shape_id_by_rigidbody)
     delete(body_id_by_rigidbody)
     delete(rigidbody_by_shape_id)
     delete(shape_id_by_collider)

@@ -112,6 +112,7 @@ load_tsx :: proc(tileset: ^TileSet, path: string) {
                     tmx_set.image.source = fmt.tprintf(src)
                     delete(src)
                     created : bool
+                    // freed in destroy map
                     tmx_set.tilesheet, created = io.new_tilesheet(tmx_set.image.source, {cast(i32)tmx_set.tilewidth, cast(i32)tmx_set.tileheight})
                     if !created do panic("asd")
                     fmt.println("TILESHEET: ", tmx_set.image.source, tmx_set.tilesheet, created)
@@ -157,8 +158,8 @@ load_imagelayer :: proc(layer: json.Object, path: string, layer_depth: int) -> I
     if v,ok := layer["image"].(json.String); ok {
         here := filepath.dir(path)
         _path,_ := filepath.join({here, v})
-         _layer.image = _path
-    }
+        _layer.image = _path
+            }
     if v,ok := layer["visible"].(json.Boolean); ok do _layer.visible = v
     if v,ok := layer["repeatx"].(json.Boolean); ok do _layer.repeatx = v
     if v,ok := layer["repeaty"].(json.Boolean); ok do _layer.repeaty = v
@@ -293,13 +294,21 @@ destroy :: proc(_map: ^Map) {
         delete(layer.data)
     }
     for objectgroup in _map.objectgroups {
+        for object in objectgroup.objects {
+            delete(object.properties)
+        }
         delete(objectgroup.objects)
     }
+    for imagelayer in _map.imagelayers {
+        delete(imagelayer.image)
+    }
+
+
     for tileset in _map.tilesets {
         if tileset.tilesheet != nil do io.free_tilesheet(tileset.tilesheet)
     }
-    
-    
+
+
 
     delete(_map.tilesets)
     delete(_map.layers)

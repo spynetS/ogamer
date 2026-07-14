@@ -7,7 +7,7 @@ import "core:strings";
 import es "../event-system";
 import "../types";
 
-RENDER :: true
+RENDER := true
 DEBUG  :: false
 
 
