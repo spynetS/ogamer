@@ -42,7 +42,8 @@ Object :: struct {
     name: string,
     class: string, // or type?
     layer_depth: int,
-    properties: [dynamic]Property
+    properties: [dynamic]Property,
+    point: bool
 }
 
 LayerBase :: struct {
@@ -184,6 +185,7 @@ load_object :: proc (value: json.Object, layer_depth: int) -> Object {
     if v,ok := value["width"].(json.Float); ok do object.width = cast(f32)v
     if v,ok := value["height"].(json.Float); ok do object.height = cast(f32)v
     if v,ok := value["visible"].(json.Boolean); ok do object.visible = v
+    if v,ok := value["point"].(json.Boolean); ok do object.point = v
     if v,ok := value["x"].(json.Float); ok do object.x = cast(f32)v
     if v,ok := value["y"].(json.Float); ok do object.y = cast(f32)v
     if v,ok := value["properties"].(json.Array); ok {
@@ -236,7 +238,9 @@ load_tileset :: proc(tileset: json.Object, path: string) -> TileSet {
         here := filepath.dir(path)
         _path,_ := filepath.join({here, v})
         // CHECK IF JSON OR TMX
-        load_tsx(&_tileset, _path)
+        //load_tsx(&_tileset, _path)
+        // delete(here)
+        delete(_path)
     } 
     return _tileset
 }
@@ -278,7 +282,7 @@ load_map :: proc(path: string) -> ^Map {
         case:
         fmt.println("WARNING: no real map")
     }
-
+    json.destroy_value(value)
     return _map
 }
 
@@ -287,8 +291,16 @@ destroy :: proc(_map: ^Map) {
     for layer in _map.layers {
         delete(layer.data)
     }
-    
-    delete(_map.layers)
-    free(_map)
+    for objectgroup in _map.objectgroups {
+        delete(objectgroup.objects)
+    }
+    for tileset in _map.tilesets {
+        if tileset.tilesheet != nil do io.free_tilesheet(tileset.tilesheet)
+    }
 
+    delete(_map.tilesets)
+    delete(_map.layers)
+    delete(_map.objectgroups)
+    delete(_map.imagelayers)
+    free(_map)
 }
