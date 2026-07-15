@@ -2,6 +2,10 @@ package ogamer_events;
 
 import "../input/"
 
+EventQueue :: struct {
+    next_events    : [dynamic]Event,
+    current_events : [dynamic]Event
+}
 
 Event_MouseButton_Pressed :: struct {
     button: input.MouseButton,

@@ -1,11 +1,14 @@
 package ogamer_ecs;
 
 import "./components/"
+import rn "../renderer/"
 import "core:fmt"
 
 // It is here we add new components to the whole ecs system
 add_systems :: proc(ECS : ^EntityComponentSystem) {
-    add_storage(ECS, components.Transform, transform_system)
+    add_storage(ECS, components.Transform, nil)
+    add_storage(ECS, components.ShapeRenderer, shape_render_system)
+    add_storage(ECS, components.SpriteRenderer, sprite_render_system)
 }
 
 
@@ -51,7 +54,7 @@ has_component :: proc(storage: ^ComponentStorage($T), entity: Entity) -> bool {
 }
 
 @(private)
-get_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid) -> (^ComponentStorage(T), bool) {
+get_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid) -> (^ComponentStorage(T), bool){
     holder, ok := ecs.storages[typeid_of(T)]
     if !ok do return nil, false
     return cast(^ComponentStorage(T))holder.storage, true
@@ -73,9 +76,9 @@ add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDA
 }
 
 
-update_systems :: proc(ecs: ^EntityComponentSystem) {
+update_systems :: proc(ecs: ^EntityComponentSystem, renderer: ^rn.Renderer, dt: f32) {
     for type, holder in ecs.storages {
-        holder.update(ecs, 0.16)
+        if holder.update != nil do holder.update(ecs, renderer, dt)
     }
 }
 

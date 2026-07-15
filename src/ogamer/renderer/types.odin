@@ -29,7 +29,12 @@ UIText     :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string, colo
 BeginDraw  :: struct {}
 EndDraw    :: struct {}
 
+RendererSettings :: struct {
+    target_fps: i32
+}
+
 Renderer :: struct {
+    settings        : RendererSettings,
     init_commands   : [dynamic]RenderCommand,
     draw_commands   : [dynamic]RenderCommand,
     deinit_commands : [dynamic]RenderCommand,

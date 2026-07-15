@@ -1,7 +1,10 @@
 package ogamer_ecs;
 
-Entity :: distinct u32
-SYSTEM_UPDATE_FUNCTION :: proc(e: ^EntityComponentSystem, dt: f32)
+import rn "../renderer/"
+
+
+Entity :: u32
+SYSTEM_UPDATE_FUNCTION :: proc(e: ^EntityComponentSystem, renderer: ^rn.Renderer, dt: f32)
 DESTROY_COMPONENT_STORAGE :: proc(raw: rawptr)
 
 
@@ -25,4 +28,3 @@ EntityComponentSystem :: struct {
     storages: map[typeid]StorageHolder,
     entity_counter: Entity
 }
-

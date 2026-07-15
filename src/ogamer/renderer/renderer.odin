@@ -1,12 +1,19 @@
 package ogamer_renderer;
 
+import "../events"
+
+new_renderer :: proc (settings: RendererSettings) -> ^Renderer {
+    renderer := new(Renderer)
+    renderer.settings = settings
+    return renderer
+}
+
 /*
 This procedure executes the commands of the renderer
 the renderer implementation should set this hook 
 execute = RENDER_IMPLEMETNATION.execute
 */
-execute : proc (renderer: ^Renderer)
-
+execute : proc (renderer: ^Renderer, eventQueue: ^events.EventQueue)
 
 /*
 This procedure is used to add render commands to the renderer
