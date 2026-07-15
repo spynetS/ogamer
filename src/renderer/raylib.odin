@@ -38,6 +38,38 @@ deinit_renderer :: proc() {
     rl.UnloadTexture(target.texture);
 }
 
+load_sprite :: proc(sprite: types.Sprite, inverted: bool) -> (rl.Texture2D,rl.Rectangle, bool) {
+
+    if assets == nil || sprite.texture == "" do return rl.Texture2D({}), rl.Rectangle({}), false
+    sprite := sprite;
+    texture := assets.textures[sprite.texture]
+    rl_texture, found := texture_cache[texture]; 
+    // if its not cached we add it to cache
+    if !found {
+        fmt.println("INFO: load texture")
+        image : rl.Image = {
+            raw_data(texture.data),
+            texture.width,
+            texture.height,
+            texture.mipmaps,
+            rl.PixelFormat.UNCOMPRESSED_R8G8B8A8
+        }
+        rl_texture = rl.LoadTextureFromImage(image);
+        texture_cache[texture] = rl_texture
+    }
+
+    tw := cast(f32)texture.width
+    th := cast(f32)texture.height
+    
+    source: rl.Rectangle = {
+        cast(f32)(sprite.uv[0].x * tw),
+        cast(f32)(sprite.uv[0].y * th),
+        cast(f32)((sprite.uv[1].x - sprite.uv[0].x) * tw) * cast(f32) (inverted ? -1 : 1),
+        cast(f32)((sprite.uv[1].y - sprite.uv[0].y) * th),
+    }
+    return rl_texture, source, true
+}
+
 execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
     #partial switch v in command {
         case InitWindow:
@@ -94,33 +126,8 @@ execute_command :: proc(renderer : ^Renderer ,command: RenderCommand) {
             );
         }
         case Sprite:
-        if assets == nil do break
-        sprite := v.sprite;
-        texture := assets.textures[sprite.texture]
-        rl_texture, found := texture_cache[texture]; 
-        // if its not cached we add it to cache
-        if !found {
-            fmt.println("INFO: load texture")
-            image : rl.Image = {
-                raw_data(texture.data),
-                texture.width,
-                texture.height,
-                texture.mipmaps,
-                rl.PixelFormat.UNCOMPRESSED_R8G8B8A8
-            }
-            rl_texture = rl.LoadTextureFromImage(image);
-            texture_cache[texture] = rl_texture
-        }
-
-        tw := cast(f32)texture.width
-        th := cast(f32)texture.height
-        
-        source: rl.Rectangle = {
-            cast(f32)(sprite.uv[0].x * tw),
-            cast(f32)(sprite.uv[0].y * th),
-            cast(f32)((sprite.uv[1].x - sprite.uv[0].x) * tw),
-            cast(f32)((sprite.uv[1].y - sprite.uv[0].y) * th),
-        }
+        rl_texture, source, ok := load_sprite(v.sprite, v.inverted)
+        if !ok do break
 
         if v.repeated_x {
             tile_width := cast(f32)v.size.x // whatever your spacing is
@@ -265,23 +272,8 @@ execute :: proc(renderer: ^Renderer) {
                 case UISprite:
                 // tecture cacheing
                 // TODO load this before rendering (make a sperate function to load tectures)
-                if v.image == nil do break
-                sprite, got := texture_cache[v.image]
-                if !got {
-                    fmt.println("INFO: load texture")
-                    image : rl.Image = {
-                        raw_data(v.image.data),
-                        v.image.width,
-                        v.image.height,
-                        v.image.mipmaps,
-                        rl.PixelFormat.UNCOMPRESSED_R8G8B8A8
-                    }
-                    sprite = rl.LoadTextureFromImage(image);
-                    texture_cache[v.image] = sprite
-                }
-                
-                
-                source : rl.Rectangle = {0,0, cast(f32)(v.inverted ? -sprite.width :sprite.width ), cast(f32)sprite.height}
+                rl_texture, source, ok := load_sprite(v.sprite, v.inverted)
+                if !ok do break
                 dest : rl.Rectangle = {v.pos.x,-v.pos.y, v.size.x, v.size.y} // Y-up
 
                 origin : rl.Vector2 = {
@@ -290,7 +282,7 @@ execute :: proc(renderer: ^Renderer) {
                 };
 
                 rl.DrawTexturePro(
-                    sprite,
+                    rl_texture,
                     source,
                     dest,
                     origin,

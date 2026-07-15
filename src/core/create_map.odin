@@ -1,5 +1,6 @@
 package core;
 import "core:fmt"
+import "core:mem/virtual"
 import "../scripting"
 import "../renderer"
 import "../types"
@@ -51,12 +52,7 @@ create_objectgroup :: proc(game: ^Game, _map: ^Map, tile_scale: types.Vector2 = 
             if is_tile {
                 gid := object.gid & 0x0FFF_FFFF   // strip flip/rotate flags
                 if tileset, found := get_tileset(_map, gid); found {
-                    grid_x := (gid - tileset.firstgid) % tileset.columns
-                    grid_y := (gid - tileset.firstgid) / tileset.columns
-                    scripting.add_component(go, types.SpriteRenderable({
-                        layer=objectgroup.layer_depth,
-                        sprite = tileset.tilesheet.sprites[grid_y][grid_x],
-                    }))
+                    add_sprite(game, go, objectgroup.layer_depth, objectgroup.parallax, tileset, gid)
                 }
             }
             if object.class == "collider" {
@@ -69,34 +65,69 @@ create_objectgroup :: proc(game: ^Game, _map: ^Map, tile_scale: types.Vector2 = 
     }
 }
 
+add_sprite :: proc(game: ^Game, go: ^types.GameObject, layer_depth: int, parallax: types.Vector2, tileSet: TileSet, value: int) {
+    grid_x := (value - tileSet.firstgid) % tileSet.columns
+    grid_y := (value - tileSet.firstgid) / tileSet.columns
+
+    // if the tileset has a specgic tile we can we have to do some more stuff
+    if tile, found := tileSet.tiles[value-tileSet.firstgid]; found {
+        fmt.println("FOUND ANIMATION")
+        switch tile in tile{
+        case Animation:
+            size := len(tile.frames)
+            sprites := make([][]types.Sprite, 1, allocator=virtual.arena_allocator(&game.io_handler.arena))
+            sprites[0] = make([]types.Sprite, size, allocator=virtual.arena_allocator(&game.io_handler.arena))
+            for i in 0..<size {
+                gid := tile.frames[i].tileid
+                grid_x := (gid) % tileSet.columns
+                grid_y := (gid) / tileSet.columns
+                sprite := tileSet.tilesheet.sprites[grid_y][grid_x]
+                sprites[0][i] = sprite
+            }
+            scripting.add_component(go, types.SpriteAnimator({
+                sprites=sprites,
+                time=10/cast(f32)tile.frames[0].duration,
+            }))
+        }
+
+    }
+    else {
+        scripting.add_component(go, types.SpriteRenderable({
+            sprite = tileSet.tilesheet.sprites[grid_y][grid_x],
+            layer=layer_depth,
+            parallax=parallax-1
+        }))
+    }
+}
+
 position_gameobject :: proc (
     go: ^types.GameObject,
     map_pos:types.Vector2,
     size: types.Vector2,
     tileset: TileSet,
     _map: ^Map,
-    tile_scale: types.Vector2 = {1,1}) {
+    tile_scale: types.Vector2 = {1,1})
+{
+    tw  := cast(f32)tileset.tilewidth // tile size (may be > grid cell)
+    th  := cast(f32)tileset.tileheight
     
-                tw  := cast(f32)tileset.tilewidth // tile size (may be > grid cell)
-                th  := cast(f32)tileset.tileheight
-                
-                mtw := cast(f32)_map.tilewidth      // grid cell size
-                mth := cast(f32)_map.tileheight
+    mtw := cast(f32)_map.tilewidth      // grid cell size
+    mth := cast(f32)_map.tileheight
 
-                // scaling
-                tw  *= tile_scale.x
-                th  *= tile_scale.y
-                mtw *= tile_scale.x
-                mth *= tile_scale.y
+    // scaling
+    tw  *= tile_scale.x
+    th  *= tile_scale.y
+    mtw *= tile_scale.x
+    mth *= tile_scale.y
 
-                fx := cast(f32)map_pos.x;  fy := cast(f32)map_pos.y
-                fw := cast(f32)size.x;  fh := cast(f32)size.y
+    fx := cast(f32)map_pos.x;  fy := cast(f32)map_pos.y
+    fw := cast(f32)size.x;  fh := cast(f32)size.y
 
-                go.transform.size = {tw, th}
+    go.transform.size = {tw, th}
 
-                // Tiled = bottom-left cell anchor, Y-down. Ours = center anchor, Y-up.
-                go.transform.pos.x = fx*mtw - fw*mtw/2 + tw/2
-                go.transform.pos.y = fh*mth/2 - (fy+1)*mth + th/2
+    // Tiled = bottom-left cell anchor, Y-down. Ours = center anchor, Y-up.
+    go.transform.pos.x = fx*mtw - fw*mtw/2 + tw/2
+    go.transform.pos.y = fh*mth/2 - (fy+1)*mth + th/2
 }
 
 create_tiles :: proc (game: ^Game, _map: ^Map, tile_scale: types.Vector2 = {1,1}) {
@@ -107,8 +138,6 @@ create_tiles :: proc (game: ^Game, _map: ^Map, tile_scale: types.Vector2 = {1,1}
             value := layer.data[i] & 0x0FFF_FFFF  // clear h/v/diagonal/rotate flags
             if tileSet, found := get_tileset(_map, value); found {
                 if tileSet.columns == 0 do continue
-                grid_x := (value - tileSet.firstgid) % tileSet.columns
-                grid_y := (value - tileSet.firstgid) / tileSet.columns
 
                 x := i % layer.width
                 y := i / layer.width
@@ -122,14 +151,8 @@ create_tiles :: proc (game: ^Game, _map: ^Map, tile_scale: types.Vector2 = {1,1}
                                     tileSet,
                                     _map,
                                     tile_scale)
-
-                scripting.add_component(go, types.SpriteRenderable({
-                    sprite = tileSet.tilesheet.sprites[grid_y][grid_x],
-                    layer=layer.layer_depth,
-                    parallax=layer.parallax-1
-                }))
-
-             }
+                add_sprite(game, go, layer.layer_depth, layer.parallax, tileSet, value)
+            }
         }
     }
 }
@@ -159,7 +182,7 @@ create_imagelayer :: proc(game: ^Game, _map: ^Map, tile_scale: types.Vector2 = {
 
         go.transform.pos += {imagelayer.imagewidth/2, imagelayer.imageheight/2}*tile_scale
         sprite, loaded := io.load(game.io_handler, imagelayer.image)
- 
+        
         scripting.add_component(go, types.SpriteRenderable({
             sprite=sprite,
             layer=imagelayer.layer_depth,
@@ -171,7 +194,7 @@ create_imagelayer :: proc(game: ^Game, _map: ^Map, tile_scale: types.Vector2 = {
 }
 
 create_from_map :: proc (game: ^Game, _map: ^Map, tile_scale: types.Vector2 = {1,1}, on_create: proc(Object, types.Transform) = nil) {
-
+    if _map == nil do return
     create_tiles(game, _map, tile_scale)
     create_objectgroup(game, _map, tile_scale, on_create)
     create_imagelayer(game,_map, tile_scale)

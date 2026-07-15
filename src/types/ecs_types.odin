@@ -45,7 +45,7 @@ Image :: struct {
     width, height, mipmaps, channels : i32,
 }
 
-UV :: distinct [2][2]f32
+UV :: distinct [2]Vector2
 
 Texture_ID :: distinct string
 Sprite :: struct {
@@ -153,7 +153,7 @@ SpriteRenderable :: struct {
 }
 UiSprite :: struct {
     using component: Component,
-    image    : ^Image,
+    sprite   : Sprite,
     inverted : bool,
     size     : Vector2,
     offset   : Vector2,
