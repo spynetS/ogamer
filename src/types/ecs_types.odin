@@ -153,7 +153,7 @@ SpriteRenderable :: struct {
 }
 UiSprite :: struct {
     using component: Component,
-    image    : ^Image,
+    sprite   : Sprite,
     inverted : bool,
     size     : Vector2,
     offset   : Vector2,

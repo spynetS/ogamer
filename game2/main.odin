@@ -4,7 +4,8 @@ import "../src/core"
 import "../src/types"
 import "../src/io"
 import sc "../src/scripting"
-
+import "../src/renderer"
+import rl "vendor:raylib"
 // sprites are inside ./assets
 // https://anokolisa.itch.io/free-pixel-art-asset-pack-topdown-tileset-rpg-16x16-sprites
 
@@ -72,11 +73,35 @@ main :: proc() {
     defer core.destroy(_map)
     defer core.free_game(game);
 
+    
+    rl.HideCursor()
+    
+    mouse,_ := sc.new_gameobject(&game.ecs);
+    mouse.transform.size = {30,30}
+    cursor,_ := io.load(game.io_handler,"./game2/assets/Arrow2.png")
+    sc.add_component(mouse, types.Persistent({}))
+    sc.add_component(mouse, types.UiSprite({sprite=cursor, layer=10}))
+    sc.add_component(mouse, types.Script({
+        on_update = proc(go: types.GameObject, data: rawptr, dt: f32){
+            go.transform.pos = (renderer.get_mouse_position() + {10,10}) * {1,-1}
+            if sc.is_mouse_pressed(types.MouseButton.LEFT) {
+                tileset := io.new_tilesheet(game.io_handler,"./game2/assets/Environment/Props/Animated/Pan_01-Sheet.png", {32,32})
+                new_go := sc.new_gameobject(go.ecs);
+                new_go.transform.pos = renderer.get_world_mouse_position()
+                sc.add_component(new_go, types.SpriteAnimator({
+                    sprites=tileset.sprites,
+                    time=0.1
+                }))
+            }
+        }
+    }))
+
+
 
     core.create_from_map(
         game,
         _map,
-        {2,2},
+        {3,3},
         on_create = proc (obj: core.Object, transform: types.Transform){
             if obj.class == "player" do create_player(transform.pos)
         })

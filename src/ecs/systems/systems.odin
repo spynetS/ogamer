@@ -58,7 +58,7 @@ ui_system :: proc(ecs: ^types.ECS, io_handler: ^types.IOHandler, renderer: ^rn.R
         sprite := sprite_storage.dense[i]
         if sprite.disabled do continue;
 
-        cmd := rn.UISprite({t.pos+sprite.offset, t.size+sprite.size, t.rot, sprite.inverted, sprite.image, sprite.layer})
+        cmd := rn.UISprite({t.pos+sprite.offset, t.size+sprite.size, t.rot, sprite.inverted, sprite.sprite, sprite.layer})
         rn.add_command(renderer, cmd);
     }
 
