@@ -1,7 +1,6 @@
 package ogamer;
 
 import "./ecs"
-import "./ecs/components/"
 
 
 /*
@@ -10,17 +9,15 @@ keep track which package contains what and to make it
 easier for them to code
 */
 
-GameObject :: struct {
-    entity: ecs.Entity,
-    transform: ^components.Transform, // ecs should handle the transform memory
-    parent: ^GameObject,
-    ecs: ^ecs.EntityComponentSystem,
-}
+GameObject :: ecs.GameObject
 
-add_component    :: ecs.add_component
-get_component    :: ecs.get_component
+add_component    :: ecs.gameobject_add_component
+get_component    :: ecs.gameobject_get_component
+new_gameobject   :: ecs.new_gameobject
+get_gameobject   :: ecs.get_gameobject
 
-NewTransform     :: components.NewTransform
-Transform        :: components.Transform
-NewShapeRenderer :: components.NewShapeRenderer
-ShapeRenderer    :: components.ShapeRenderer
+
+NewTransform     :: ecs.NewTransform
+Transform        :: ecs.Transform
+NewShapeRenderer :: ecs.NewShapeRenderer
+ShapeRenderer    :: ecs.ShapeRenderer

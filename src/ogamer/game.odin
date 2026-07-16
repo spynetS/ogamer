@@ -15,13 +15,11 @@ Game :: struct {
 }
 
 
-init_game :: proc () -> ^Game {
+init_game :: proc (settings: rn.RendererSettings = rn.RendererSettings({67})) -> ^Game {
     rn.execute = raylib.execute // TODO 
 
-
-
     game := new(Game)
-    game.renderer = rn.new_renderer(rn.RendererSettings({67}))
+    game.renderer = rn.new_renderer(settings)
     game.should_run = true
     game.eventQueue = events.new_eventQueue()
 
@@ -46,6 +44,7 @@ start_game :: proc (game: ^Game) {
 
     prev_time := time.now()
     for game.should_run {
+
 
         // check if we should close
         for event in events.event_queue_poll(game.eventQueue) {
@@ -77,3 +76,11 @@ start_game :: proc (game: ^Game) {
     rn.execute(game.renderer, game.eventQueue)
 }
 
+destroy_game :: proc (game: ^Game) {
+    ecs.free_ecs(game.ecs);
+    rn.destroy_renderer(game.renderer)
+    io.destroy_handler(game.assetsManager)
+    events.event_queue_destroy(game.eventQueue)
+    
+    free(game)
+}

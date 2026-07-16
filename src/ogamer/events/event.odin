@@ -15,6 +15,7 @@ event_queue_init :: proc(eventQueue: ^EventQueue) {
 event_queue_destroy :: proc(eventQueue: ^EventQueue) {
     delete(eventQueue.next_events)
     delete(eventQueue.current_events)
+    free(eventQueue)
 }
 
 emit :: proc(eventQueue: ^EventQueue, e: Event) {

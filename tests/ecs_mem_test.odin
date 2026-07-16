@@ -4,7 +4,6 @@ import "core:testing"
 import "core:mem"
 import "core:fmt"
 import "../src/ogamer/ecs"
-import "../src/ogamer/ecs/components"
 
 @(test)
 test_mem :: proc(t: ^testing.T) {
@@ -13,14 +12,15 @@ test_mem :: proc(t: ^testing.T) {
     context.allocator = mem.tracking_allocator(&track)
     leaks := 0
 
-
-
     ECS := new(ecs.EntityComponentSystem)
-    ecs.add_component(ECS,0, components.NewTransform(pos={1,1}))
-    comp := ecs.get_component(ECS, 0, components.Transform);
     ecs.add_systems(ECS);
-    ecs.update_systems(ECS);
-    ecs.update_systems(ECS);
+
+    ecs.add_component(ECS,0, ecs.NewTransform(pos={1,1}))
+    ecs.add_component(ECS,0, ecs.NewShapeRenderer())
+    ecs.add_component(ECS,0, ecs.NewScriptComponent(ecs.NewScript()))
+
+    comp := ecs.get_component(ECS, 0, ecs.Transform);
+    ecs.update_systems(ECS, nil, 1);
     ecs.free_ecs(ECS);
 
     for _, entry in track.allocation_map {

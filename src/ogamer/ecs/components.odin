@@ -1,6 +1,6 @@
-package ogamer_ecs_components;
+package ogamer_ecs;
 
-import "../../io"
+import "../io"
 
 Vector2 :: [2]f32
 Entity :: u32
@@ -74,3 +74,38 @@ NewSpriteRenderer :: proc (
     layer      =     layer,
     repeated_x =     repeated_x,
     repeated_y =     repeated_y}) }
+
+/*
+This struct holds information that scripts would need
+in their functions
+It's a workaround to get object oriented behaviur
+*/
+
+ScriptData :: struct {
+    data: rawptr,
+    gameObject: GameObject,
+    ecs: ^EntityComponentSystem,
+    dt: f32
+}
+SCRIPT_UPDATE_FUNCTION :: proc (data: ScriptData)
+
+Script :: struct {
+    data: rawptr, // This is passed to the functions
+    update : SCRIPT_UPDATE_FUNCTION,
+}
+NewScript :: proc (
+    data: rawptr = nil,
+    update : SCRIPT_UPDATE_FUNCTION = nil
+) -> Script {return Script({data=data, update=update})}
+
+ScriptComponent :: struct {
+    scripts: [dynamic]Script
+}
+
+NewScriptComponent :: proc (
+    script:Script=Script({})
+) -> ScriptComponent {
+    comp := ScriptComponent({})
+    append(&comp.scripts,script)
+    return comp
+}

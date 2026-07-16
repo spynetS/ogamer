@@ -1,14 +1,19 @@
 package ogamer_ecs;
 
-import "./components/"
 import rn "../renderer/"
 import "core:fmt"
 
 // It is here we add new components to the whole ecs system
 add_systems :: proc(ECS : ^EntityComponentSystem) {
-    add_storage(ECS, components.Transform, nil)
-    add_storage(ECS, components.ShapeRenderer, shape_render_system)
-    add_storage(ECS, components.SpriteRenderer, sprite_render_system)
+    add_storage(ECS, Transform, nil)
+    add_storage(ECS, ShapeRenderer, shape_render_system)
+    add_storage(ECS, SpriteRenderer, sprite_render_system)
+    add_storage(ECS, ScriptComponent, script_system, before_destroy = proc (raw: rawptr) {
+        stor := cast(^ComponentStorage(ScriptComponent))raw
+        for i in 0..<len(stor.dense) {
+            delete(stor.dense[i].scripts)
+        }
+    })
 }
 
 
@@ -61,11 +66,12 @@ get_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid) -> (^ComponentStora
 }
 
 @(private)
-add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDATE_FUNCTION) {
+add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDATE_FUNCTION, before_destroy : DESTROY_COMPONENT_STORAGE = nil) {
     storage := new(ComponentStorage(T))
     ecs.storages[T] = StorageHolder({
         storage=storage,
         update=update,
+        before_destroy = before_destroy,
         destroy = proc(raw: rawptr) {
             s := cast(^ComponentStorage(T))raw
             delete(s.sparse)
@@ -73,6 +79,7 @@ add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDA
             delete(s.entities)
             free(s)
         }})
+
 }
 
 
@@ -89,6 +96,7 @@ get_new_entity :: proc(ecs: ^EntityComponentSystem) -> Entity {
 
 free_ecs :: proc (ecs: ^EntityComponentSystem) {
     for type, holder in ecs.storages {
+        if holder.before_destroy != nil do holder.before_destroy(holder.storage)
         holder.destroy(holder.storage)
     }
     delete(ecs.storages)

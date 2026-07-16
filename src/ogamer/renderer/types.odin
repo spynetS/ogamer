@@ -1,5 +1,4 @@
 package ogamer_renderer;
-import "../ecs/components/"
 import "../io/"
 
 
@@ -32,6 +31,13 @@ EndDraw    :: struct {}
 RendererSettings :: struct {
     target_fps: i32
 }
+Camera2D :: struct {
+    offset:   [2]f32,  // Camera offset (displacement from target)
+	  target:   [2]f32,  // Camera target (rotation and zoom origin)
+	  rotation: f32,     // Camera rotation in degrees
+	  zoom:     f32,     // Camera zoom (scaling), should be 1.0f by default
+}
+
 
 Renderer :: struct {
     settings        : RendererSettings,
@@ -39,5 +45,5 @@ Renderer :: struct {
     draw_commands   : [dynamic]RenderCommand,
     deinit_commands : [dynamic]RenderCommand,
     debug_commands  : [dynamic]RenderCommand,
-    active_camera   : ^components.Camera2D
+    active_camera   : ^Camera2D
 }

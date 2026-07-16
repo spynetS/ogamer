@@ -40,7 +40,7 @@ load_path :: proc(handler: ^AssetsManager, file_path: string) -> (^Image, bool) 
     return image, true
 }
 
-free_handler :: proc(handler: ^AssetsManager) {
+destroy_handler :: proc(handler: ^AssetsManager) {
     virtual.arena_destroy(&handler.arena)
     delete(handler.textures)
     free(handler)
