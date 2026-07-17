@@ -59,6 +59,7 @@ script_system :: proc(data: SystemData, dt: f32) {
                 data=script.data,
                 gameObject = go,
                 ecs=data.ecs,
+                eventQueue = data.eventQueue,
                 dt=dt
             }))
         }

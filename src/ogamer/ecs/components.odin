@@ -1,6 +1,7 @@
 package ogamer_ecs;
 
 import "../io"
+import "../events"
 
 Vector2 :: [2]f32
 Entity :: u32
@@ -85,6 +86,7 @@ ScriptData :: struct {
     data: rawptr,
     gameObject: GameObject,
     ecs: ^EntityComponentSystem,
+    eventQueue: ^events.EventQueue,
     dt: f32
 }
 SCRIPT_UPDATE_FUNCTION :: proc (data: ScriptData)

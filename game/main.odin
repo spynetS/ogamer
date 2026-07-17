@@ -2,10 +2,13 @@ package main;
 import og "../src/ogamer"
 import "../src/ogamer/io"
 import "../src/ogamer/ecs"
+import "../src/ogamer/events"
 import "core:fmt"
 
+game: ^og.Game
+
 main :: proc() {
-    game := og.init_game();
+    game = og.init_game();
     
     path := "/home/spy/dev/speler/Sprites/01-King Human/Idle (78x58).png"
 
@@ -20,7 +23,7 @@ main :: proc() {
 
     og.add_component(gameObject, ecs.NewScriptComponent(ecs.NewScript(
         update = proc(data: ecs.ScriptData) {
-            //data.gameObject.transform.pos += {1,1}*data.dt*100
+            
         }
     )))
     og.start_game(game);
