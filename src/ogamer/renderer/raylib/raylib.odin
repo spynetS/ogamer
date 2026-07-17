@@ -230,7 +230,7 @@ execute :: proc(renderer: ^rn.Renderer, eventQueue: ^es.EventQueue) {
 
     handle_input()
 
-    if rl.IsWindowReady() && rl.WindowShouldClose() do es.emit(eventQueue, es.Event_Should_Close_Window({}));
+    if rl.IsWindowReady() && rl.WindowShouldClose() do es.emit(eventQueue, es.Should_Close_Window({}));
     window_w := f32(rl.GetScreenWidth())
 		window_h := f32(rl.GetScreenHeight())
     scale := math.min(window_w / width, window_h / height)

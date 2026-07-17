@@ -79,9 +79,10 @@ sprite_animator_system :: proc(data: SystemData, dt: f32) {
     storage,        ok  := get_storage(data.ecs, SpriteAnimator)
     sprite_storage, ok2 := get_storage(data.ecs, SpriteRenderer)
     if !ok || !ok2 do return
-
+    
     for i in 0..<len(storage.dense) {
         animator := &storage.dense[i]
+        entity   := storage.entities[i]
         if animator.disabled do continue
 
         // Lazily attach a SpriteRenderable to write frames into.
@@ -114,10 +115,8 @@ sprite_animator_system :: proc(data: SystemData, dt: f32) {
         // End-of-cycle bookkeeping.
         if animator._frame_counter <= 0 {
             animator._frame_counter = length
-            // TODO emit event here
-            // if animator._first_run do events.emit(data.eventQueue, events.Event_SpriteAnimator_End({}))
-            // else                   do animator._first_run = true
-            if !animator._first_run do animator._first_run = true
+            if animator._first_run do events.emit(data.eventQueue, events.AnimationFinished({entity}))
+            else                   do animator._first_run = true
         }
 
         // Advance the frame timer.

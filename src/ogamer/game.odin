@@ -49,7 +49,7 @@ start_game :: proc (game: ^Game) {
         // check if we should close
         for event in events.event_queue_poll(game.eventQueue) {
             #partial switch v in event {
-                case events.Event_Should_Close_Window:
+                case events.Should_Close_Window:
                 game.should_run = false;
             }
         }
