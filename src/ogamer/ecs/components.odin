@@ -22,7 +22,11 @@ Camera2D :: struct {
 Transform :: struct {
     using component: Component,
     pos: Vector2,
-    size: Vector2
+    size: Vector2,
+    rot: f32,
+    local_pos: Vector2,
+    local_size: Vector2,
+    local_rot: f32,
 }
 
 NewTransform :: proc (
@@ -42,9 +46,9 @@ NewShapeRenderer :: proc (
 
 Parent :: struct {
     using component: Component,
-    entity: Entity
+    parent_entity: Entity
 }
-NewParent :: proc (entity: Entity) -> Parent { return Parent({entity=entity}) }
+NewParent :: proc (entity: Entity) -> Parent { return Parent({parent_entity=entity}) }
 
 SpriteRenderer :: struct {
     using component : Component,

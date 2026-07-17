@@ -37,3 +37,7 @@ get_gameobject :: proc(ecs: ^EntityComponentSystem, entity: Entity) -> GameObjec
         transform = transform
     })
 }
+
+add_child :: proc(parent, child: GameObject){
+    gameobject_add_component(child, NewParent(parent.entity))
+}

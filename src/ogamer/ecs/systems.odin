@@ -1,11 +1,10 @@
 package ogamer_ecs;
 
 import "core:fmt"
+import "core:math"
 import rn "../renderer/"
 import  "../io/"
 import  "../events/"
-
-
 
 shape_render_system :: proc(data: SystemData, dt: f32) {
     s_storage,ok := get_storage(data.ecs, ShapeRenderer)
@@ -33,7 +32,7 @@ sprite_render_system :: proc(data: SystemData, dt: f32) {
         t := t_storage.dense[t_storage.sparse[entity]]
         
         if data.renderer == nil do continue
-        rn.add_command(data.renderer, rn.Sprite({t.pos,s.offset, t.size, 0, s.inverted, s.sprite, s.layer, s.repeated_x, s.repeated_y}))
+        rn.add_command(data.renderer, rn.Sprite({t.pos,s.offset, t.size, t.rot, s.inverted, s.sprite, s.layer, s.repeated_x, s.repeated_y}))
     }
 }
 
@@ -129,6 +128,40 @@ sprite_animator_system :: proc(data: SystemData, dt: f32) {
         } else {
             animator._time_counter -= dt
         }
+    }
+}
+
+rotate :: proc(p : Vector2, angle: f32) -> Vector2 {
+
+    rad := angle / math.DEG_PER_RAD;
+    s := math.sin(rad)
+    c := math.cos(rad)
+    return Vector2({
+        p.x * c - p.y * s,
+        p.x * s + p.y * c
+    })
+}
+
+
+parent_system :: proc(data: SystemData, dt: f32) {
+    parent_storage, ok := get_storage(data.ecs, Parent);
+    if !ok do return;
+    t_storage, ok2 := get_storage(data.ecs, Transform)
+    if !ok2 do return
+
+    for i in 0..<len(parent_storage.dense) {
+        entity := parent_storage.entities[i]
+        t_idx, has_t := has_component(t_storage, entity)
+        if !has_t do continue
+        
+        child_t  := &t_storage.dense[t_storage.sparse[int(entity)]]
+        parent   := &parent_storage.dense[i]
+        if t_storage.sparse[int(parent.parent_entity)] == -1 do continue
+        parent_t := &t_storage.dense[t_storage.sparse[int(parent.parent_entity)]]
+
+        child_t.pos = parent_t.pos + rotate(child_t.local_pos * parent_t.size/100, parent_t.rot) // divide by 100 because default size is 100?
+        child_t.size = parent_t.size + child_t.local_size * parent_t.size/100
+        child_t.rot = parent_t.rot
     }
 }
 

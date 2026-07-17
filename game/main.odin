@@ -23,9 +23,15 @@ main :: proc() {
 
     og.add_component(gameObject, ecs.NewScriptComponent(ecs.NewScript(
         update = proc(data: ecs.ScriptData) {
-            
+            data.gameObject.transform.pos += {1,0}
         }
     )))
+
+    child := og.new_gameobject(game.ecs)
+    og.add_component(child, ecs.NewSpriteRenderer(sprite=tilesheet.sprites[0][0]))
+    child.transform.local_pos = {100,100}
+    og.add_child(gameObject,child)
+
     og.start_game(game);
     og.destroy_game(game);
 }
