@@ -109,3 +109,33 @@ NewScriptComponent :: proc (
     append(&comp.scripts,script)
     return comp
 }
+
+SpriteAnimator :: struct {
+    using component   : Component,
+    sprite_comp       : ^SpriteRenderer, // sprite component to be actived on
+    sprites           : [][]io.Sprite,        // image matrix
+    sprites_length    : []int,             // the "real" length of each animation
+    active_animation  : int,               // the row in the sprites matrix
+    _active_animation : int,               // internal row in the sprites matrix
+    time              : f32,               // time for each frame
+    _time_counter     : f32,               // internal counter
+    _frame_counter    : int,               // internal counter
+    _first_run        : bool,              // internal first_run holder
+    active_index      : int                // active frame in animation
+}
+NewSpriteAnimator :: proc (
+    sprite_comp       : ^SpriteRenderer = nil,
+    sprites           : [][]io.Sprite = nil,
+    sprites_length    : []int = nil,
+    active_animation  : int = 0,
+    time              : f32 = 0.1,
+    active_index      : int = 0) -> SpriteAnimator {
+    return SpriteAnimator({
+        sprite_comp = sprite_comp,
+        sprites = sprites,
+        sprites_length = sprites_length,
+        active_animation = active_animation,
+        time = time,
+        active_index = active_index,
+    })
+}

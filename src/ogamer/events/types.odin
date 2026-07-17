@@ -1,6 +1,7 @@
 package ogamer_events;
 
 import "../input/"
+//import "../ecs/"
 
 EventQueue :: struct {
     next_events    : [dynamic]Event,
@@ -56,7 +57,6 @@ Event :: union {
 
     Event_MouseButton_Pressed,
     Event_MouseButton_Released,
-
 
     Event_Collision_Entered,
     Event_Collision_Left,

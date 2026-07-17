@@ -8,6 +8,7 @@ add_systems :: proc(ECS : ^EntityComponentSystem) {
     add_storage(ECS, Transform, nil)
     add_storage(ECS, ShapeRenderer, shape_render_system)
     add_storage(ECS, SpriteRenderer, sprite_render_system)
+    add_storage(ECS, SpriteAnimator, sprite_animator_system)
     add_storage(ECS, ScriptComponent, script_system, before_destroy = proc (raw: rawptr) {
         stor := cast(^ComponentStorage(ScriptComponent))raw
         for i in 0..<len(stor.dense) {
@@ -18,9 +19,9 @@ add_systems :: proc(ECS : ^EntityComponentSystem) {
 
 
 // TODO add error code
-add_component :: proc(ECS : ^EntityComponentSystem, entity: Entity, component: $T) {
+add_component :: proc(ECS : ^EntityComponentSystem, entity: Entity, component: $T) -> ^T {
     storage, ok := get_storage(ECS, T)
-    if !ok do return 
+    if !ok do return nil
     dense_index := len(storage.dense)
 
     append(&storage.dense, component)
@@ -31,6 +32,7 @@ add_component :: proc(ECS : ^EntityComponentSystem, entity: Entity, component: $
     }
 
     storage.sparse[entity] = dense_index
+    return &storage.dense[dense_index]
 }
 
 get_component :: proc(ecs: ^EntityComponentSystem, entity: Entity, $T: typeid) -> ^T {
@@ -53,9 +55,12 @@ get_component :: proc(ecs: ^EntityComponentSystem, entity: Entity, $T: typeid) -
     return &storage.dense[dense_index]
 }
 
-has_component :: proc(storage: ^ComponentStorage($T), entity: Entity) -> bool {
-    return entity < len(storage.sparse) &&
+has_component :: proc(storage: ^ComponentStorage($T), entity: Entity) -> (int, bool) {
+    has := int(entity) < len(storage.sparse) &&
         storage.sparse[entity] != -1
+    
+    if has do return storage.sparse[int(entity)], has
+    else   do return -1, false
 }
 
 @(private)
@@ -83,9 +88,9 @@ add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDA
 }
 
 
-update_systems :: proc(ecs: ^EntityComponentSystem, renderer: ^rn.Renderer, dt: f32) {
-    for type, holder in ecs.storages {
-        if holder.update != nil do holder.update(ecs, renderer, dt)
+update_systems :: proc(data: SystemData, dt: f32) {
+    for type, holder in data.ecs.storages {
+        if holder.update != nil do holder.update(data, dt)
     }
 }
 

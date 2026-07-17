@@ -2,24 +2,28 @@ package ogamer_ecs;
 
 import "core:fmt"
 import rn "../renderer/"
+import  "../io/"
+import  "../events/"
 
-shape_render_system :: proc(e: ^EntityComponentSystem, renderer: ^rn.Renderer, dt: f32) {
-    s_storage,ok := get_storage(e, ShapeRenderer)
-    t_storage,ok2 := get_storage(e, Transform)
+
+
+shape_render_system :: proc(data: SystemData, dt: f32) {
+    s_storage,ok := get_storage(data.ecs, ShapeRenderer)
+    t_storage,ok2 := get_storage(data.ecs, Transform)
     if !ok || !ok2 do return
     
     for i in 0..<len(s_storage.dense) {
         s := s_storage.dense[i]
         entity := s_storage.entities[i]
         t := t_storage.dense[t_storage.sparse[entity]]
-        if renderer == nil do continue
-        rn.add_command(renderer, rn.Rectangle({t.pos,t.size,0, rn.get_color(0xffffffff), false, 0}))
+        if data.renderer == nil do continue
+        rn.add_command(data.renderer, rn.Rectangle({t.pos,t.size,0, rn.get_color(0xffffffff), false, 0}))
     }
 }
 
-sprite_render_system :: proc(e: ^EntityComponentSystem, renderer: ^rn.Renderer, dt: f32) {
-    t_storage,ok := get_storage(e, Transform)
-    s_storage,ok2 := get_storage(e, SpriteRenderer)
+sprite_render_system :: proc(data: SystemData, dt: f32) {
+    t_storage,ok := get_storage(data.ecs, Transform)
+    s_storage,ok2 := get_storage(data.ecs, SpriteRenderer)
     if !ok || !ok2 do return
 
     for i in 0..<len(s_storage.dense) {
@@ -28,15 +32,14 @@ sprite_render_system :: proc(e: ^EntityComponentSystem, renderer: ^rn.Renderer, 
         if int(entity) > len(t_storage.sparse) do continue
         t := t_storage.dense[t_storage.sparse[entity]]
         
-        if renderer == nil do continue
-        rn.add_command(renderer, rn.Sprite({t.pos,s.offset, t.size, 0, s.inverted, s.sprite, s.layer, s.repeated_x, s.repeated_y}))
+        if data.renderer == nil do continue
+        rn.add_command(data.renderer, rn.Sprite({t.pos,s.offset, t.size, 0, s.inverted, s.sprite, s.layer, s.repeated_x, s.repeated_y}))
     }
-
 }
 
-script_system :: proc(e: ^EntityComponentSystem, renderer: ^rn.Renderer, dt: f32) {
-    t_storage,ok := get_storage(e, Transform)
-    s_storage,ok2 := get_storage(e, ScriptComponent)
+script_system :: proc(data: SystemData, dt: f32) {
+    t_storage,ok := get_storage(data.ecs, Transform)
+    s_storage,ok2 := get_storage(data.ecs, ScriptComponent)
     if !ok || !ok2 do return
 
     for i in 0..<len(s_storage.dense) {
@@ -47,7 +50,7 @@ script_system :: proc(e: ^EntityComponentSystem, renderer: ^rn.Renderer, dt: f32
 
         go := GameObject({
             entity = entity,
-            ecs = e,
+            ecs = data.ecs,
             transform = t,
         })
 
@@ -55,10 +58,77 @@ script_system :: proc(e: ^EntityComponentSystem, renderer: ^rn.Renderer, dt: f32
             if script.update != nil do script.update(ScriptData({
                 data=script.data,
                 gameObject = go,
-                ecs=e,
+                ecs=data.ecs,
                 dt=dt
             }))
         }
 
     }
 }
+
+animation_length :: proc(animator: ^SpriteAnimator) -> int {
+    anim := animator._active_animation
+    if animator.sprites_length == nil || animator.sprites_length[anim] == 0 {
+        return len(animator.sprites[anim])
+    }
+    return animator.sprites_length[anim]
+}
+
+
+sprite_animator_system :: proc(data: SystemData, dt: f32) {
+    storage,        ok  := get_storage(data.ecs, SpriteAnimator)
+    sprite_storage, ok2 := get_storage(data.ecs, SpriteRenderer)
+    if !ok || !ok2 do return
+
+    for i in 0..<len(storage.dense) {
+        animator := &storage.dense[i]
+        if animator.disabled do continue
+
+        // Lazily attach a SpriteRenderable to write frames into.
+        if animator.sprite_comp == nil {
+            index, has_sprite := has_component(sprite_storage, storage.entities[i])
+            if has_sprite {
+                animator.sprite_comp = &sprite_storage.dense[index]
+            } else {
+                fmt.println("INFO: Adding sprite component to", storage.entities[i], animator, "because it had no sprite_component")
+                sprite := add_component(data.ecs, storage.entities[i], NewSpriteRenderer())
+                animator.sprite_comp = sprite
+            }
+        }
+
+        // Switch to a newly requested animation.
+        if animator.active_animation != animator._active_animation {
+            if animator.active_animation < 0 || animator.active_animation >= len(animator.sprites) {
+                fmt.println("WARNING: active_animation", animator.active_animation, "out of bounds")
+                continue
+            }
+            animator._active_animation = animator.active_animation
+            animator._frame_counter    = animation_length(animator) - 1
+            animator.active_index      = 0
+            animator._time_counter     = animator.time
+        }
+
+        length := animation_length(animator)
+        if length <= 0 do continue // nothing to play; guards the modulo below
+
+        // End-of-cycle bookkeeping.
+        if animator._frame_counter <= 0 {
+            animator._frame_counter = length
+            // TODO emit event here
+            // if animator._first_run do events.emit(data.eventQueue, events.Event_SpriteAnimator_End({}))
+            // else                   do animator._first_run = true
+            if !animator._first_run do animator._first_run = true
+        }
+
+        // Advance the frame timer.
+        if animator._time_counter <= 0 {
+            animator._time_counter      = animator.time
+            animator.active_index       = (animator.active_index + 1) % length
+            animator.sprite_comp.sprite = animator.sprites[animator._active_animation][animator.active_index]
+            animator._frame_counter    -= 1
+        } else {
+            animator._time_counter -= dt
+        }
+    }
+}
+

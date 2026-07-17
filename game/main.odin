@@ -7,15 +7,20 @@ import "core:fmt"
 main :: proc() {
     game := og.init_game();
     
-    sprite := io.load(game.assetsManager, "../../Pictures/balin.png")
+    path := "/home/spy/dev/speler/Sprites/01-King Human/Idle (78x58).png"
+
+    tilesheet := io.new_tilesheet(game.assetsManager, path, {78,58})
 
     gameObject := og.new_gameobject(game.ecs);
+    gameObject.transform.size = {200,200}
+    og.add_component(gameObject, ecs.NewSpriteRenderer());
+    og.add_component(gameObject, ecs.NewSpriteAnimator(
+        sprites=tilesheet.sprites,
+    ))
 
-    og.add_component(gameObject, ecs.NewTransform())
-    og.add_component(gameObject, ecs.NewSpriteRenderer(sprite=sprite))
     og.add_component(gameObject, ecs.NewScriptComponent(ecs.NewScript(
         update = proc(data: ecs.ScriptData) {
-            data.gameObject.transform.pos += {1,1}*data.dt*100
+            //data.gameObject.transform.pos += {1,1}*data.dt*100
         }
     )))
     og.start_game(game);

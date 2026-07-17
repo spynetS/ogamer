@@ -1,11 +1,19 @@
 package ogamer_ecs;
 
 import rn "../renderer/"
+import "../io/"
+import "../events/"
 
 
-SYSTEM_UPDATE_FUNCTION :: proc(e: ^EntityComponentSystem, renderer: ^rn.Renderer, dt: f32)
+SYSTEM_UPDATE_FUNCTION :: proc(data: SystemData, dt: f32)
 DESTROY_COMPONENT_STORAGE :: proc(raw: rawptr)
 
+SystemData :: struct {
+    ecs: ^EntityComponentSystem,
+    renderer: ^rn.Renderer,
+    assets_manager: ^io.AssetsManager,
+    eventQueue: ^events.EventQueue
+}
 
 @(private)
 ComponentStorage :: struct($T: typeid) {

@@ -64,7 +64,12 @@ start_game :: proc (game: ^Game) {
         rn.add_command(game.renderer, begin);
         rn.add_command(game.renderer, cmd);
         // render
-        ecs.update_systems(game.ecs, game.renderer, dt)
+        ecs.update_systems(ecs.SystemData({
+            ecs = game.ecs,
+            renderer = game.renderer,
+            assets_manager = game.assetsManager,
+            eventQueue = game.eventQueue
+        }), dt)
 
         // end the rendering
         rn.add_command(game.renderer, end);
