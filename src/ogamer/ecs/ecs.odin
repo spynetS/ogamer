@@ -19,7 +19,6 @@ add_systems :: proc(ECS : ^EntityComponentSystem) {
 }
 
 
-// TODO add error code
 add_component :: proc(ECS : ^EntityComponentSystem, entity: Entity, component: $T) -> ^T {
     storage, ok := get_storage(ECS, T)
     if !ok do return nil

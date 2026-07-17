@@ -1,5 +1,6 @@
 package main;
 import og "../src/ogamer"
+import "../src/ogamer/tiled"
 import "../src/ogamer/io"
 import "../src/ogamer/ecs"
 import "../src/ogamer/events"
@@ -9,28 +10,12 @@ game: ^og.Game
 
 main :: proc() {
     game = og.init_game();
+
+    _map := tiled.load_map(game.assetsManager, "./game/map.tmj")
+    defer tiled.destroy_map(_map)
+    tiled.create_from_map(game, _map)
+
     
-    path := "/home/spy/dev/speler/Sprites/01-King Human/Idle (78x58).png"
-
-    tilesheet := io.new_tilesheet(game.assetsManager, path, {78,58})
-
-    gameObject := og.new_gameobject(game.ecs);
-    gameObject.transform.size = {200,200}
-    og.add_component(gameObject, ecs.NewSpriteRenderer());
-    og.add_component(gameObject, ecs.NewSpriteAnimator(
-        sprites=tilesheet.sprites,
-    ))
-
-    og.add_component(gameObject, ecs.NewScriptComponent(ecs.NewScript(
-        update = proc(data: ecs.ScriptData) {
-            data.gameObject.transform.pos += {1,0}
-        }
-    )))
-
-    child := og.new_gameobject(game.ecs)
-    og.add_component(child, ecs.NewSpriteRenderer(sprite=tilesheet.sprites[0][0]))
-    child.transform.local_pos = {100,100}
-    og.add_child(gameObject,child)
 
     og.start_game(game);
     og.destroy_game(game);

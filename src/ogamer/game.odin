@@ -38,7 +38,7 @@ start_game :: proc (game: ^Game) {
 
     begin :rn.BeginDraw = {};
     end :rn.EndDraw = {};
-    cmd : rn.Clear = {rn.get_color(0x181818ff)}
+    cmd : rn.Clear = {rn.get_color(0x00aaffff)}
 
 
 
