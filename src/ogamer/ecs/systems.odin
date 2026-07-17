@@ -185,3 +185,47 @@ camera_system :: proc(data: SystemData, dt: f32) {
         data.renderer.active_camera.rotation=camera.rotation
     }
 }
+
+ui_system :: proc(data:SystemData, dt: f32){
+    text_storage, ok := get_storage(data.ecs, UIText);
+    t_storage, ok2 := get_storage(data.ecs, Transform)
+    if !ok || !ok2 do return;
+
+    for i in 0..<len(text_storage.dense) {
+        entity := text_storage.entities[i]
+        text := text_storage.dense[i]
+        t := t_storage.dense[t_storage.sparse[entity]]
+
+        rn.add_command(data.renderer, rn.UIText({
+            pos=t.pos+text.offset,
+            font_size=text.font_size,
+            rot=t.rot,
+            text=text.text,
+            color=text.color,
+            layer=text.layer
+        }))
+    }
+
+}
+text_system :: proc(data:SystemData, dt: f32){
+    text_storage, ok := get_storage(data.ecs, Text);
+    t_storage, ok2 := get_storage(data.ecs, Transform)
+    if !ok || !ok2 do return;
+
+    for i in 0..<len(text_storage.dense) {
+        entity := text_storage.entities[i]
+        text := text_storage.dense[i]
+        t := t_storage.dense[t_storage.sparse[entity]]
+
+        rn.add_command(data.renderer, rn.Text({
+            pos=t.pos+text.offset,
+            font_size=text.font_size,
+            rot=t.rot,
+            text=text.text,
+            color=text.color,
+            layer=text.layer
+        }))
+    }
+
+}
+

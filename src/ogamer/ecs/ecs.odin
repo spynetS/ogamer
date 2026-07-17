@@ -11,6 +11,8 @@ add_systems :: proc(ECS : ^EntityComponentSystem) {
     add_storage(ECS, SpriteAnimator, sprite_animator_system)
     add_storage(ECS, Parent, parent_system)
     add_storage(ECS, Camera2D, camera_system)
+    add_storage(ECS, UIText, ui_system)
+    add_storage(ECS, Text, text_system)
     add_storage(ECS, ScriptComponent, script_system, before_destroy = proc (raw: rawptr) {
         stor := cast(^ComponentStorage(ScriptComponent))raw
         for i in 0..<len(stor.dense) {

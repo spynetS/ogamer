@@ -151,3 +151,43 @@ NewSpriteAnimator :: proc (
         active_index = active_index,
     })
 }
+
+Text :: struct {
+    using base: Component,
+    text: string,
+    font_size: i32,
+    color: [4]u8,
+    layer: int,
+    offset: Vector2
+}
+NewText :: proc(
+    text: string = "",
+    font_size: i32 = 32,
+    color: [4]u8 = {0x18,0x18,0x18,0xff},
+    layer: int= 0,
+    offset: Vector2 = {0,0}
+) -> Text {return Text({
+    text=text,
+    font_size=font_size,
+    color=color,
+    layer=layer,
+    offset=offset
+})}
+
+
+UIText :: struct {
+    using text_base: Text,
+}
+NewUiText :: proc(
+    text: string = "",
+    font_size: i32 = 32,
+    color: [4]u8 = {0x18,0x18,0x18,0xff},
+    layer: int= 0,
+    offset: Vector2 = {0,0}
+) -> UIText {return UIText({
+    text=text,
+    font_size=font_size,
+    color=color,
+    layer=layer,
+    offset=offset
+})}

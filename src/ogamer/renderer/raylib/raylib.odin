@@ -298,11 +298,11 @@ execute :: proc(renderer: ^rn.Renderer, eventQueue: ^es.EventQueue) {
                 )
             }
         }
-        rl.DrawText(fmt.ctprintf("%d", rl.GetFPS()),
-                    100,
-                    100,
-                    24,
-                    rl.Color(0x000000ff))
+        // rl.DrawText(fmt.ctprintf("%d", rl.GetFPS()),
+        //             100,
+        //             100,
+        //             24,
+        //             rl.Color(0x000000ff))
 
         rl.EndTextureMode();
         
