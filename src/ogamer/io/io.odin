@@ -2,16 +2,22 @@ package ogamer_io;
 
 import "vendor:stb/image"
 import "core:strings"
+import "core:fmt"
 
 import "core:mem/virtual"
 
 load :: proc(handler: ^AssetsManager, file_path: string, uv: UV = {{0,0},{1,1}}) -> (Sprite, bool) #optional_ok {
-    texture, ok := load_path(handler, file_path)
-    if !ok do return Sprite({}), false
-    
-    texture_id := Texture_ID(file_path)
-    handler.textures[texture_id] = texture
 
+    texture_id := Texture_ID(file_path);
+    texture, found := handler.textures[texture_id]
+    if !found {
+        fmt.println("INFO: didn't find texture", file_path, ". Add to assets")
+        ok : bool
+        texture, ok = load_path(handler, file_path)
+        if !ok do return Sprite({}), false
+        handler.textures[texture_id] = texture
+    }
+    
     return Sprite({
         texture = texture_id,
         uv = uv
