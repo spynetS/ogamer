@@ -188,8 +188,9 @@ camera_system :: proc(data: SystemData, dt: f32) {
 
 ui_system :: proc(data:SystemData, dt: f32){
     text_storage, ok := get_storage(data.ecs, UIText);
-    t_storage, ok2 := get_storage(data.ecs, Transform)
-    if !ok || !ok2 do return;
+    sprite_storage, ok2 := get_storage(data.ecs, UISpriteRenderer);
+    t_storage, ok3 := get_storage(data.ecs, Transform)
+    if !ok || !ok2 || !ok3 do return;
 
     for i in 0..<len(text_storage.dense) {
         entity := text_storage.entities[i]
@@ -203,6 +204,24 @@ ui_system :: proc(data:SystemData, dt: f32){
             text=text.text,
             color=text.color,
             layer=text.layer
+        }))
+    }
+
+     for i in 0..<len(sprite_storage.dense) {
+        entity := sprite_storage.entities[i]
+        sprite := sprite_storage.dense[i]
+        t := t_storage.dense[t_storage.sparse[entity]]
+
+        rn.add_command(data.renderer, rn.UISprite({
+            pos=t.pos,
+            offset = sprite.offset,
+            size = t.size + sprite.size,
+            rot=t.rot,
+            inverted=sprite.inverted,
+            sprite=sprite.sprite,
+            layer=sprite.layer,
+            repeated_x = sprite.repeated_x,
+            repeated_y = sprite.repeated_y
         }))
     }
 

@@ -32,7 +32,8 @@ main :: proc() {
 
     debug := og.new_gameobject(game.ecs);
     debug.transform.pos = {100,100}
-    og.add_component(debug, ecs.NewUiText(text="HEJ whats happening?"))
+//    og.add_component(debug, ecs.NewUiText(text="HEJ whats happening?"))
+    og.add_component(debug, ecs.NewUISpriteRenderer(sprite=tilesheet.sprites[0][0]))
 
 
     og.start_game(game);

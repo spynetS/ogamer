@@ -191,3 +191,27 @@ NewUiText :: proc(
     layer=layer,
     offset=offset
 })}
+
+UISpriteRenderer :: struct {
+    using sprite_base: SpriteRenderer
+}
+
+NewUISpriteRenderer :: proc (
+    sprite          : io.Sprite = io.Sprite({}),
+    inverted        : bool = false,
+    size            : Vector2 = {0,0},
+    offset          : Vector2 = {0,0},
+    parallax        : Vector2 = {1,1},
+    layer           : int = 0,
+    repeated_x      : bool = false,
+    repeated_y      : bool = false,    
+) -> UISpriteRenderer { return UISpriteRenderer({
+    sprite     =     sprite,
+    inverted   =     inverted,
+    size       =     size,
+    offset     =     offset,
+    parallax   =     parallax,
+    layer      =     layer,
+    repeated_x =     repeated_x,
+    repeated_y =     repeated_y}) }
+
