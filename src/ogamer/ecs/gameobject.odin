@@ -17,10 +17,9 @@ gameobject_get_component :: proc(go: GameObject, component: $T) -> ^T {
 
 new_gameobject :: proc(ecs: ^EntityComponentSystem) -> GameObject {
     entity := get_new_entity(ecs)
-    add_component(ecs, entity, NewTransform())
-    
+    transform := add_component(ecs, entity, NewTransform())
 
-    transform := get_component(ecs, entity, Transform)
+
     return GameObject({
         entity=entity,
         ecs = ecs,

@@ -17,7 +17,12 @@ Camera2D :: struct {
 	  rotation: f32,                // Camera rotation in degrees
 	  zoom:     f32,                // Camera zoom (scaling), should be 1.0f by default
 }
-
+NewCamera :: proc(
+    offset:   Vector2 = {0,0},
+	  target:   Vector2 = {0,0},
+	  rotation: f32 = 0,
+	  zoom:     f32 = 1  
+) -> Camera2D { return Camera2D{offset=offset, target=target, rotation=0, zoom=zoom}}
 
 Transform :: struct {
     using component: Component,
@@ -129,6 +134,7 @@ SpriteAnimator :: struct {
     _first_run        : bool,              // internal first_run holder
     active_index      : int                // active frame in animation
 }
+
 NewSpriteAnimator :: proc (
     sprite_comp       : ^SpriteRenderer = nil,
     sprites           : [][]io.Sprite = nil,

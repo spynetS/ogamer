@@ -6,6 +6,11 @@ import "./ecs"
 import "./io"
 import "core:time"
 
+
+// TO JUST RUN ONE GAME LOOP ITERATION
+DEBUG :: false
+
+
 Game :: struct {
     renderer: ^rn.Renderer,
     ecs: ^ecs.EntityComponentSystem,
@@ -76,6 +81,7 @@ start_game :: proc (game: ^Game) {
 
         events.event_queue_clear(game.eventQueue);
         rn.execute(game.renderer, game.eventQueue)
+        if DEBUG == true do game.should_run = false
     }
     rn.add_command(game.renderer, rn.DeinitWindow({}))
     rn.execute(game.renderer, game.eventQueue)

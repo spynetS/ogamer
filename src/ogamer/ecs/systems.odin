@@ -165,3 +165,23 @@ parent_system :: proc(data: SystemData, dt: f32) {
     }
 }
 
+camera_system :: proc(data: SystemData, dt: f32) {
+    storage, ok := get_storage(data.ecs, Camera2D);
+    if !ok do return;
+    t_storage, ok2 := get_storage(data.ecs, Transform)
+    if !ok2 do return
+    
+    for i in 0..<len(storage.dense) {
+        entity    := storage.entities[i]
+        camera    := storage.dense[i];
+        transform := t_storage.dense[t_storage.sparse[entity]];
+
+        camera.target = transform.pos
+        // FIXME
+        if data.renderer.active_camera == nil do data.renderer.active_camera = new(rn.Camera2D)
+        data.renderer.active_camera.offset=camera.offset
+        data.renderer.active_camera.target=camera.target
+        data.renderer.active_camera.zoom=camera.zoom
+        data.renderer.active_camera.rotation=camera.rotation
+    }
+}
