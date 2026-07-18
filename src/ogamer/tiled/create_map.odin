@@ -163,26 +163,33 @@ create_tiles :: proc (game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1}) {
 
 
 create_imagelayer :: proc(game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1}) {
-    map_w := cast(f32)_map.width * cast(f32)_map.tilewidth * tile_scale.x
+    map_w := cast(f32)_map.width * cast(f32)_map.tilewidth * tile_scale.y
     map_h := cast(f32)_map.height * cast(f32)_map.tileheight * tile_scale.y
     for imagelayer in _map.imagelayers {
         if !imagelayer.visible do continue
-        // TODO implement repeat
+
         go := og.new_gameobject(game.ecs)
 
         x := imagelayer.offsetx * tile_scale.x
-        y := -imagelayer.offsety * tile_scale.y
+        y := imagelayer.offsety * tile_scale.y
 
-        go.transform.pos = {
-            x-map_w/2,
-            y-map_h/2
-        } 
+
+        
+
+        fmt.println(imagelayer.imagewidth, imagelayer.imageheight)
+        fmt.println(_map.width, _map.height)
+
+
         go.transform.size = {
             cast(f32)imagelayer.imagewidth,
             cast(f32)imagelayer.imageheight
         } * tile_scale
 
-        go.transform.pos += {imagelayer.imagewidth/2, imagelayer.imageheight/2}*tile_scale
+
+        go.transform.pos += go.transform.size/2 * {1,-1} // we translate so top corner is middle
+        go.transform.pos += {-20*f32(_map.tilewidth), 20*f32(_map.tileheight)}/2 * tile_scale // translate so top corner is
+        go.transform.pos += {x,-y} // translate the offset params
+
         sprite, loaded := io.load(game.assetsManager, imagelayer.image)
         
         og.add_component(go, ecs.SpriteRenderer({
