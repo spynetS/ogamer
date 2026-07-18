@@ -57,10 +57,10 @@ create_objectgroup :: proc(game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,
                 }
             }
             if object.class == "collider" {
-                assert(false)
+                panic("TODO: COLLIDERS NOT IMPLEMENTED YET")
+  
                 // og.add_component(go, types.RigidBody({}))
                 // og.add_component(go, types.SquareCollider({}))
-                // fmt.println("COLLIDER")
             }
             if on_create != nil do on_create(object, go.transform^)
         }
@@ -77,7 +77,7 @@ add_sprite :: proc(game: ^og.Game, go: ^og.GameObject, layer_depth: int, paralla
         switch tile in tile{
         case Animation:
             size := len(tile.frames)
-            sprites := make([][]io.Sprite, 1, allocator=virtual.arena_allocator(&game.assetsManager.arena))
+            sprites   := make([][]io.Sprite, 1, allocator=virtual.arena_allocator(&game.assetsManager.arena))
             sprites[0] = make([]io.Sprite, size, allocator=virtual.arena_allocator(&game.assetsManager.arena))
             for i in 0..<size {
                 gid := tile.frames[i].tileid
