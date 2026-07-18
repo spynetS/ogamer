@@ -187,31 +187,31 @@ execute_command :: proc(renderer : ^rn.Renderer ,command: rn.RenderCommand) {
 
 }
 // TODO
-handle_input :: proc() {
-    // key := input.KeyboardKey(rl.GetKeyPressed());
-    // if key != input.KeyboardKey.KEY_NULL {
-    //     es.emit(event.Event_Key_Pressed({key}));
-    //     append(&input.keys, key);
-    // }
+handle_input :: proc(eventQueue: ^es.EventQueue) {
+    key := input.KeyboardKey(rl.GetKeyPressed());
+    if key != input.KeyboardKey.KEY_NULL {
+        es.emit(eventQueue, es.Key_Pressed({key}));
+        append(&input.keys, key);
+    }
 
-    // for i := len(types.keys) - 1; i >= 0; i -= 1 {
-    //     if rl.IsKeyReleased(rl.KeyboardKey(types.keys[i])) {
-    //         unordered_remove(&types.keys, i)
-    //     }
-    // }
+    for i := len(input.keys) - 1; i >= 0; i -= 1 {
+        if rl.IsKeyReleased(rl.KeyboardKey(input.keys[i])) {
+            unordered_remove(&input.keys, i)
+        }
+    }
     
-    // for rl_btn in rl.MouseButton {
-    //     btn := types.MouseButton(rl_btn)
-    //     if rl.IsMouseButtonPressed(rl_btn) {
-    //         es.emit(types.Event_MouseButton_Pressed({btn}))
-    //         append(&types.mouse_buttons, btn)
-    //     }
-    // }
-    // for i := len(types.mouse_buttons) - 1; i >= 0; i -= 1 {
-    //     if rl.IsMouseButtonReleased(rl.MouseButton(types.mouse_buttons[i])) {
-    //         unordered_remove(&types.mouse_buttons, i)
-    //     }
-    // }
+    for rl_btn in rl.MouseButton {
+        btn := input.MouseButton(rl_btn)
+        if rl.IsMouseButtonPressed(rl_btn) {
+            es.emit(eventQueue, es.MouseButton_Pressed({btn}))
+            append(&input.mouse_buttons, btn)
+        }
+    }
+    for i := len(input.mouse_buttons) - 1; i >= 0; i -= 1 {
+        if rl.IsMouseButtonReleased(rl.MouseButton(input.mouse_buttons[i])) {
+            unordered_remove(&input.mouse_buttons, i)
+        }
+    }
 
 }
 
@@ -228,7 +228,7 @@ layer_of :: proc(command: rn.RenderCommand) -> int {
 
 execute :: proc(renderer: ^rn.Renderer, eventQueue: ^es.EventQueue) {
 
-    handle_input()
+    handle_input(eventQueue)
 
     if rl.IsWindowReady() && rl.WindowShouldClose() do es.emit(eventQueue, es.Should_Close_Window({}));
     window_w := f32(rl.GetScreenWidth())

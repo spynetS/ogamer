@@ -1,5 +1,8 @@
 package ogamer_input;
 
+keys          : [dynamic]KeyboardKey
+mouse_buttons : [dynamic]MouseButton
+
 // TAKEN FROM RAYLIB
 MouseButton :: enum i32 {
 	LEFT    = 0,                      // Mouse button left
