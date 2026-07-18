@@ -62,7 +62,7 @@ create_objectgroup :: proc(game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,
                 // og.add_component(go, types.SquareCollider({}))
                 // fmt.println("COLLIDER")
             }
-            on_create(object, go.transform^)
+            if on_create != nil do on_create(object, go.transform^)
         }
     }
 }
