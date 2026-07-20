@@ -11,7 +11,7 @@ load :: proc(handler: ^AssetsManager, file_path: string, uv: UV = {{0,0},{1,1}})
     texture_id := Texture_ID(file_path);
     texture, found := handler.textures[texture_id]
     if !found {
-        fmt.println("INFO: didn't find texture", file_path, ". Add to assets")
+        fmt.println("INFO: didn't find texture in cache", file_path, ". Adding to cache")
         ok : bool
         texture, ok = load_path(handler, file_path)
         if !ok do return Sprite({}), false

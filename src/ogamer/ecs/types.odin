@@ -3,6 +3,7 @@ package ogamer_ecs;
 import rn "../renderer/"
 import "../io/"
 import "../events/"
+import "../physics/"
 
 
 SYSTEM_UPDATE_FUNCTION :: proc(data: SystemData, dt: f32)
@@ -11,6 +12,7 @@ DESTROY_COMPONENT_STORAGE :: proc(raw: rawptr)
 SystemData :: struct {
     ecs: ^EntityComponentSystem,
     renderer: ^rn.Renderer,
+    world: ^physics.PhysicsWorld,
     assets_manager: ^io.AssetsManager,
     eventQueue: ^events.EventQueue
 }

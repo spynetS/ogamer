@@ -14,35 +14,50 @@ main :: proc() {
     game = og.init_game();
 
 
-    // _map := tiled.load_map(game.assetsManager, "./game/map.tmj")
-    // defer tiled.destroy_map(_map)
+    _map := tiled.load_map(game.assetsManager, "./game/map.tmj")
+    defer tiled.destroy_map(_map)
 
-    // tiled.create_from_map(game, _map, {3,3})
-
-    tilesheet := io.new_tilesheet(game.assetsManager, "/home/spy/dev/speler/Sprites/02-King Pig/Idle (38x28).png", {38,28})
-    gameobject := og.new_gameobject(game.ecs);
-    og.add_component(gameobject, ecs.NewSpriteAnimator(sprites=tilesheet.sprites))
-    og.add_component(gameobject, ecs.NewCamera())
-    
-    og.add_component(gameobject, ecs.NewText(text="HEJ whats happening?", offset={-100,100}))
-    
-    og.add_component(gameobject, ecs.NewScriptComponent(ecs.NewScript(update = proc(data: ecs.ScriptData) {
-        for event in events.event_queue_poll(game.eventQueue) {
-            #partial switch v in event {
-                case events.Key_Pressed:
-                if v.key == input.KeyboardKey.SPACE do data.gameObject.transform.pos += {1,0.1}
-            }
-
+    tiled.create_from_map(game, _map, {3,3}, on_create = proc(obj: tiled.Object, transform: ecs.Transform) {
+        if obj.class == "player" {
+            fmt.println("PLAYER")
+            tilesheet := io.new_tilesheet(game.assetsManager, "/home/spy/dev/speler/Sprites/02-King Pig/Idle (38x28).png", {38,28})
+            gameobject := og.new_gameobject(game.ecs);
+            gameobject.transform.pos = transform.pos
+            og.add_component(gameobject, ecs.NewSpriteAnimator(sprites=tilesheet.sprites))
+            og.add_component(gameobject, ecs.NewCamera(zoom=1))
+            og.add_component(gameobject, ecs.Rigidbody({type=ecs.BodyType.dynamicBody}))
+            
+            og.add_component(gameobject, ecs.NewText(text="HEJ whats happening?", offset={-100,100}))
+            
+            og.add_component(gameobject, ecs.NewScriptComponent(ecs.NewScript(update = proc(data: ecs.ScriptData) {
+                for event in events.event_queue_poll(game.eventQueue) {
+                    #partial switch v in event {
+                        case events.Key_Pressed:
+                        if v.key == input.KeyboardKey.W do data.gameObject.transform.pos += {0,100}
+                        if v.key == input.KeyboardKey.S do data.gameObject.transform.pos -= {0,100}
+                        if v.key == input.KeyboardKey.D do data.gameObject.transform.pos += {100,0}
+                        if v.key == input.KeyboardKey.A do data.gameObject.transform.pos -= {100,0}
+                    }
+                }
+            })))
+        }
+        if obj.class == "col" {
+            fmt.println("COL")
+            tilesheet := io.new_tilesheet(game.assetsManager, "/home/spy/dev/speler/Sprites/02-King Pig/Idle (38x28).png", {38,28})
+            gameobject1 := og.new_gameobject(game.ecs);
+            gameobject1.transform.pos = transform.pos
+            gameobject1.transform.size = transform.size
+            og.add_component(gameobject1, ecs.Rigidbody({type=ecs.BodyType.staticBody}))
+            og.add_component(gameobject1, ecs.SpriteRenderer({sprite=tilesheet.sprites[0][0]}))
             
         }
 
-    })))
+    })
 
-
-    debug := og.new_gameobject(game.ecs);
-    debug.transform.pos = {100,100}
-    og.add_component(debug, ecs.NewText(text="HEJ whats happening?"))
-    og.add_component(debug, ecs.NewUISpriteRenderer(sprite=tilesheet.sprites[0][0]))
+    // debug := og.new_gameobject(game.ecs);
+    // debug.transform.pos = {100,100}
+    // og.add_component(debug, ecs.NewText(text="HEJ whats happening?"))
+    // og.add_component(debug, ecs.NewUISpriteRenderer(sprite=tilesheet.sprites[0][0]))
 
 
     og.start_game(game);

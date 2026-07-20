@@ -2,6 +2,7 @@ package ogamer;
 import rn "./renderer"
 import "./renderer/raylib"
 import "./events"
+import "./physics"
 import "./ecs"
 import "./io"
 import "core:time"
@@ -45,6 +46,8 @@ start_game :: proc (game: ^Game) {
     end :rn.EndDraw = {};
     cmd : rn.Clear = {rn.get_color(0x00aaffff)}
 
+    phy_world := physics.PhysicsWorld({})
+    physics.init_physics(&phy_world)
 
 
     prev_time := time.now()
@@ -73,7 +76,8 @@ start_game :: proc (game: ^Game) {
             ecs = game.ecs,
             renderer = game.renderer,
             assets_manager = game.assetsManager,
-            eventQueue = game.eventQueue
+            eventQueue = game.eventQueue,
+            world = &phy_world
         }), dt)
 
         // end the rendering
@@ -85,6 +89,9 @@ start_game :: proc (game: ^Game) {
     }
     rn.add_command(game.renderer, rn.DeinitWindow({}))
     rn.execute(game.renderer, game.eventQueue)
+
+    physics.deinit_physics(&phy_world)
+    
 }
 
 destroy_game :: proc (game: ^Game) {

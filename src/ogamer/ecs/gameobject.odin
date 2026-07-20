@@ -1,5 +1,7 @@
 package ogamer_ecs;
 
+import "core:fmt"
+
 
 GameObject :: struct {
     entity: Entity,
@@ -16,9 +18,10 @@ gameobject_get_component :: proc(go: GameObject, component: $T) -> ^T {
 
 
 new_gameobject :: proc(ecs: ^EntityComponentSystem) -> GameObject {
-    entity := get_new_entity(ecs)
+    entity    := get_new_entity(ecs)
     transform := add_component(ecs, entity, NewTransform())
 
+    fmt.println("INFO: new gameobject @", entity)
 
     return GameObject({
         entity=entity,

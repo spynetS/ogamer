@@ -215,3 +215,20 @@ NewUISpriteRenderer :: proc (
     repeated_x =     repeated_x,
     repeated_y =     repeated_y}) }
 
+BodyType :: enum {
+    staticBody = 0,
+	  kinematicBody = 1,
+	  dynamicBody = 2,
+}
+
+
+Rigidbody :: struct {
+    using base: Component,
+    vel: Vector2,
+    acc: Vector2,
+    disabled_gravity: bool,
+    disabled_rotation: bool,
+    created: bool,
+    type: BodyType
+        
+}

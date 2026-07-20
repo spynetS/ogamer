@@ -2,9 +2,11 @@ package ogamer_ecs;
 
 import "core:fmt"
 import "core:math"
+import b2 "vendor:box2d"
 import rn "../renderer/"
 import  "../io/"
 import  "../events/"
+import  "../physics/"
 
 shape_render_system :: proc(data: SystemData, dt: f32) {
     s_storage,ok := get_storage(data.ecs, ShapeRenderer)
@@ -21,8 +23,8 @@ shape_render_system :: proc(data: SystemData, dt: f32) {
 }
 
 sprite_render_system :: proc(data: SystemData, dt: f32) {
-    t_storage,ok := get_storage(data.ecs, Transform)
-    s_storage,ok2 := get_storage(data.ecs, SpriteRenderer)
+    t_storage, ok := get_storage(data.ecs, Transform)
+    s_storage, ok2 := get_storage(data.ecs, SpriteRenderer)
     if !ok || !ok2 do return
 
     for i in 0..<len(s_storage.dense) {
@@ -32,7 +34,8 @@ sprite_render_system :: proc(data: SystemData, dt: f32) {
         t := t_storage.dense[t_storage.sparse[entity]]
         
         if data.renderer == nil do continue
-        rn.add_command(data.renderer, rn.Sprite({t.pos,s.offset, t.size, t.rot, s.inverted, s.sprite, s.layer, s.repeated_x, s.repeated_y}))
+        if s.sprite.texture == "" do rn.add_command(data.renderer, rn.Rectangle({t.pos,t.size, t.rot, {255,255,255,255}, false, 1}))
+        else do rn.add_command(data.renderer, rn.Sprite({t.pos,s.offset, t.size, t.rot, s.inverted, s.sprite, s.layer, s.repeated_x, s.repeated_y}))
     }
 }
 
@@ -226,7 +229,7 @@ ui_system :: proc(data:SystemData, dt: f32){
     }
 
 }
-text_system :: proc(data:SystemData, dt: f32){
+text_system :: proc(data: SystemData, dt: f32){
     text_storage, ok := get_storage(data.ecs, Text);
     t_storage, ok2 := get_storage(data.ecs, Transform)
     if !ok || !ok2 do return;
@@ -248,3 +251,50 @@ text_system :: proc(data:SystemData, dt: f32){
 
 }
 
+
+physics_system :: proc(data: SystemData, dt: f32) {
+    rigid_storage, ok := get_storage(data.ecs, Rigidbody);
+    transform_storage, ok1 := get_storage(data.ecs, Transform);
+    if !ok do return
+
+    b2.World_Step(data.world.world_id, dt, 8);
+
+    for i in 0..<len(rigid_storage.dense) {
+        // Check for new rigid bodies
+        // Check for new colliders
+        // Check for rigidbody value change and change box2d
+        entity := rigid_storage.entities[i]
+        rb := &rigid_storage.dense[i]
+        transform := &transform_storage.dense[transform_storage.sparse[entity]]
+
+        if body_id, has_body := data.world.bodies[entity]; has_body {
+            if shape_id, has_shape := data.world.shapes[body_id]; has_shape {
+                body_t := b2.Body_GetTransform(body_id)
+                poly := b2.Shape_GetPolygon(shape_id)
+                world_center := b2.TransformPoint(body_t, poly.centroid) * physics.PIXELS_PER_METER
+                fmt.println(world_center)
+                transform.pos = world_center
+                transform.rot = b2.Rot_GetAngle(body_t.q) * math.DEG_PER_RAD
+            }
+            else {
+                // TODO create shape
+                physics.build_body_shape(data.world,
+                                         body_id,
+                                         transform.size,
+                                         true,
+                                        false)
+            }
+            
+        }
+        else {
+            physics.create_body(data.world,
+                                entity,
+                                b2.BodyType(rb.type),
+                                transform.pos,
+                                transform.rot,
+                                rb.disabled_gravity,
+                                rb.disabled_rotation)
+        }
+    }
+
+}
