@@ -9,8 +9,8 @@ GameObject :: struct {
     ecs: ^EntityComponentSystem,
 }
 
-gameobject_add_component :: proc(go: GameObject, component: $T) {
-    add_component(go.ecs, go.entity, component)
+gameobject_add_component :: proc(go: GameObject, component: $T)  -> ^T {
+    return add_component(go.ecs, go.entity, component)
 }
 gameobject_get_component :: proc(go: GameObject, component: $T) -> ^T {
     return get_component(go.ecs, go.entity, component)

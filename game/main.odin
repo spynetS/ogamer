@@ -7,6 +7,7 @@ import "../src/ogamer/input "
 import "../src/ogamer/events"
 import rn "../src/ogamer/renderer"
 import "core:fmt"
+import b2 "vendor:box2d"
 
 game: ^og.Game
 
@@ -19,13 +20,13 @@ main :: proc() {
 
     tiled.create_from_map(game, _map, {3,3}, on_create = proc(obj: tiled.Object, transform: ecs.Transform) {
         if obj.class == "player" {
-            fmt.println("PLAYER")
+
             tilesheet := io.new_tilesheet(game.assetsManager, "/home/spy/dev/speler/Sprites/02-King Pig/Idle (38x28).png", {38,28})
             gameobject := og.new_gameobject(game.ecs);
             gameobject.transform.pos = transform.pos
             og.add_component(gameobject, ecs.NewSpriteAnimator(sprites=tilesheet.sprites))
             og.add_component(gameobject, ecs.NewCamera(zoom=1))
-            og.add_component(gameobject, ecs.Rigidbody({type=ecs.BodyType.dynamicBody}))
+            og.add_component(gameobject, ecs.Rigidbody({type=ecs.BodyType.dynamicBody, disabled_rotation=true}))
             
             og.add_component(gameobject, ecs.NewText(text="HEJ whats happening?", offset={-100,100}))
             
@@ -33,31 +34,26 @@ main :: proc() {
                 for event in events.event_queue_poll(game.eventQueue) {
                     #partial switch v in event {
                         case events.Key_Pressed:
-                        if v.key == input.KeyboardKey.W do data.gameObject.transform.pos += {0,100}
-                        if v.key == input.KeyboardKey.S do data.gameObject.transform.pos -= {0,100}
-                        if v.key == input.KeyboardKey.D do data.gameObject.transform.pos += {100,0}
-                        if v.key == input.KeyboardKey.A do data.gameObject.transform.pos -= {100,0}
+                        if v.key == input.KeyboardKey.D     do b2.Body_ApplyForceToCenter(data.world.bodies[data.gameObject.entity],{1000,0},true)
+                        if v.key == input.KeyboardKey.A     do b2.Body_ApplyForceToCenter(data.world.bodies[data.gameObject.entity],{-1000,0},true)
+                        if v.key == input.KeyboardKey.SPACE do b2.Body_ApplyForceToCenter(data.world.bodies[data.gameObject.entity],{0,1000},true)
                     }
                 }
             })))
+            fmt.println("PLAYER", gameobject.entity)
         }
         if obj.class == "col" {
-            fmt.println("COL")
-            tilesheet := io.new_tilesheet(game.assetsManager, "/home/spy/dev/speler/Sprites/02-King Pig/Idle (38x28).png", {38,28})
+            tilesheet := io.new_tilesheet(game.assetsManager, "/home/spy/dev/speler/Sprites/02-King Pig/Attack (38x28).png", {38,28})
             gameobject1 := og.new_gameobject(game.ecs);
             gameobject1.transform.pos = transform.pos
             gameobject1.transform.size = transform.size
             og.add_component(gameobject1, ecs.Rigidbody({type=ecs.BodyType.staticBody}))
-            og.add_component(gameobject1, ecs.SpriteRenderer({sprite=tilesheet.sprites[0][0]}))
-            
+            og.add_component(gameobject1, ecs.SpriteRenderer({}))
+            fmt.println("COL", gameobject1.entity)
         }
 
     })
 
-    // debug := og.new_gameobject(game.ecs);
-    // debug.transform.pos = {100,100}
-    // og.add_component(debug, ecs.NewText(text="HEJ whats happening?"))
-    // og.add_component(debug, ecs.NewUISpriteRenderer(sprite=tilesheet.sprites[0][0]))
 
 
     og.start_game(game);

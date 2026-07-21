@@ -5,12 +5,12 @@ import "core:fmt"
 
 // It is here we add new components to the whole ecs system
 add_systems :: proc(ECS : ^EntityComponentSystem) {
+    add_storage(ECS, Camera2D, camera_system)
     add_storage(ECS, Transform, nil)
     add_storage(ECS, ShapeRenderer, shape_render_system)
     add_storage(ECS, SpriteRenderer, sprite_render_system)
     add_storage(ECS, SpriteAnimator, sprite_animator_system)
     add_storage(ECS, Parent, parent_system)
-    add_storage(ECS, Camera2D, camera_system)
     add_storage(ECS, UIText, ui_system)
     add_storage(ECS, UISpriteRenderer, ui_system)
     add_storage(ECS, Text, text_system)
@@ -62,8 +62,8 @@ get_component :: proc(ecs: ^EntityComponentSystem, entity: Entity, $T: typeid) -
 
 has_component :: proc(storage: ^ComponentStorage($T), entity: Entity) -> (int, bool) {
     has := int(entity) < len(storage.sparse) &&
-        storage.sparse[entity] != -1
-    
+         storage.sparse[entity] > 0 // FIXME This is a bug because it could also be 0
+
     if has do return storage.sparse[int(entity)], has
     else   do return -1, false
 }

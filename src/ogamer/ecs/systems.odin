@@ -34,8 +34,13 @@ sprite_render_system :: proc(data: SystemData, dt: f32) {
         t := t_storage.dense[t_storage.sparse[entity]]
         
         if data.renderer == nil do continue
-        if s.sprite.texture == "" do rn.add_command(data.renderer, rn.Rectangle({t.pos,t.size, t.rot, {255,255,255,255}, false, 1}))
-        else do rn.add_command(data.renderer, rn.Sprite({t.pos,s.offset, t.size, t.rot, s.inverted, s.sprite, s.layer, s.repeated_x, s.repeated_y}))
+
+        if data.renderer.active_camera != nil && s.parallax != {1,1} {
+            s.offset = data.renderer.active_camera.target * (s.parallax)
+        }
+
+
+        rn.add_command(data.renderer, rn.Sprite({t.pos,s.offset, t.size, t.rot, s.inverted, s.sprite, s.layer, s.repeated_x, s.repeated_y}))
     }
 }
 
@@ -62,6 +67,7 @@ script_system :: proc(data: SystemData, dt: f32) {
                 gameObject = go,
                 ecs=data.ecs,
                 eventQueue = data.eventQueue,
+                world = data.world,
                 dt=dt
             }))
         }
@@ -90,12 +96,12 @@ sprite_animator_system :: proc(data: SystemData, dt: f32) {
 
         // Lazily attach a SpriteRenderable to write frames into.
         if animator.sprite_comp == nil {
-            index, has_sprite := has_component(sprite_storage, storage.entities[i])
+            index, has_sprite := has_component(sprite_storage, entity)
             if has_sprite {
-                animator.sprite_comp = &sprite_storage.dense[index]
+                animator.sprite_comp = &sprite_storage.dense[sprite_storage.sparse[entity]]
             } else {
-                fmt.println("INFO: Adding sprite component to", storage.entities[i], animator, "because it had no sprite_component")
-                sprite := add_component(data.ecs, storage.entities[i], NewSpriteRenderer())
+                fmt.println("INFO: Adding sprite component to", entity, animator, "because it had no sprite_component")
+                sprite := add_component(data.ecs, entity, NewSpriteRenderer())
                 animator.sprite_comp = sprite
             }
         }

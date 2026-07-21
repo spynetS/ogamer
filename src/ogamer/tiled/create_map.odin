@@ -195,7 +195,7 @@ create_imagelayer :: proc(game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1
         og.add_component(go, ecs.SpriteRenderer({
             sprite=sprite,
             layer=imagelayer.layer_depth,
-            parallax = imagelayer.parallax-1,
+            parallax = imagelayer.parallax,
             repeated_x = imagelayer.repeatx,
             repeated_y = imagelayer.repeaty
         }))
