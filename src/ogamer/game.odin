@@ -49,6 +49,8 @@ start_game :: proc (game: ^Game) {
     phy_world := physics.PhysicsWorld({})
     physics.init_physics(&phy_world)
 
+    game.ecs.world = &phy_world
+
 
     prev_time := time.now()
     for game.should_run {
@@ -77,7 +79,6 @@ start_game :: proc (game: ^Game) {
             renderer = game.renderer,
             assets_manager = game.assetsManager,
             eventQueue = game.eventQueue,
-            world = &phy_world
         }), dt)
 
         // end the rendering

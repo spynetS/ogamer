@@ -10,7 +10,7 @@ Vector2 :: [2]f32
 PhysicsWorld :: struct {
     world_id: b2.WorldId,
     bodies: map[Entity]b2.BodyId, 
-    shapes: map[b2.BodyId]b2.ShapeId
+    shapes: map[Entity]b2.ShapeId
 }
 
 init_physics :: proc (world: ^PhysicsWorld) {
@@ -50,31 +50,41 @@ create_body  :: proc (world: ^PhysicsWorld,
 }
 
 build_body_shape :: proc (world: ^PhysicsWorld,
+                          entity: Entity,
                           body_id: b2.BodyId,
+                          local_pos: Vector2,
                           size: Vector2,
                           is_collider: bool,
                           is_trigger: bool,
-                          density: f32 = 0
+                          density: f32 = 1
                          ) {
     // if the body has a shape we have to destroy the old one
-    if old, has := world.shapes[body_id]; has {
+
+    if old, has := world.shapes[entity]; has {
         b2.DestroyShape(old, true);
     }
-    box := b2.MakeBox(
+
+    local := b2.Vec2{
+        local_pos.x / PIXELS_PER_METER,
+        local_pos.y / PIXELS_PER_METER,
+    }
+    
+    box := b2.MakeOffsetBox(
         (size.x / 2) / PIXELS_PER_METER,
-        (size.y / 2) / PIXELS_PER_METER
+        (size.y / 2) / PIXELS_PER_METER,
+        local,
+        b2.Rot_identity,
     )
 
     shapeDef := b2.DefaultShapeDef()
-    shapeDef.density = density == 0 ? 1 : density
-    shapeDef.enableContactEvents = (is_collider);
-    shapeDef.enableSensorEvents = true
+    shapeDef.density = density
+    shapeDef.enableContactEvents = is_collider;
+    shapeDef.enableSensorEvents = is_trigger
     shapeDef.isSensor = (is_collider ? is_trigger : true)
     shapeId := b2.CreatePolygonShape(body_id, shapeDef, box);
 
-    world.shapes[body_id] = shapeId
+    world.shapes[entity] = shapeId
     fmt.println("INFO: ", body_id, "created box2d shape ")
 }
-
 
 destroy_body :: proc () {}

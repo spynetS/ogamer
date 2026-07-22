@@ -27,6 +27,7 @@ main :: proc() {
             og.add_component(gameobject, ecs.NewSpriteAnimator(sprites=tilesheet.sprites))
             og.add_component(gameobject, ecs.NewCamera(zoom=1))
             og.add_component(gameobject, ecs.Rigidbody({type=ecs.BodyType.dynamicBody, disabled_rotation=true}))
+            og.add_component(gameobject, ecs.NewCollider(size={-50,0}))
             
             og.add_component(gameobject, ecs.NewText(text="HEJ whats happening?", offset={-100,100}))
             
@@ -40,16 +41,27 @@ main :: proc() {
                     }
                 }
             })))
+
+            child := og.new_gameobject(game.ecs)
+            child.transform.local_pos = {75,0}
+            child.transform.local_size = {-50,-50}
+            og.add_component(child, ecs.NewCollider())
+//            og.add_component(child, ecs.NewShapeRenderer())
+
+            //og.add_child(gameobject, child)
+            
+
             fmt.println("PLAYER", gameobject.entity)
         }
         if obj.class == "col" {
             tilesheet := io.new_tilesheet(game.assetsManager, "/home/spy/dev/speler/Sprites/02-King Pig/Attack (38x28).png", {38,28})
-            gameobject1 := og.new_gameobject(game.ecs);
-            gameobject1.transform.pos = transform.pos
-            gameobject1.transform.size = transform.size
-            og.add_component(gameobject1, ecs.Rigidbody({type=ecs.BodyType.staticBody}))
-            og.add_component(gameobject1, ecs.SpriteRenderer({}))
-            fmt.println("COL", gameobject1.entity)
+            gameobject := og.new_gameobject(game.ecs);
+            gameobject.transform.pos = transform.pos
+            gameobject.transform.size = transform.size
+            og.add_component(gameobject, ecs.Rigidbody({type=ecs.BodyType.staticBody}))
+            og.add_component(gameobject, ecs.NewCollider())
+            og.add_component(gameobject, ecs.NewSpriteRenderer())
+            fmt.println("COL", gameobject.entity)
         }
 
     })

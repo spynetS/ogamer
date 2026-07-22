@@ -41,5 +41,9 @@ get_gameobject :: proc(ecs: ^EntityComponentSystem, entity: Entity) -> GameObjec
 }
 
 add_child :: proc(parent, child: GameObject){
+    fmt.println("INFO: adding", child.entity, "as child to", parent.entity)
     gameobject_add_component(child, NewParent(parent.entity))
+    parent, has_parent := get_component(parent.ecs, child.entity, Parent);
+    fmt.println(parent)
+
 }

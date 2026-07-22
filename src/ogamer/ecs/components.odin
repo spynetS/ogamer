@@ -234,3 +234,29 @@ Rigidbody :: struct {
     type: BodyType
         
 }
+NewRigidbody :: proc (
+    vel: Vector2 = {0,0},
+    acc: Vector2 = {0,0},
+    disabled_gravity: bool = false,
+    disabled_rotation: bool = false,
+    type: BodyType
+) -> Rigidbody {return Rigidbody({
+    vel = vel,
+    acc = acc,
+    disabled_gravity = disabled_gravity,
+    disabled_rotation = disabled_rotation,
+    type = type,
+})}
+
+Collider :: struct {
+    using base: Component,
+    offset: Vector2,
+    size: Vector2,
+    trigger: bool
+}
+
+NewCollider :: proc (
+    offset: Vector2 = {0,0},
+    size: Vector2 = {0,0},
+    trigger: bool = false
+) -> Collider {return Collider({offset=offset, size=size,trigger=trigger})}
