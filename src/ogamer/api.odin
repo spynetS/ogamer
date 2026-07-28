@@ -26,6 +26,8 @@ Transform        :: ecs.Transform
 NewShapeRenderer :: ecs.NewShapeRenderer
 ShapeRenderer    :: ecs.ShapeRenderer
 
+
+
 // INPUT
 
 is_key_down :: input.is_key_down
@@ -38,3 +40,4 @@ is_mouse_pressed :: proc (btn: input.MouseButton) -> bool {
     if current_game == nil do return false;
     return input.is_mouse_pressed(current_game.eventQueue, btn)
 }
+

@@ -6,6 +6,7 @@ import b2 "vendor:box2d"
 import rn "../renderer/"
 import  "../io/"
 import  "../events/"
+import  "../input/"
 import  "../physics/"
 
 shape_render_system :: proc(data: SystemData, dt: f32) {
@@ -157,7 +158,7 @@ parent_system :: proc(data: SystemData, dt: f32) {
     if !ok do return;
     t_storage, ok2 := get_storage(data.ecs, Transform)
     if !ok2 do return
-    fmt.println("INFO: parent-comp")
+
 
     for i in 0..<len(parent_storage.dense) {
         entity := parent_storage.entities[i]
@@ -166,7 +167,7 @@ parent_system :: proc(data: SystemData, dt: f32) {
         
         child_t  := &t_storage.dense[t_storage.sparse[int(entity)]]
         parent   := &parent_storage.dense[i]
-        fmt.println("INFO: parent-comp", parent)
+
         
         if t_storage.sparse[int(parent.parent_entity)] == -1 do continue
         parent_t := &t_storage.dense[t_storage.sparse[int(parent.parent_entity)]]
@@ -366,4 +367,39 @@ physics_system :: proc(data: SystemData, dt: f32) {
         }
     }
 
+}
+
+mouse_over_system :: proc (data: SystemData, dt: f32) {
+    mouse_storage, ok := get_storage(data.ecs, MouseOverComponent);
+    transform_storage, ok1 := get_storage(data.ecs, Transform);
+    if !ok do return
+
+    for i in 0..<len(mouse_storage.dense) {
+        entity := mouse_storage.entities[i];
+        mouse_over := mouse_storage.dense[i]
+        transform := transform_storage.dense[transform_storage.sparse[entity]]
+        
+        mp := input.get_world_mouse_position()
+        px := mp.x
+        py := mp.y
+        x := transform.pos.x
+        y := transform.pos.y
+        w := transform.size.x
+        h := transform.size.y
+
+        before := mouse_over.over
+        mouse_over.over = px >= x &&
+           px <= x + w &&
+           py >= y &&
+            py <= y + h;
+
+        // we left
+        if before && !mouse_over.over {
+            events.emit(data.eventQueue, events.MouseLeftEntity({entity}))
+        }
+        else if !before && mouse_over.over {
+            events.emit(data.eventQueue, events.MouseEnteredEntity({entity}))
+        }
+
+    }
 }

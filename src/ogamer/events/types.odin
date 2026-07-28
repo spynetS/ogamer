@@ -50,6 +50,12 @@ AnimationFinished :: struct {
 Should_Close_Window :: struct {
 
 }
+MouseEnteredEntity :: struct {
+    entity: Entity
+}
+MouseLeftEntity :: struct {
+    entity: Entity
+}
 
 // The union of all possible events
 Event :: union {
@@ -66,6 +72,9 @@ Event :: union {
     Trigger_Entered,
     Trigger_Left,
     Trigger_Hit,
+
+    MouseEnteredEntity,
+    MouseLeftEntity,
     
 
     AnimationFinished,

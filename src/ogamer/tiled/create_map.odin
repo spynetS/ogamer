@@ -206,6 +206,8 @@ create_imagelayer :: proc(game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1
     }
 }
 
+
+// Make everything under a parent gameobject
 create_from_map :: proc (game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1}, on_create: proc(Object, ecs.Transform) = nil) {
     if _map == nil do panic("NO MAP")
     create_tiles(game, _map, tile_scale)

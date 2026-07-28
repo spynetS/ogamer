@@ -14,6 +14,8 @@ add_systems :: proc(ECS : ^EntityComponentSystem) {
     add_storage(ECS, UIText, ui_system)
     add_storage(ECS, UISpriteRenderer, ui_system)
     add_storage(ECS, Text, text_system)
+    add_storage(ECS, Tag, nil)
+    add_storage(ECS, MouseOverComponent, mouse_over_system)
     add_storage(ECS, Rigidbody, physics_system)
     add_storage(ECS, Collider, collider_system)
     add_storage(ECS, ScriptComponent, script_system, before_destroy = proc (raw: rawptr) {
@@ -108,7 +110,33 @@ add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDA
             delete(s.dense)
             delete(s.entities)
             free(s)
-        }})
+        },
+        destroy_entity = proc(storage: rawptr, entity:Entity) {
+            s := cast(^ComponentStorage(T))storage
+
+            id := int(entity)
+
+            // bounds + existence check
+            if id >= len(s.sparse) || s.sparse[id] == NO_ENTITY {
+                return
+            }
+
+            index      := s.sparse[id]
+            last_index := len(s.dense) - 1
+            last_entity := s.entities[last_index]
+
+            s.dense[index]    = s.dense[last_index]
+            s.entities[index] = last_entity
+
+            pop(&s.dense)
+            pop(&s.entities)
+
+            // point the moved entity's sparse entry at its new index
+            s.sparse[int(last_entity)] = index
+            s.sparse[id] = NO_ENTITY
+        }
+
+    })
 
 }
 
@@ -122,6 +150,12 @@ update_systems :: proc(data: SystemData, dt: f32) {
 get_new_entity :: proc(ecs: ^EntityComponentSystem) -> Entity {
     ecs.entity_counter += 1
     return ecs.entity_counter
+}
+
+destroy_entity :: proc(ecs: ^EntityComponentSystem, entity:Entity ) {
+    for key, holder in ecs.storages {
+        holder.destroy_entity(holder.storage, entity)
+    }
 }
 
 free_ecs :: proc (ecs: ^EntityComponentSystem) {

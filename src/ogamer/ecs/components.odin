@@ -32,7 +32,7 @@ Transform :: struct {
     rot: f32,
     local_pos: Vector2,
     local_size: Vector2,
-    local_rot: f32,
+    local_rot: f32
 }
 
 NewTransform :: proc (
@@ -260,3 +260,13 @@ NewCollider :: proc (
     size: Vector2 = {0,0},
     trigger: bool = false
 ) -> Collider {return Collider({offset=offset, size=size,trigger=trigger})}
+
+MouseOverComponent :: struct {
+    using base: Component,
+    over: bool
+}
+
+Tag :: struct {
+    using base: Component,
+    tag: string
+}

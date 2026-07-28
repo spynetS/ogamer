@@ -47,3 +47,21 @@ add_child :: proc(parent, child: GameObject){
     fmt.println(parent)
 
 }
+
+
+get_gameobjects_tag :: proc(ecs: ^EntityComponentSystem, tag: string) -> [dynamic]GameObject{
+    tag_storage, ok := get_storage(ecs, Tag)
+
+    gameobjects : [dynamic]GameObject
+
+    for i in 0..<len(tag_storage.dense) {
+        tag_comp := tag_storage.dense[i]
+        if tag_comp.tag != tag do continue
+        
+        entity := tag_storage.entities[i]
+        gb := get_gameobject(ecs, entity)
+
+        append(&gameobjects, gb)
+    }
+    return gameobjects
+}
