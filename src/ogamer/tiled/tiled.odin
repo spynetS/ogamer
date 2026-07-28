@@ -251,12 +251,12 @@ load_objectgroup :: proc(layer: json.Object, layer_depth: int) -> ObjectGroup {
 }
 
 load_tileset :: proc(handler: ^io.AssetsManager, tileset: json.Object, path: string) -> TileSet {
+
     _tileset := TileSet({})
     if v,ok := tileset["firstgid"].(json.Float); ok do _tileset.firstgid = cast(int)v
     if v,ok := tileset["source"].(json.String); ok {
         here := filepath.dir(path)
         _path,_ := filepath.join({here, v})
-
         load_tileset_file(handler, &_tileset, _path)
         delete(_path)
     } 
@@ -296,7 +296,7 @@ load_map :: proc(handler: ^io.AssetsManager, path: string) -> ^Map {
             layer_depth += 1
         }
         for tileset in v["tilesets"].(json.Array) {
-            append(&_map.tilesets,load_tileset(handler, tileset.(json.Object), path))
+            append(&_map.tilesets, load_tileset(handler, tileset.(json.Object), path))
         }
 
         case:

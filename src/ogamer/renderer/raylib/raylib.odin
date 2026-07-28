@@ -186,11 +186,11 @@ execute_command :: proc(renderer : ^rn.Renderer ,command: rn.RenderCommand) {
     }
 
 }
-// TODO
+// TODO should not append to array
 handle_input :: proc(eventQueue: ^es.EventQueue) {
     key := input.KeyboardKey(rl.GetKeyPressed());
     if key != input.KeyboardKey.KEY_NULL {
-        es.emit(eventQueue, es.Key_Pressed({key}));
+        es.emit(eventQueue, es.Key_Pressed({i32(key)}));
         append(&input.keys, key);
     }
 
@@ -203,8 +203,8 @@ handle_input :: proc(eventQueue: ^es.EventQueue) {
     for rl_btn in rl.MouseButton {
         btn := input.MouseButton(rl_btn)
         if rl.IsMouseButtonPressed(rl_btn) {
-            es.emit(eventQueue, es.MouseButton_Pressed({btn}))
-            append(&input.mouse_buttons, btn)
+            es.emit(eventQueue, es.MouseButton_Pressed({i32(btn)}))
+            append(&input.mouse_buttons, btn) 
         }
     }
     for i := len(input.mouse_buttons) - 1; i >= 0; i -= 1 {

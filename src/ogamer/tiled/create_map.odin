@@ -94,6 +94,7 @@ add_sprite :: proc(game: ^og.Game, go: ^og.GameObject, layer_depth: int, paralla
 
     }
     else {
+        fmt.println("ADDED TILE")
         og.add_component(go^, ecs.SpriteRenderer({
             sprite = tileSet.tilesheet.sprites[grid_y][grid_x],
             layer=layer_depth,
@@ -156,6 +157,9 @@ create_tiles :: proc (game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1}) {
                                     tile_scale)
                 add_sprite(game, &go, layer.layer_depth, layer.parallax, tileSet, value)
             }
+            else {
+                fmt.println("DID NOT FOUND TILESET")
+            }
         }
     }
 }
@@ -203,7 +207,7 @@ create_imagelayer :: proc(game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1
 }
 
 create_from_map :: proc (game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1}, on_create: proc(Object, ecs.Transform) = nil) {
-    if _map == nil do return
+    if _map == nil do panic("NO MAP")
     create_tiles(game, _map, tile_scale)
     create_objectgroup(game, _map, tile_scale, on_create)
     create_imagelayer(game,_map, tile_scale)

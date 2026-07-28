@@ -1,6 +1,5 @@
 package ogamer_events;
 
-import "../input/"
 
 Entity :: u32
 
@@ -11,16 +10,16 @@ EventQueue :: struct {
 }
 
 MouseButton_Pressed :: struct {
-    button: input.MouseButton,
+    button: i32,
 }
 MouseButton_Released :: struct {
-    button: input.MouseButton,
+    button: i32,
 }
 Key_Pressed :: struct {
-    key: input.KeyboardKey,
+    key: i32,
 }
 Key_Released :: struct { // TODO add so it gets emited
-    key: input.KeyboardKey,
+    key: i32,
 }
 Collision_Entered :: struct {
     // ra: ^RigidBody,
