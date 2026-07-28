@@ -5,15 +5,17 @@ import "core:fmt"
 
 // It is here we add new components to the whole ecs system
 add_systems :: proc(ECS : ^EntityComponentSystem) {
+    add_storage(ECS, Camera2D, camera_system)
     add_storage(ECS, Transform, nil)
     add_storage(ECS, ShapeRenderer, shape_render_system)
     add_storage(ECS, SpriteRenderer, sprite_render_system)
     add_storage(ECS, SpriteAnimator, sprite_animator_system)
     add_storage(ECS, Parent, parent_system)
-    add_storage(ECS, Camera2D, camera_system)
     add_storage(ECS, UIText, ui_system)
     add_storage(ECS, UISpriteRenderer, ui_system)
     add_storage(ECS, Text, text_system)
+    add_storage(ECS, Rigidbody, physics_system)
+    add_storage(ECS, Collider, collider_system)
     add_storage(ECS, ScriptComponent, script_system, before_destroy = proc (raw: rawptr) {
         stor := cast(^ComponentStorage(ScriptComponent))raw
         for i in 0..<len(stor.dense) {
@@ -24,47 +26,65 @@ add_systems :: proc(ECS : ^EntityComponentSystem) {
 
 
 add_component :: proc(ECS : ^EntityComponentSystem, entity: Entity, component: $T) -> ^T {
-    storage, ok := get_storage(ECS, T)
+    holder, ok := get_storage_holder(ECS, T)
     if !ok do return nil
+    defer {
+        //fmt.println("INFO: added component",component, "to", entity)
+        comp := component
+        if holder.on_create != nil do holder.on_create(ECS, entity, &comp)
+    }
+    storage := cast(^ComponentStorage(T))holder.storage
     dense_index := len(storage.dense)
-
+    
     append(&storage.dense, component)
     append(&storage.entities, entity)
-
-    if int(entity) >= len(storage.sparse) {
+    old_len := len(storage.sparse)
+    
+    if int(entity) >= old_len {
         resize(&storage.sparse, entity + 1)
+        
+        for i in old_len..<len(storage.sparse) {
+            storage.sparse[i] = NO_ENTITY
+        }
     }
 
     storage.sparse[entity] = dense_index
     return &storage.dense[dense_index]
 }
 
-get_component :: proc(ecs: ^EntityComponentSystem, entity: Entity, $T: typeid) -> ^T {
+get_component :: proc(ecs: ^EntityComponentSystem, entity: Entity, $T: typeid) -> (^T, bool) #optional_ok {
     storage, ok := get_storage(ecs, T)
     
     if !ok {
-        return nil
+        return nil, false
     }
 
     if int(entity) >= len(storage.sparse) {
-        return nil
+        return nil, false
     }
 
     dense_index := storage.sparse[entity]
-
-    if dense_index == -1 {
-        return nil
+    
+    if dense_index == NO_ENTITY {
+        return nil, false
     }
 
-    return &storage.dense[dense_index]
+    return &storage.dense[dense_index], true
 }
 
 has_component :: proc(storage: ^ComponentStorage($T), entity: Entity) -> (int, bool) {
     has := int(entity) < len(storage.sparse) &&
-        storage.sparse[entity] != -1
-    
+         storage.sparse[entity] != NO_ENTITY
+
     if has do return storage.sparse[int(entity)], has
     else   do return -1, false
+}
+
+@(private)
+get_storage_holder :: proc(ecs: ^EntityComponentSystem, $T: typeid) -> (^StorageHolder, bool){
+    holder, ok := &ecs.storages[typeid_of(T)]
+    if !ok do return nil, false
+    return holder, true
 }
 
 @(private)
@@ -75,11 +95,12 @@ get_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid) -> (^ComponentStora
 }
 
 @(private)
-add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDATE_FUNCTION, before_destroy : DESTROY_COMPONENT_STORAGE = nil) {
+add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDATE_FUNCTION, on_create: ON_CREATE_COMPONENT = nil, before_destroy : DESTROY_COMPONENT_STORAGE = nil) {
     storage := new(ComponentStorage(T))
     ecs.storages[T] = StorageHolder({
         storage=storage,
         update=update,
+        on_create=on_create,
         before_destroy = before_destroy,
         destroy = proc(raw: rawptr) {
             s := cast(^ComponentStorage(T))raw

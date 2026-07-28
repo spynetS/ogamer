@@ -2,6 +2,7 @@ package ogamer_ecs;
 
 import "../io"
 import "../events"
+import "../physics"
 
 Vector2 :: [2]f32
 Entity :: u32
@@ -96,6 +97,7 @@ ScriptData :: struct {
     gameObject: GameObject,
     ecs: ^EntityComponentSystem,
     eventQueue: ^events.EventQueue,
+    world: ^physics.PhysicsWorld,
     dt: f32
 }
 SCRIPT_UPDATE_FUNCTION :: proc (data: ScriptData)
@@ -215,3 +217,46 @@ NewUISpriteRenderer :: proc (
     repeated_x =     repeated_x,
     repeated_y =     repeated_y}) }
 
+BodyType :: enum {
+    staticBody = 0,
+	  kinematicBody = 1,
+	  dynamicBody = 2,
+}
+
+
+Rigidbody :: struct {
+    using base: Component,
+    vel: Vector2,
+    acc: Vector2,
+    disabled_gravity: bool,
+    disabled_rotation: bool,
+    created: bool,
+    type: BodyType
+        
+}
+NewRigidbody :: proc (
+    vel: Vector2 = {0,0},
+    acc: Vector2 = {0,0},
+    disabled_gravity: bool = false,
+    disabled_rotation: bool = false,
+    type: BodyType
+) -> Rigidbody {return Rigidbody({
+    vel = vel,
+    acc = acc,
+    disabled_gravity = disabled_gravity,
+    disabled_rotation = disabled_rotation,
+    type = type,
+})}
+
+Collider :: struct {
+    using base: Component,
+    offset: Vector2,
+    size: Vector2,
+    trigger: bool
+}
+
+NewCollider :: proc (
+    offset: Vector2 = {0,0},
+    size: Vector2 = {0,0},
+    trigger: bool = false
+) -> Collider {return Collider({offset=offset, size=size,trigger=trigger})}
