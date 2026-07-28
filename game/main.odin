@@ -26,7 +26,7 @@ main :: proc() {
             gameobject.transform.pos = transform.pos
             og.add_component(gameobject, ecs.NewSpriteAnimator(sprites=tilesheet.sprites))
             og.add_component(gameobject, ecs.NewCamera(zoom=1))
-            og.add_component(gameobject, ecs.Rigidbody({type=ecs.BodyType.dynamicBody, disabled_rotation=true}))
+            og.add_component(gameobject, ecs.Rigidbody({type=ecs.BodyType.dynamicBody, disabled_rotation=false}))
             og.add_component(gameobject, ecs.NewCollider(size={-50,0}))
             
             og.add_component(gameobject, ecs.NewText(text="HEJ whats happening?", offset={-100,100}))
@@ -35,9 +35,9 @@ main :: proc() {
                 for event in events.event_queue_poll(game.eventQueue) {
                     #partial switch v in event {
                         case events.Key_Pressed:
-                        if v.key == input.KeyboardKey.D     do b2.Body_ApplyForceToCenter(data.world.bodies[data.gameObject.entity],{1000,0},true)
-                        if v.key == input.KeyboardKey.A     do b2.Body_ApplyForceToCenter(data.world.bodies[data.gameObject.entity],{-1000,0},true)
-                        if v.key == input.KeyboardKey.SPACE do b2.Body_ApplyForceToCenter(data.world.bodies[data.gameObject.entity],{0,1000},true)
+                        if v.key == input.KeyboardKey.D     do b2.Body_ApplyForceToCenter(data.world.bodies[data.gameObject.entity],{600,0},true)
+                        if v.key == input.KeyboardKey.A     do b2.Body_ApplyForceToCenter(data.world.bodies[data.gameObject.entity],{-600,0},true)
+                        if v.key == input.KeyboardKey.SPACE do b2.Body_ApplyForceToCenter(data.world.bodies[data.gameObject.entity],{0,1200},true)
                     }
                 }
             })))
