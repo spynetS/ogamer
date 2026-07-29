@@ -3,7 +3,7 @@ package tests;
 import "core:testing"
 import "core:mem"
 import "core:fmt"
-import "../src/ogamer/ecs"
+import "../ogamer/ecs"
 
 @(test)
 test_mem :: proc(t: ^testing.T) {
