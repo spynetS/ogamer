@@ -292,7 +292,31 @@ MouseOverComponent :: struct {
     over: bool
 }
 
+NewMouseOverComponent :: proc (
+    over: bool = false
+) -> MouseOverComponent {
+    return MouseOverComponent({over=over})
+}
+
+
 Tag :: struct {
     using base: Component,
     tag: string
+}
+
+NewTag :: proc (
+    tag: string = ""
+) -> Tag {
+    return Tag({tag=tag})
+}
+
+DepthSort :: struct {
+    using base: Component,
+    offset: Vector2
+}
+
+NewDepthSort :: proc (
+    offset: Vector2 = {0, 0}
+) -> DepthSort {
+    return DepthSort({offset=offset})
 }

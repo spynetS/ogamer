@@ -26,7 +26,7 @@ get_tileset :: proc(_map: ^Map, gid: int) -> (TileSet, bool) {
     return result, found
 }
 
-create_objectgroup :: proc(game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1}, on_create: proc(Object, ecs.Transform) = nil) {
+create_objectgroup :: proc(game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1}, on_create: proc(Object, ecs.GameObject) = nil) {
     // map height in pixels, scaled — used only for the Y flip
     map_w := cast(f32)_map.width * cast(f32)_map.tilewidth * tile_scale.x
     map_h := cast(f32)_map.height * cast(f32)_map.tileheight * tile_scale.y
@@ -62,7 +62,7 @@ create_objectgroup :: proc(game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,
                 // og.add_component(go, types.RigidBody({}))
                 // og.add_component(go, types.SquareCollider({}))
             }
-            if on_create != nil do on_create(object, go.transform^)
+            if on_create != nil do on_create(object, go)
         }
     }
 }
@@ -97,7 +97,7 @@ add_sprite :: proc(game: ^og.Game, go: ^og.GameObject, layer_depth: int, paralla
         og.add_component(go^, ecs.SpriteRenderer({
             sprite = tileSet.tilesheet.sprites[grid_y][grid_x],
             layer=layer_depth,
-            parallax=parallax-1
+            parallax=parallax
         }))
     }
 }
@@ -154,7 +154,7 @@ create_tiles :: proc (game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1}) {
                                     tileSet,
                                     _map,
                                     tile_scale)
-                add_sprite(game, &go, layer.layer_depth, layer.parallax, tileSet, value)
+                add_sprite(game, &go, layer.layer_depth-1000, layer.parallax, tileSet, value)
             }
             else {
                 //fmt.println("DID NOT FOUND TILESET")
@@ -207,7 +207,7 @@ create_imagelayer :: proc(game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1
 
 
 // Make everything under a parent gameobject
-create_from_map :: proc (game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1}, on_create: proc(Object, ecs.Transform) = nil) {
+create_from_map :: proc (game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1}, on_create: proc(Object, ecs.GameObject) = nil) {
     if _map == nil do panic("NO MAP")
     create_tiles(game, _map, tile_scale)
     create_objectgroup(game, _map, tile_scale, on_create)

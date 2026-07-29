@@ -42,6 +42,7 @@ sprite_render_system :: proc(data: SystemData, dt: f32) {
 
 
         rn.add_command(data.renderer, rn.Sprite({t.pos,s.offset, t.size, t.rot, s.inverted, s.sprite, s.layer, s.repeated_x, s.repeated_y}))
+//        rn.add_command(data.renderer, rn.Text({t.pos, 16, t.rot, fmt.tprintf("%d",s.layer), rn.get_color(0x181818ff),s.layer}))
     }
 }
 
@@ -540,5 +541,31 @@ mouse_over_system :: proc (data: SystemData, dt: f32) {
             events.emit(data.eventQueue, events.MouseEnteredEntity({entity}))
         }
 
+    }
+}
+
+depth_sort_system :: proc (data: SystemData, dt: f32) {
+    depth_storage, ok1 := get_storage(data.ecs, DepthSort)
+    trans_storage, ok2 := get_storage(data.ecs, Transform)
+    sprite_storage, ok3 := get_storage(data.ecs, SpriteRenderer)
+
+    if !ok1 || !ok2 || !ok3 do return
+
+    for i in 0..<len(depth_storage.dense) {
+        entity := depth_storage.entities[i]
+
+        if int(entity) >= len(trans_storage.sparse) do continue
+        if int(entity) >= len(sprite_storage.sparse) do continue
+
+        trans_index := trans_storage.sparse[entity]
+        sprite_index := sprite_storage.sparse[entity]
+
+        if trans_index == NO_ENTITY || sprite_index == NO_ENTITY do continue
+
+        depth := depth_storage.dense[i]
+        transform := trans_storage.dense[trans_index]
+        sprite := &sprite_storage.dense[sprite_index]
+
+        sprite.layer = int(-transform.pos.y + depth.offset.y + 100000)
     }
 }

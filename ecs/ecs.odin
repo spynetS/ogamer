@@ -18,6 +18,7 @@ add_systems :: proc(ECS : ^EntityComponentSystem) {
     add_storage(ECS, MouseOverComponent, mouse_over_system)
     add_storage(ECS, Rigidbody, physics_system)
     add_storage(ECS, Collider, collider_system)
+    add_storage(ECS, DepthSort, depth_sort_system)
     add_storage(ECS, ScriptComponent,
                 script_system,
                 before_destroy = proc (raw: rawptr) {

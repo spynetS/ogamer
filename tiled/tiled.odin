@@ -11,8 +11,8 @@ import "core:encoding/xml"
 import "core:encoding/json"
 
 Value :: union {
-	  i64, 
-	  f64, 
+	  i32, 
+	  f32, 
 	  bool, 
 	  string, 
 }
@@ -197,9 +197,12 @@ load_imagelayer :: proc(layer: json.Object, path: string, layer_depth: int) -> I
     return _layer
 }
 
-load_object :: proc (value: json.Object, layer_depth: int) -> Object {
+load_object :: proc (value: json.Object, layer_depth: int, path: string) -> Object {
     object := Object({gid=-1, visible=true, layer_depth = layer_depth})
 
+    if v,ok := value["template"].(json.String); ok {
+        panic("TODO")
+    }
     if v,ok := value["name"].(json.String); ok do object.name  = fmt.tprintf(v)
     if v,ok := value["type"].(json.String); ok do object.class = fmt.tprintf(v)
     if v,ok := value["gid"].(json.Float); ok do object.gid = cast(int)v
@@ -216,13 +219,13 @@ load_object :: proc (value: json.Object, layer_depth: int) -> Object {
             #partial switch val in el {
                 case json.Object:
                 #partial switch type in val["value"] {
-                    case json.Integer : prop.value=type
-                    case json.Float   : prop.value=type
+                    case json.Integer : prop.value=i32(type)
+                    case json.Float   : prop.value=f32(type)
                     case json.Boolean : prop.value=type
                     case json.String  : prop.value=type
                 }
-                prop.name = val["name"].(json.String)
-                prop.type = val["type"].(json.String)
+                prop.name = fmt.tprintf("%s",val["name"].(json.String))
+                prop.type = fmt.tprintf("%s",val["type"].(json.String))
             }
             append(&object.properties, prop)
         }
@@ -230,7 +233,7 @@ load_object :: proc (value: json.Object, layer_depth: int) -> Object {
     return object
 }
 
-load_objectgroup :: proc(layer: json.Object, layer_depth: int) -> ObjectGroup {
+load_objectgroup :: proc(layer: json.Object, layer_depth: int, path: string) -> ObjectGroup {
 
     objectgroup := ObjectGroup({visible=true, layer_depth = layer_depth});
     if v,ok := layer["draworder"].(json.String); ok do objectgroup.draworder = fmt.tprintf(v)
@@ -242,7 +245,7 @@ load_objectgroup :: proc(layer: json.Object, layer_depth: int) -> ObjectGroup {
     if v,ok := layer["objects"].(json.Array); ok {
         objects := make([dynamic]Object)
         for value in v {
-            append(&objects, load_object(value.(json.Object), layer_depth))
+            append(&objects, load_object(value.(json.Object), layer_depth, path))
         }
         objectgroup.objects = objects
     } 
@@ -290,7 +293,7 @@ load_map :: proc(handler: ^io.AssetsManager, path: string) -> ^Map {
         for layer in v["layers"].(json.Array) {
             switch layer.(json.Object)["type"].(json.String)  {
             case "tilelayer": append(&_map.layers,load_layer(layer.(json.Object), layer_depth))
-            case "objectgroup": append(&_map.objectgroups,load_objectgroup(layer.(json.Object), layer_depth))
+            case "objectgroup": append(&_map.objectgroups,load_objectgroup(layer.(json.Object), layer_depth, path))
             case "imagelayer": append(&_map.imagelayers,load_imagelayer(layer.(json.Object), path, layer_depth))
             }
             layer_depth += 1
