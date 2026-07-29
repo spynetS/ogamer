@@ -34,7 +34,7 @@ Tile :: union {
     Animation
 }
 TileSet :: struct {
-    name: string,
+    name, source: string,
     firstgid, tilewidth, tileheight, tilecount, columns, margin, spacing: int,
     image: Image,
     tilesheet: ^io.TileSheet,
@@ -197,11 +197,60 @@ load_imagelayer :: proc(layer: json.Object, path: string, layer_depth: int) -> I
     return _layer
 }
 
-load_object :: proc (value: json.Object, layer_depth: int, path: string) -> Object {
+load_template :: proc (value: json.Object, obj: ^Object, path: string, tilesets: [dynamic]TileSet) {
+    fmt.println("TEMPLATE:", value)
+
+    if v,ok := value["object"].(json.Object); ok {
+        template_object := load_object(v, obj.layer_depth, "", tilesets)
+        obj.class       = template_object.class
+        obj.id          = template_object.id
+        obj.gid         = template_object.gid
+        obj.x           = template_object.x
+        obj.y           = template_object.y
+        obj.width       = template_object.width
+        obj.height      = template_object.height
+        obj.visible     = template_object.visible
+        obj.name        = template_object.name
+        obj.layer_depth = template_object.layer_depth
+        obj.point       = template_object.point
+        obj.properties  = template_object.properties
+        fmt.println("OBJ:", obj)
+    }
+    if tileset_val,ok := value["tileset"].(json.Object); ok {
+        if v,ok := tileset_val["source"].(json.String); ok {
+            here := filepath.dir(path)
+            _path,_ := filepath.join({here, v})
+            defer delete(_path)
+
+            for tileset in tilesets {
+                fmt.println("TILESETS:", tileset.source, _path)
+                if tileset.source == _path do obj.gid += tileset.firstgid-1
+            }
+        }
+    }
+
+    
+}
+
+load_object :: proc (value: json.Object, layer_depth: int, path: string, tilesets: [dynamic]TileSet) -> Object {
     object := Object({gid=-1, visible=true, layer_depth = layer_depth})
 
     if v,ok := value["template"].(json.String); ok {
-        panic("TODO")
+        here := filepath.dir(path)
+        _path,_ := filepath.join({here, v})
+        defer delete(_path)
+        fmt.println("TEMPLATE PATH:", _path)
+        data, read_err := os.read_entire_file(_path, context.allocator)
+	      if read_err != nil {
+		        fmt.eprintfln("Failed to load the file: %v", read_err)
+		        return Object({})
+	      }
+	      defer delete(data)
+        value, error := json.parse(data)
+        load_template(value.(json.Object), &object, path, tilesets)
+        fmt.println("OBJ:", object)
+        
+
     }
     if v,ok := value["name"].(json.String); ok do object.name  = fmt.tprintf(v)
     if v,ok := value["type"].(json.String); ok do object.class = fmt.tprintf(v)
@@ -233,7 +282,7 @@ load_object :: proc (value: json.Object, layer_depth: int, path: string) -> Obje
     return object
 }
 
-load_objectgroup :: proc(layer: json.Object, layer_depth: int, path: string) -> ObjectGroup {
+load_objectgroup :: proc(layer: json.Object, layer_depth: int, path: string, tilesets: [dynamic]TileSet) -> ObjectGroup {
 
     objectgroup := ObjectGroup({visible=true, layer_depth = layer_depth});
     if v,ok := layer["draworder"].(json.String); ok do objectgroup.draworder = fmt.tprintf(v)
@@ -245,7 +294,7 @@ load_objectgroup :: proc(layer: json.Object, layer_depth: int, path: string) -> 
     if v,ok := layer["objects"].(json.Array); ok {
         objects := make([dynamic]Object)
         for value in v {
-            append(&objects, load_object(value.(json.Object), layer_depth, path))
+            append(&objects, load_object(value.(json.Object), layer_depth, path, tilesets))
         }
         objectgroup.objects = objects
     } 
@@ -260,6 +309,7 @@ load_tileset :: proc(handler: ^io.AssetsManager, tileset: json.Object, path: str
     if v,ok := tileset["source"].(json.String); ok {
         here := filepath.dir(path)
         _path,_ := filepath.join({here, v})
+        _tileset.source = fmt.tprintf("%s",_path)
         load_tileset_file(handler, &_tileset, _path)
         delete(_path)
     } 
@@ -290,16 +340,17 @@ load_map :: proc(handler: ^io.AssetsManager, path: string) -> ^Map {
         _map.tileheight = cast(int)v["tileheight"].(json.Float)
 
         layer_depth := -len(v["layers"].(json.Array))
+        for tileset in v["tilesets"].(json.Array) {
+            append(&_map.tilesets, load_tileset(handler, tileset.(json.Object), path))
+        }
+
         for layer in v["layers"].(json.Array) {
             switch layer.(json.Object)["type"].(json.String)  {
             case "tilelayer": append(&_map.layers,load_layer(layer.(json.Object), layer_depth))
-            case "objectgroup": append(&_map.objectgroups,load_objectgroup(layer.(json.Object), layer_depth, path))
+            case "objectgroup": append(&_map.objectgroups,load_objectgroup(layer.(json.Object), layer_depth, path, _map.tilesets))
             case "imagelayer": append(&_map.imagelayers,load_imagelayer(layer.(json.Object), path, layer_depth))
             }
             layer_depth += 1
-        }
-        for tileset in v["tilesets"].(json.Array) {
-            append(&_map.tilesets, load_tileset(handler, tileset.(json.Object), path))
         }
 
         case:
