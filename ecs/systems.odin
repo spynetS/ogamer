@@ -212,6 +212,9 @@ parent_system :: proc(data: SystemData, dt: f32) {
     if !ok do return;
     t_storage, ok2 := get_storage(data.ecs, Transform)
     if !ok2 do return
+    s_storage, ok3 := get_storage(data.ecs, SpriteRenderer)
+    if !ok3 do return
+
 
 
     for i in 0..<len(parent_storage.dense) {
@@ -225,12 +228,20 @@ parent_system :: proc(data: SystemData, dt: f32) {
         
         if t_storage.sparse[int(parent.parent_entity)] == -1 do continue
         parent_t := &t_storage.dense[t_storage.sparse[int(parent.parent_entity)]]
-
-
-
+       
         child_t.pos = parent_t.pos + rotate(child_t.local_pos * parent_t.size/100, parent_t.rot) // divide by 100 because default size is 100?
         child_t.size = parent_t.size + child_t.local_size * parent_t.size/100
         child_t.rot = parent_t.rot
+
+        if int(entity) >= len(s_storage.sparse) || s_storage.sparse[int(entity)] == -1 do continue
+        if s_storage.sparse[int(parent.parent_entity)] == -1 do continue
+
+        parent_sprite := &s_storage.dense[s_storage.sparse[int(parent.parent_entity)]]
+        my_sprite := &s_storage.dense[s_storage.sparse[int(entity)]]
+
+        my_sprite.layer = parent_sprite.layer + my_sprite.local_layer
+
+
     }
 }
 

@@ -65,6 +65,7 @@ SpriteRenderer :: struct {
     offset          : Vector2,
     parallax        : Vector2,
     layer           : int,
+    local_layer     : int,
     repeated_x      : bool,
     repeated_y      : bool,
 }
@@ -75,17 +76,19 @@ NewSpriteRenderer :: proc (
     offset          : Vector2 = {0,0},
     parallax        : Vector2 = {1,1},
     layer           : int = 0,
+    local_layer     : int = 0,
     repeated_x      : bool = false,
     repeated_y      : bool = false,    
 ) -> SpriteRenderer { return SpriteRenderer({
-    sprite     =     sprite,
-    inverted   =     inverted,
-    size       =     size,
-    offset     =     offset,
-    parallax   =     parallax,
-    layer      =     layer,
-    repeated_x =     repeated_x,
-    repeated_y =     repeated_y}) }
+    sprite      =     sprite,
+    inverted    =     inverted,
+    size        =     size,
+    offset      =     offset,
+    parallax    =     parallax,
+    layer       =     layer,
+    local_layer =     local_layer,
+    repeated_x  =     repeated_x,
+    repeated_y  =     repeated_y}) }
 
 /*
 This struct holds information that scripts would need
