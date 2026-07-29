@@ -1,0 +1,14 @@
+{ "columns":8,
+ "image":"farm\/characters\/main character\/walk and idle.png",
+ "imageheight":72,
+ "imagewidth":192,
+ "margin":0,
+ "name":"walk and idle",
+ "spacing":0,
+ "tilecount":24,
+ "tiledversion":"1.12.2",
+ "tileheight":24,
+ "tilewidth":24,
+ "type":"tileset",
+ "version":"1.10"
+}

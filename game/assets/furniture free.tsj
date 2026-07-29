@@ -1,0 +1,14 @@
+{ "columns":5,
+ "image":"farm\/objects&items\/furniture free.png",
+ "imageheight":48,
+ "imagewidth":80,
+ "margin":0,
+ "name":"furniture free",
+ "spacing":0,
+ "tilecount":15,
+ "tiledversion":"1.12.2",
+ "tileheight":16,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":"1.10"
+}

@@ -1,0 +1,14 @@
+{ "columns":9,
+ "image":"farm\/objects&items\/farm objects free.png",
+ "imageheight":191,
+ "imagewidth":144,
+ "margin":0,
+ "name":"farm objects free",
+ "spacing":0,
+ "tilecount":99,
+ "tiledversion":"1.12.2",
+ "tileheight":16,
+ "tilewidth":16,
+ "type":"tileset",
+ "version":"1.10"
+}
