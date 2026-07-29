@@ -50,9 +50,12 @@ script_system :: proc(data: SystemData, dt: f32) {
     s_storage,ok2 := get_storage(data.ecs, ScriptComponent)
     if !ok || !ok2 do return
 
+    // this is used to cache the length of the dense array 
+    len_before : int = len(s_storage.dense)
     for i in 0..<len(s_storage.dense) {
         s := s_storage.dense[i]
         entity := s_storage.entities[i]
+        // FIXME CRASHES SOMETIMES
         if int(entity) > len(t_storage.sparse) do continue
         t := &t_storage.dense[t_storage.sparse[entity]]
 
@@ -62,7 +65,17 @@ script_system :: proc(data: SystemData, dt: f32) {
             transform = t,
         })
 
-        for script in s.scripts {
+
+        // we update the length before the script updates
+        // this is because if the length after the update
+        // is increased, this means a new script has beed instantiated
+        // and we dont want to update that one untill next update phycle
+        // this is because we want everyting for the new entity to be
+        // created before we update the script
+        if len(s_storage.dense) > len_before do continue
+        len_before = len(s_storage.dense)
+
+        for &script in s.scripts {
             data := ScriptData({
                 data=script.data,
                 gameObject = go,
@@ -71,6 +84,11 @@ script_system :: proc(data: SystemData, dt: f32) {
                 world = data.ecs.world,
                 dt=dt
             })
+
+            if script.start != nil && !script._started {
+                script._started = true
+                script.start(data)
+            } 
             if script.update != nil do script.update(data)
 
             for event in events.event_queue_poll(data.eventQueue) {

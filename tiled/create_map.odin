@@ -73,7 +73,6 @@ add_sprite :: proc(game: ^og.Game, go: ^og.GameObject, layer_depth: int, paralla
 
     // if the tileset has a specgic tile we can we have to do some more stuff
     if tile, found := tileSet.tiles[value-tileSet.firstgid]; found {
-        fmt.println("FOUND ANIMATION")
         switch tile in tile{
         case Animation:
             size := len(tile.frames)
@@ -94,7 +93,7 @@ add_sprite :: proc(game: ^og.Game, go: ^og.GameObject, layer_depth: int, paralla
 
     }
     else {
-        fmt.println("ADDED TILE")
+//        fmt.println("ADDED TILE")
         og.add_component(go^, ecs.SpriteRenderer({
             sprite = tileSet.tilesheet.sprites[grid_y][grid_x],
             layer=layer_depth,
@@ -138,7 +137,7 @@ position_gameobject :: proc (
 create_tiles :: proc (game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1}) {
     for layer in _map.layers {
         if layer.visible == false do continue
-        fmt.println("LAYER:", layer)
+//        fmt.println("LAYER:", layer)
         for i in 0..<len(layer.data) {
             value := layer.data[i] & 0x0FFF_FFFF  // clear h/v/diagonal/rotate flags
             if tileSet, found := get_tileset(_map, value); found {
@@ -158,7 +157,7 @@ create_tiles :: proc (game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,1}) {
                 add_sprite(game, &go, layer.layer_depth, layer.parallax, tileSet, value)
             }
             else {
-                fmt.println("DID NOT FOUND TILESET")
+                //fmt.println("DID NOT FOUND TILESET")
             }
         }
     }

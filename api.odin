@@ -17,6 +17,9 @@ keep track which package contains what and to make it
 easier for them to code
 */
 
+RenderSettings :: rn.RendererSettings
+
+
 GameObject :: ecs.GameObject
 
 add_component    :: ecs.gameobject_add_component

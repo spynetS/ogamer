@@ -22,7 +22,7 @@ Game :: struct {
 }
 
 
-init_game :: proc (settings: rn.RendererSettings = rn.RendererSettings({67})) -> ^Game {
+init_game :: proc (settings: rn.RendererSettings = rn.RendererSettings({60})) -> ^Game {
     rn.execute = raylib.execute // TODO 
     input.get_mouse_position = raylib.get_mouse_position // TODO 
     input.get_world_mouse_position = raylib.get_world_mouse_position // TODO 

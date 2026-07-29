@@ -37,6 +37,8 @@ create_body  :: proc (world: ^PhysicsWorld,
         return
     }
 
+    fmt.println("CREATED PHYSICS BODY")
+
     body_def := b2.DefaultBodyDef();
     body_def.position = pos/PIXELS_PER_METER
     body_def.type = type

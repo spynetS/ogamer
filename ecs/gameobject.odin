@@ -21,8 +21,6 @@ new_gameobject :: proc(ecs: ^EntityComponentSystem) -> GameObject {
     entity    := get_new_entity(ecs)
     transform := add_component(ecs, entity, NewTransform())
 
-    fmt.println("INFO: new gameobject @", entity)
-
     return GameObject({
         entity=entity,
         ecs = ecs,

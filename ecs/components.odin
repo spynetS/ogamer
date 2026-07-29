@@ -101,11 +101,13 @@ ScriptData :: struct {
     world: ^physics.PhysicsWorld,
     dt: f32
 }
-SCRIPT_UPDATE_FUNCTION :: proc (data: ScriptData)
+SCRIPT_FUNCTION           :: proc (data: ScriptData)
 SCRIPT_COLLISION_FUNCTION :: proc(data:ScriptData, other: GameObject)
 Script :: struct {
     data                  : rawptr, // This is passed to the functions
-    update                : SCRIPT_UPDATE_FUNCTION,
+    _started              : bool,
+    start                 : SCRIPT_FUNCTION,
+    update                : SCRIPT_FUNCTION,
     on_collision_enter    : SCRIPT_COLLISION_FUNCTION,
     on_collision_left     : SCRIPT_COLLISION_FUNCTION,
     on_trigger_enter      : SCRIPT_COLLISION_FUNCTION,
@@ -114,13 +116,15 @@ Script :: struct {
 }
 NewScript :: proc (
     data                  : rawptr = nil,
-    update                : SCRIPT_UPDATE_FUNCTION = nil,
+    start                 : SCRIPT_FUNCTION = nil,
+    update                : SCRIPT_FUNCTION = nil,
     on_collision_enter    : SCRIPT_COLLISION_FUNCTION = nil,
     on_collision_left     : SCRIPT_COLLISION_FUNCTION = nil,
     on_trigger_enter      : SCRIPT_COLLISION_FUNCTION = nil,
     on_trigger_left       : SCRIPT_COLLISION_FUNCTION = nil,
     on_animation_finished : proc(data:ScriptData, animator: ^SpriteAnimator) = nil
 ) -> Script {return Script({data=data,
+                            start=start,
                             update=update,
                             on_collision_enter = on_collision_enter,
                             on_collision_left = on_collision_left,

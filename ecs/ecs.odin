@@ -18,12 +18,14 @@ add_systems :: proc(ECS : ^EntityComponentSystem) {
     add_storage(ECS, MouseOverComponent, mouse_over_system)
     add_storage(ECS, Rigidbody, physics_system)
     add_storage(ECS, Collider, collider_system)
-    add_storage(ECS, ScriptComponent, script_system, before_destroy = proc (raw: rawptr) {
-        stor := cast(^ComponentStorage(ScriptComponent))raw
-        for i in 0..<len(stor.dense) {
-            delete(stor.dense[i].scripts)
-        }
-    })
+    add_storage(ECS, ScriptComponent,
+                script_system,
+                before_destroy = proc (raw: rawptr) {
+                    stor := cast(^ComponentStorage(ScriptComponent))raw
+                    for i in 0..<len(stor.dense) {
+                        delete(stor.dense[i].scripts)
+                    } 
+                })
 }
 
 
@@ -111,6 +113,7 @@ add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDA
             delete(s.entities)
             free(s)
         },
+        // This is really remove component 
         destroy_entity = proc(storage: rawptr, entity:Entity) {
             s := cast(^ComponentStorage(T))storage
 
