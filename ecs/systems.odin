@@ -340,9 +340,44 @@ physics_system :: proc(data: SystemData, dt: f32) {
                 body_t := b2.Body_GetTransform(body_id)
                 poly := b2.Shape_GetPolygon(shape_id)
                 world_center := b2.TransformPoint(body_t, poly.centroid) * physics.PIXELS_PER_METER
-                fmt.println(world_center)
+
+                // Check if the transforms position has changed
+                // we check axies independently to not destrurb unchanged axies
+                if transform._pos.x != transform.pos.x {
+                    body_t.p= b2.Vec2({
+                        transform.pos.x/physics.PIXELS_PER_METER,
+                        body_t.p.y})
+                    b2.Body_SetTransform(body_id,body_t.p,body_t.q)
+
+                    
+                }
+                if transform._pos.y != transform.pos.y {
+                    b2.Body_SetTransform(body_id,b2.Vec2({
+                        body_t.p.x,
+                        transform.pos.y/physics.PIXELS_PER_METER}
+                    ),body_t.q)
+                }
+
                 transform.pos = world_center
+                transform._pos = world_center // save old pos so we can use it later to compare
+
                 transform.rot = b2.Rot_GetAngle(body_t.q) * math.DEG_PER_RAD
+
+                body_vel := b2.Body_GetLinearVelocity(body_id)
+
+                // Check if the rigidbody vel has changed
+                // we check axies independently to not destrurb unchanged axies
+                if rb._vel.x != rb.vel.x {
+                    body_vel = {rb._vel.x, body_vel.y}
+                    b2.Body_SetLinearVelocity(body_id, body_vel)
+                }
+                if rb._vel.y != rb.vel.y {
+                    body_vel = {body_vel.x, rb._vel.y}
+                    b2.Body_SetLinearVelocity(body_id, body_vel)
+                }
+                rb.vel = body_vel
+                rb._vel = body_vel
+
             }
             else {
                 // TODO create shape
@@ -362,6 +397,7 @@ physics_system :: proc(data: SystemData, dt: f32) {
                                 b2.BodyType(rb.type),
                                 transform.pos,
                                 transform.rot,
+                                rb.linear_damping,
                                 rb.disabled_gravity,
                                 rb.disabled_rotation)
         }

@@ -28,6 +28,7 @@ NewCamera :: proc(
 Transform :: struct {
     using component: Component,
     pos: Vector2,
+    _pos: Vector2, // old
     size: Vector2,
     rot: f32,
     local_pos: Vector2,
@@ -227,7 +228,9 @@ BodyType :: enum {
 Rigidbody :: struct {
     using base: Component,
     vel: Vector2,
+    _vel: Vector2, // holds past value
     acc: Vector2,
+    linear_damping: f32,
     disabled_gravity: bool,
     disabled_rotation: bool,
     created: bool,
@@ -237,12 +240,14 @@ Rigidbody :: struct {
 NewRigidbody :: proc (
     vel: Vector2 = {0,0},
     acc: Vector2 = {0,0},
+    linear_damping:f32 = 0.1,
     disabled_gravity: bool = false,
     disabled_rotation: bool = false,
     type: BodyType
 ) -> Rigidbody {return Rigidbody({
     vel = vel,
     acc = acc,
+    linear_damping=linear_damping,
     disabled_gravity = disabled_gravity,
     disabled_rotation = disabled_rotation,
     type = type,

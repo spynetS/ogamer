@@ -2,7 +2,12 @@ package ogamer;
 
 import "./ecs"
 import "./input"
+import b2 "vendor:box2d"
 import rn "./renderer"
+import "./physics"
+
+Entity  :: u32
+Vector2 :: [2]f32
 
 current_game : ^Game
 
@@ -41,3 +46,8 @@ is_mouse_pressed :: proc (btn: input.MouseButton) -> bool {
     return input.is_mouse_pressed(current_game.eventQueue, btn)
 }
 
+
+// PHYSICS
+apply_force :: proc (entity: Entity, force: Vector2) {
+    b2.Body_ApplyForceToCenter(current_game.ecs.world.bodies[entity], force * physics.PIXELS_PER_METER, true)
+}

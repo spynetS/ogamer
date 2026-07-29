@@ -27,6 +27,7 @@ create_body  :: proc (world: ^PhysicsWorld,
                       type: b2.BodyType,
                       pos: Vector2,
                       rot: f32,
+                      linear_damping:f32,
                       disable_gravity: bool,
                       disable_rotation: bool,
                      ) {
@@ -42,7 +43,8 @@ create_body  :: proc (world: ^PhysicsWorld,
     if disable_gravity  do body_def.gravityScale = 0
     if disable_rotation do body_def.fixedRotation = true
     //body_def.linearDamping = rigid.linear_damping
-
+    body_def.linearDamping = linear_damping
+    
     id : = b2.CreateBody(world.world_id, body_def);
     b2.Body_SetTransform(id, pos/PIXELS_PER_METER, get_rot(rot))
     world.bodies[entity] = id
