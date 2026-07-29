@@ -102,15 +102,32 @@ ScriptData :: struct {
     dt: f32
 }
 SCRIPT_UPDATE_FUNCTION :: proc (data: ScriptData)
-
+SCRIPT_COLLISION_FUNCTION :: proc(data:ScriptData, other: GameObject)
 Script :: struct {
-    data: rawptr, // This is passed to the functions
-    update : SCRIPT_UPDATE_FUNCTION,
+    data                  : rawptr, // This is passed to the functions
+    update                : SCRIPT_UPDATE_FUNCTION,
+    on_collision_enter    : SCRIPT_COLLISION_FUNCTION,
+    on_collision_left     : SCRIPT_COLLISION_FUNCTION,
+    on_trigger_enter      : SCRIPT_COLLISION_FUNCTION,
+    on_trigger_left       : SCRIPT_COLLISION_FUNCTION,
+    on_animation_finished : proc(data:ScriptData, animator: ^SpriteAnimator)
 }
 NewScript :: proc (
-    data: rawptr = nil,
-    update : SCRIPT_UPDATE_FUNCTION = nil
-) -> Script {return Script({data=data, update=update})}
+    data                  : rawptr = nil,
+    update                : SCRIPT_UPDATE_FUNCTION = nil,
+    on_collision_enter    : SCRIPT_COLLISION_FUNCTION = nil,
+    on_collision_left     : SCRIPT_COLLISION_FUNCTION = nil,
+    on_trigger_enter      : SCRIPT_COLLISION_FUNCTION = nil,
+    on_trigger_left       : SCRIPT_COLLISION_FUNCTION = nil,
+    on_animation_finished : proc(data:ScriptData, animator: ^SpriteAnimator) = nil
+) -> Script {return Script({data=data,
+                            update=update,
+                            on_collision_enter = on_collision_enter,
+                            on_collision_left = on_collision_left,
+                            on_trigger_enter = on_trigger_enter,
+                            on_trigger_left = on_trigger_left,
+                            on_animation_finished = on_animation_finished
+                           })}
 
 ScriptComponent :: struct {
     scripts: [dynamic]Script

@@ -19,7 +19,7 @@ event_queue_destroy :: proc(eventQueue: ^EventQueue) {
 }
 
 emit :: proc(eventQueue: ^EventQueue, e: Event) {
-    fmt.println("INFO: New =Event", e)
+    fmt.println("INFO: New Event", e)
     append(&eventQueue.next_events, e)
 }
 

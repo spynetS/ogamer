@@ -10,7 +10,8 @@ Vector2 :: [2]f32
 PhysicsWorld :: struct {
     world_id: b2.WorldId,
     bodies: map[Entity]b2.BodyId, 
-    shapes: map[Entity]b2.ShapeId
+    shapes: map[Entity]b2.ShapeId,
+    entites_by_shape: map[b2.ShapeId]Entity
 }
 
 init_physics :: proc (world: ^PhysicsWorld) {
@@ -86,6 +87,7 @@ build_body_shape :: proc (world: ^PhysicsWorld,
     shapeId := b2.CreatePolygonShape(body_id, shapeDef, box);
 
     world.shapes[entity] = shapeId
+    world.entites_by_shape[shapeId] = entity
     fmt.println("INFO: ", body_id, "created box2d shape ")
 }
 

@@ -62,15 +62,50 @@ script_system :: proc(data: SystemData, dt: f32) {
             transform = t,
         })
 
-        for script in s.scripts {            
-            if script.update != nil do script.update(ScriptData({
+        for script in s.scripts {
+            data := ScriptData({
                 data=script.data,
                 gameObject = go,
                 ecs=data.ecs,
                 eventQueue = data.eventQueue,
                 world = data.ecs.world,
                 dt=dt
-            }))
+            })
+            if script.update != nil do script.update(data)
+
+            for event in events.event_queue_poll(data.eventQueue) {
+                #partial switch v in event {
+                    case events.Collision_Entered:
+                    // box2d's shapeIdA/B ordering is arbitrary, so match either side.
+                    if v.ea != go.entity && v.eb != go.entity do break
+                    other := get_gameobject(data.ecs, v.ea == go.entity ? v.eb : v.ea);
+                    if script.on_collision_enter != nil do script.on_collision_enter(data, other)
+
+                    case events.Collision_Left:
+                    if v.ea != go.entity && v.eb != go.entity do break
+                    other := get_gameobject(data.ecs, v.ea == go.entity ? v.eb : v.ea);
+                    if script.on_collision_left != nil do script.on_collision_left(data, other)
+
+                    case events.Trigger_Entered:
+                    if v.ea != go.entity && v.eb != go.entity do break
+                    other_id := v.eb
+                    other := get_gameobject(data.ecs, v.ea == go.entity ? v.eb : v.ea);
+
+                    if script.on_trigger_enter != nil do script.on_trigger_enter(data, other)
+
+                    case events.Trigger_Left:
+                    if v.ea != go.entity do break
+                    other := get_gameobject(data.ecs, v.eb);
+                    if script.on_trigger_left != nil do script.on_trigger_left(data, other)
+
+                    case events.AnimationFinished:
+                    if v.entity != go.entity do break
+                    if go_anim, has := get_component(go.ecs, go.entity, SpriteAnimator); has {
+                        if script.on_animation_finished != nil do script.on_animation_finished(data, go_anim)
+                    }
+
+                }
+            }
         }
 
     }
@@ -322,12 +357,62 @@ collider_system :: proc(data: SystemData, dt: f32) {
     
 }
 
+handle_collision :: proc (ecs: ^EntityComponentSystem, eventQueue: ^events.EventQueue, contact_events: b2.ContactEvents ) {
+
+    c_storage,_ := get_storage(ecs,Collider)
+    for i in 0..< contact_events.beginCount {
+        e := contact_events.beginEvents[i]        
+        
+        ea := ecs.world.entites_by_shape[e.shapeIdA]
+        eb := ecs.world.entites_by_shape[e.shapeIdB]
+            
+
+        events.emit(eventQueue, events.Collision_Entered({ea=ea, eb=eb}))
+
+    }
+
+    for i in 0..< contact_events.endCount {
+        e := contact_events.endEvents[i]        
+        
+        ea := ecs.world.entites_by_shape[e.shapeIdA]
+        eb := ecs.world.entites_by_shape[e.shapeIdB]
+
+        events.emit(eventQueue, events.Collision_Left({ea=ea, eb=eb}))
+    }
+}
+handle_triggers :: proc (ecs: ^EntityComponentSystem, eventQueue: ^events.EventQueue, sensor_events: b2.SensorEvents ) {
+
+    c_storage,_ := get_storage(ecs,Collider)
+    for i in 0..< sensor_events.beginCount {
+        e := sensor_events.beginEvents[i]        
+        
+        ea := ecs.world.entites_by_shape[e.sensorShapeId]
+        eb := ecs.world.entites_by_shape[e.visitorShapeId]
+            
+        events.emit(eventQueue, events.Trigger_Entered({ea=ea, eb=eb}))
+    }
+
+    for i in 0..< sensor_events.endCount {
+        e := sensor_events.endEvents[i]        
+        
+        ea := ecs.world.entites_by_shape[e.sensorShapeId]
+        eb := ecs.world.entites_by_shape[e.visitorShapeId]
+
+        events.emit(eventQueue, events.Trigger_Left({ea=ea, eb=eb}))
+    }
+}
+
 physics_system :: proc(data: SystemData, dt: f32) {
     rigid_storage, ok := get_storage(data.ecs, Rigidbody);
     transform_storage, ok1 := get_storage(data.ecs, Transform);
     if !ok do return
 
     b2.World_Step(data.ecs.world.world_id, dt, 8);
+    events := b2.World_GetContactEvents(data.ecs.world.world_id);
+    handle_collision(data.ecs,data.eventQueue, events)
+
+    sensor_events := b2.World_GetSensorEvents(data.ecs.world.world_id);
+    handle_triggers(data.ecs,data.eventQueue, sensor_events)
 
     for i in 0..<len(rigid_storage.dense) {
         // Check for rigidbody value change and change box2d
