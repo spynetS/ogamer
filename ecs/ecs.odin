@@ -114,38 +114,51 @@ add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDA
         destroy_entity = proc(storage: rawptr, entity:Entity) {
             if storage == nil do return
             s := cast(^ComponentStorage(T))storage
-
-            id := int(entity)
-
-            // bounds + existence check
-            if id >= len(s.sparse) || s.sparse[id] == NO_ENTITY {
-                return
-            }
-
-            fmt.println("Destroying entity:", entity)
-
-            index      := s.sparse[id]
-            last_index := len(s.dense) - 1
-            last_entity := s.entities[last_index]
-
-            s.dense[index]    = s.dense[last_index]
-            s.entities[index] = last_entity
-
-            pop(&s.dense)
-            pop(&s.entities)
-
-            // point the moved entity's sparse entry at its new index
-            s.sparse[int(last_entity)] = index
-            s.sparse[id] = NO_ENTITY
+            remove_component_storage(s, entity);
         }
 
     })
 
 }
+remove_component_storage :: proc (storage: ^ComponentStorage($T), entity: Entity) {
+    id := int(entity)
 
+    // bounds + existence check
+    if id >= len(storage.sparse) || storage.sparse[id] == NO_ENTITY {
+        return
+    }
+
+    index      := storage.sparse[id]
+    last_index := len(storage.dense) - 1
+    last_entity := storage.entities[last_index]
+
+    // swap-remove: move last element into the removed slot
+    storage.dense[index]    = storage.dense[last_index]
+    storage.entities[index] = last_entity
+
+    pop(&storage.dense)
+    pop(&storage.entities)
+
+    // point the moved entity's sparse entry at its new index
+    storage.sparse[int(last_entity)] = index
+    storage.sparse[id] = NO_ENTITY
+
+}
+remove_component_ecs :: proc (ecs: ^EntityComponentSystem, entity: Entity, $T: typeid) {
+
+    storage, ok := get_storage(ecs, T);
+    if !ok do return
+
+    remove_component_storage(storage, entity);
+}
 
 update_systems :: proc(data: SystemData, dt: f32) {
-    for type, holder in data.ecs.storages {
+    for type, &holder in data.ecs.storages {
+        for destroy_entity in holder.destroy_queue {
+            holder.destroy_entity(holder.storage, destroy_entity)
+        }
+        clear(&holder.destroy_queue)
+        
         if holder.update != nil do holder.update(data, dt)
     }
 }
@@ -156,8 +169,8 @@ get_new_entity :: proc(ecs: ^EntityComponentSystem) -> Entity {
 }
 
 destroy_entity :: proc(ecs: ^EntityComponentSystem, entity:Entity ) {
-    for key, holder in ecs.storages {
-        if holder.destroy_entity != nil do holder.destroy_entity(holder.storage, entity)
+    for key, &holder in ecs.storages {
+        append(&holder.destroy_queue, entity)
     }
 }
 

@@ -120,6 +120,7 @@ script_system :: proc(data: SystemData, dt: f32) {
                     case events.AnimationFinished:
                     if v.entity != go.entity do break
                     if go_anim, has := get_component(go.ecs, go.entity, SpriteAnimator); has {
+                        fmt.println("BEFORE FINISH HOOK")
                         if script.on_animation_finished != nil do script.on_animation_finished(data, go_anim)
                     }
 
@@ -161,7 +162,7 @@ sprite_animator_system :: proc(data: SystemData, dt: f32) {
             }
         }
 
-        // Switch to a newly requested animation.
+        //Switch to a newly requested animation.
         if animator.active_animation != animator._active_animation {
             if animator.active_animation < 0 || animator.active_animation >= len(animator.sprites) {
                 fmt.println("WARNING: active_animation", animator.active_animation, "out of bounds")
