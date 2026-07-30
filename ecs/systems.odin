@@ -150,17 +150,7 @@ sprite_animator_system :: proc(data: SystemData, dt: f32) {
         entity   := storage.entities[i]
         if animator.disabled do continue
 
-        // Lazily attach a SpriteRenderable to write frames into.
-        if animator.sprite_comp == nil {
-            index, has_sprite := has_component(sprite_storage, entity)
-            if has_sprite {
-                animator.sprite_comp = &sprite_storage.dense[sprite_storage.sparse[entity]]
-            } else {
-                fmt.println("INFO: Adding sprite component to", entity, animator, "because it had no sprite_component")
-                sprite := add_component(data.ecs, entity, NewSpriteRenderer())
-                animator.sprite_comp = sprite
-            }
-        }
+
 
         //Switch to a newly requested animation.
         if animator.active_animation != animator._active_animation {
@@ -188,7 +178,11 @@ sprite_animator_system :: proc(data: SystemData, dt: f32) {
         if animator._time_counter <= 0 {
             animator._time_counter      = animator.time
             animator.active_index       = (animator.active_index + 1) % length
-            animator.sprite_comp.sprite = animator.sprites[animator._active_animation][animator.active_index]
+            sprite_comp, has := get_component(data.ecs, entity, SpriteRenderer)
+            if !has {
+                sprite_comp = add_component(data.ecs, entity, NewSpriteRenderer())
+            }
+            sprite_comp.sprite = animator.sprites[animator._active_animation][animator.active_index]
             animator._frame_counter    -= 1
         } else {
             animator._time_counter -= dt

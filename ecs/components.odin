@@ -150,7 +150,6 @@ NewScriptComponent :: proc (
 
 SpriteAnimator :: struct {
     using component   : Component,
-    sprite_comp       : ^SpriteRenderer, // sprite component to be actived on
     sprites           : [][]io.Sprite,        // image matrix
     sprites_length    : []int,             // the "real" length of each animation
     active_animation  : int,               // the row in the sprites matrix
@@ -163,14 +162,12 @@ SpriteAnimator :: struct {
 }
 
 NewSpriteAnimator :: proc (
-    sprite_comp       : ^SpriteRenderer = nil,
     sprites           : [][]io.Sprite = nil,
     sprites_length    : []int = nil,
     active_animation  : int = 0,
     time              : f32 = 0.1,
     active_index      : int = 0) -> SpriteAnimator {
     return SpriteAnimator({
-        sprite_comp = sprite_comp,
         sprites = sprites,
         sprites_length = sprites_length,
         active_animation = active_animation,
