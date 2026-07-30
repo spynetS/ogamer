@@ -33,11 +33,6 @@ add_systems :: proc(ECS : ^EntityComponentSystem) {
 add_component :: proc(ECS : ^EntityComponentSystem, entity: Entity, component: $T) -> ^T {
     holder, ok := get_storage_holder(ECS, T)
     if !ok do return nil
-    defer {
-        //fmt.println("INFO: added component",component, "to", entity)
-        comp := component
-        if holder.on_create != nil do holder.on_create(ECS, entity, &comp)
-    }
     if holder.storage == nil do return nil
     storage := cast(^ComponentStorage(T))holder.storage
     dense_index := len(storage.dense)
@@ -101,12 +96,11 @@ get_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid) -> (^ComponentStora
 }
 
 @(private)
-add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDATE_FUNCTION, on_create: ON_CREATE_COMPONENT = nil, before_destroy : DESTROY_COMPONENT_STORAGE = nil) {
+add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDATE_FUNCTION, before_destroy : DESTROY_COMPONENT_STORAGE = nil) {
     storage := new(ComponentStorage(T))
     ecs.storages[T] = StorageHolder({
         storage=storage,
         update=update,
-        on_create=on_create,
         before_destroy = before_destroy,
         destroy = proc(raw: rawptr) {
             if raw == nil do return
