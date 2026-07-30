@@ -38,6 +38,7 @@ add_component :: proc(ECS : ^EntityComponentSystem, entity: Entity, component: $
         comp := component
         if holder.on_create != nil do holder.on_create(ECS, entity, &comp)
     }
+    if holder.storage == nil do return nil
     storage := cast(^ComponentStorage(T))holder.storage
     dense_index := len(storage.dense)
     
@@ -108,6 +109,7 @@ add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDA
         on_create=on_create,
         before_destroy = before_destroy,
         destroy = proc(raw: rawptr) {
+            if raw == nil do return
             s := cast(^ComponentStorage(T))raw
             delete(s.sparse)
             delete(s.dense)
@@ -116,6 +118,7 @@ add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDA
         },
         // This is really remove component 
         destroy_entity = proc(storage: rawptr, entity:Entity) {
+            if storage == nil do return
             s := cast(^ComponentStorage(T))storage
 
             id := int(entity)
@@ -124,6 +127,8 @@ add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDA
             if id >= len(s.sparse) || s.sparse[id] == NO_ENTITY {
                 return
             }
+
+            fmt.println("Destroying entity:", entity)
 
             index      := s.sparse[id]
             last_index := len(s.dense) - 1
@@ -158,14 +163,14 @@ get_new_entity :: proc(ecs: ^EntityComponentSystem) -> Entity {
 
 destroy_entity :: proc(ecs: ^EntityComponentSystem, entity:Entity ) {
     for key, holder in ecs.storages {
-        holder.destroy_entity(holder.storage, entity)
+        if holder.destroy_entity != nil do holder.destroy_entity(holder.storage, entity)
     }
 }
 
 free_ecs :: proc (ecs: ^EntityComponentSystem) {
     for type, holder in ecs.storages {
         if holder.before_destroy != nil do holder.before_destroy(holder.storage)
-        holder.destroy(holder.storage)
+        if holder.destroy        != nil do holder.destroy(holder.storage)
     }
     delete(ecs.storages)
     free(ecs)
