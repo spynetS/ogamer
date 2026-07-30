@@ -106,7 +106,7 @@ script_system :: proc(data: SystemData, dt: f32) {
                     if script.on_collision_left != nil do script.on_collision_left(data, other)
 
                     case events.Trigger_Entered:
-                    if v.ea != go.entity && v.eb != go.entity do break
+                    if v.ea != go.entity do break
                     other_id := v.eb
                     other := get_gameobject(data.ecs, v.ea == go.entity ? v.eb : v.ea);
 
@@ -120,7 +120,6 @@ script_system :: proc(data: SystemData, dt: f32) {
                     case events.AnimationFinished:
                     if v.entity != go.entity do break
                     if go_anim, has := get_component(go.ecs, go.entity, SpriteAnimator); has {
-                        fmt.println("BEFORE FINISH HOOK")
                         if script.on_animation_finished != nil do script.on_animation_finished(data, go_anim)
                     }
 

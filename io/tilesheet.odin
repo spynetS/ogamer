@@ -26,7 +26,7 @@ new_tilesheet_path :: proc (handler: ^AssetsManager, path: string, tile_size: [2
 
         ts.sprites[r] = make([]Sprite, columns,allocator=virtual.arena_allocator(&handler.arena))
 
-        for c in 0..<columns {
+        for c in 0..< columns {
             x := f32((box_offset.x + tile_size.x) * c)
             y := f32((box_offset.y + tile_size.y) * r)
 

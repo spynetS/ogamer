@@ -7,7 +7,7 @@ import "../physics/"
 
 
 SYSTEM_UPDATE_FUNCTION    :: proc(data: SystemData, dt: f32)
-DESTROY_COMPONENT_STORAGE :: proc(raw: rawptr)
+DESTROY_COMPONENT_STORAGE :: proc(raw: rawptr, ecs: ^EntityComponentSystem)
 
 NO_ENTITY :: -1
 
@@ -27,12 +27,13 @@ ComponentStorage :: struct($T: typeid) {
 
 @(private)
 StorageHolder :: struct {
-    storage        : rawptr,
-    update         : SYSTEM_UPDATE_FUNCTION,
-    destroy        : DESTROY_COMPONENT_STORAGE, // Will free the storage arrays and storage
-    before_destroy : DESTROY_COMPONENT_STORAGE, // Will be run before destroying the storage
-    destroy_entity : proc(raw: rawptr, entity: Entity), // Will be run before destroying the storage
-    destroy_queue  : [dynamic]Entity
+    storage               : rawptr,
+    update                : SYSTEM_UPDATE_FUNCTION,
+    destroy               : DESTROY_COMPONENT_STORAGE, // Will free the storage arrays and storage
+    before_destroy        : DESTROY_COMPONENT_STORAGE, // Will be run before destroying the storage
+    before_destroy_entity : proc(raw: rawptr, data: SystemData, entity: Entity), // Will be run before destroying entityd
+    destroy_entity        : proc(raw: rawptr, entity: Entity), // Will be run before destroying the storage
+    destroy_queue         : [dynamic]Entity
 }
 
 EntityComponentSystem :: struct {

@@ -1,6 +1,7 @@
 package ogamer_ecs;
 
 import rn "../renderer/"
+import  "../physics/"
 import "core:fmt"
 
 // It is here we add new components to the whole ecs system
@@ -16,12 +17,28 @@ add_systems :: proc(ECS : ^EntityComponentSystem) {
     add_storage(ECS, Text, text_system)
     add_storage(ECS, Tag, nil)
     add_storage(ECS, MouseOverComponent, mouse_over_system)
-    add_storage(ECS, Rigidbody, physics_system)
-    add_storage(ECS, Collider, collider_system)
+    add_storage(ECS, Rigidbody, physics_system,
+                 before_destroy_entity = proc(raw: rawptr, data: SystemData, entity: Entity) {
+                     physics.destroy_body(data.ecs.world, entity)
+                 }
+               )
+    add_storage(ECS, Collider,
+                collider_system,
+                before_destroy_entity = proc(raw: rawptr, data: SystemData, entity: Entity) {
+                    physics.destroy_shape(data.ecs.world, entity)
+    })
     add_storage(ECS, DepthSort, depth_sort_system)
     add_storage(ECS, ScriptComponent,
                 script_system,
-                before_destroy = proc (raw: rawptr) {
+                before_destroy_entity = proc(raw: rawptr, data: SystemData, entity: Entity) {
+                    stor := cast(^ComponentStorage(ScriptComponent))raw
+                    for i in 0..<len(stor.dense) {
+                        for script in stor.dense[i].scripts{
+                            if script.on_destroy != nil do script.on_destroy(ScriptData({script.data, get_gameobject(data.ecs, entity), data.ecs, data.eventQueue, data.ecs.world, 0}))
+                        }
+                    } 
+                },
+                before_destroy = proc (raw: rawptr, ecs: ^EntityComponentSystem) {
                     stor := cast(^ComponentStorage(ScriptComponent))raw
                     for i in 0..<len(stor.dense) {
                         delete(stor.dense[i].scripts)
@@ -96,13 +113,14 @@ get_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid) -> (^ComponentStora
 }
 
 @(private)
-add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDATE_FUNCTION, before_destroy : DESTROY_COMPONENT_STORAGE = nil) {
+add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDATE_FUNCTION, before_destroy_entity : proc(raw: rawptr, data: SystemData, entity: Entity) = nil, before_destroy : DESTROY_COMPONENT_STORAGE = nil) {
     storage := new(ComponentStorage(T))
     ecs.storages[T] = StorageHolder({
         storage=storage,
         update=update,
         before_destroy = before_destroy,
-        destroy = proc(raw: rawptr) {
+        before_destroy_entity = before_destroy_entity,
+        destroy = proc(raw: rawptr, ecs: ^EntityComponentSystem) {
             if raw == nil do return
             s := cast(^ComponentStorage(T))raw
             delete(s.sparse)
@@ -155,6 +173,8 @@ remove_component_ecs :: proc (ecs: ^EntityComponentSystem, entity: Entity, $T: t
 update_systems :: proc(data: SystemData, dt: f32) {
     for type, &holder in data.ecs.storages {
         for destroy_entity in holder.destroy_queue {
+            assert(holder.destroy_entity != nil)
+            if holder.before_destroy_entity != nil do holder.before_destroy_entity(holder.storage, data, destroy_entity)
             holder.destroy_entity(holder.storage, destroy_entity)
         }
         clear(&holder.destroy_queue)
@@ -176,8 +196,8 @@ destroy_entity :: proc(ecs: ^EntityComponentSystem, entity:Entity ) {
 
 free_ecs :: proc (ecs: ^EntityComponentSystem) {
     for type, holder in ecs.storages {
-        if holder.before_destroy != nil do holder.before_destroy(holder.storage)
-        if holder.destroy        != nil do holder.destroy(holder.storage)
+        if holder.before_destroy != nil do holder.before_destroy(holder.storage, ecs)
+        if holder.destroy        != nil do holder.destroy(holder.storage, ecs)
     }
     delete(ecs.storages)
     free(ecs)

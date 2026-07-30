@@ -93,4 +93,25 @@ build_body_shape :: proc (world: ^PhysicsWorld,
     fmt.println("INFO: ", body_id, "created box2d shape ")
 }
 
-destroy_body :: proc () {}
+destroy_body :: proc (world: ^PhysicsWorld, entity: Entity) -> bool {
+    fmt.println("DESTROYING b2 BODY:", entity)
+    if old, has := world.bodies[entity]; has {
+        destroy_shape(world, entity)
+        delete_key(&world.bodies, entity)
+        b2.DestroyBody(old)
+        return true
+    }
+    return false
+}
+
+
+destroy_shape :: proc (world: ^PhysicsWorld, entity: Entity) -> bool {
+    fmt.println("DESTROYING b2 SHAPE:", entity)
+    if old, has := world.shapes[entity]; has {
+        delete_key(&world.entites_by_shape, old)
+        delete_key(&world.shapes, entity)
+        b2.DestroyShape(old, true)
+        return true
+    }
+    return false;
+}
