@@ -54,3 +54,11 @@ is_mouse_pressed :: proc (btn: input.MouseButton) -> bool {
 apply_force :: proc (entity: Entity, force: Vector2) {
     b2.Body_ApplyForceToCenter(current_game.ecs.world.bodies[entity], force * physics.PIXELS_PER_METER, true)
 }
+
+raycast :: proc(start, direction: [2]f32) -> b2.RayResult {
+    filter := b2.DefaultQueryFilter()
+    PIXELS_PER_METER :: 50
+    
+    result := b2.World_CastRayClosest(current_game.ecs.world.world_id, start / PIXELS_PER_METER, (direction) / PIXELS_PER_METER,  filter)
+    return result
+}

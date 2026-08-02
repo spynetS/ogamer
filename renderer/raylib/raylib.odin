@@ -109,6 +109,8 @@ execute_command :: proc(renderer : ^rn.Renderer ,command: rn.RenderCommand) {
                     v.font_size,
                     rl.BLACK)
 
+        case rn.Line:
+        rl.DrawLineV(v.start*{1,-1}, v.end*{1,-1}, rl.Color(v.color));
         case rn.Rectangle:
         rec : rl.Rectangle = {v.pos.x,-v.pos.y, v.size.x, v.size.y} // Y-up
         origin : rl.Vector2 = {

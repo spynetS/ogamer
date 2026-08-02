@@ -83,6 +83,7 @@ script_system :: proc(data: SystemData, dt: f32) {
                 ecs=data.ecs,
                 eventQueue = data.eventQueue,
                 world = data.ecs.world,
+                renderer = data.renderer,
                 dt=dt
             })
 

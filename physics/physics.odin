@@ -86,7 +86,7 @@ build_body_shape :: proc (world: ^PhysicsWorld,
     shapeDef.enableContactEvents = is_collider;
     shapeDef.enableSensorEvents = is_trigger
     shapeDef.isSensor = (is_collider ? is_trigger : true)
-    shapeId := b2.CreatePolygonShape(body_id, shapeDef, &box);
+    shapeId := b2.CreatePolygonShape(body_id, shapeDef, box);
 
     world.shapes[entity] = shapeId
     world.entites_by_shape[shapeId] = entity

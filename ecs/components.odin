@@ -3,6 +3,7 @@ package ogamer_ecs;
 import "../io"
 import "../events"
 import "../physics"
+import "../renderer"
 
 Vector2 :: [2]f32
 Entity :: u32
@@ -102,6 +103,7 @@ ScriptData :: struct {
     ecs: ^EntityComponentSystem,
     eventQueue: ^events.EventQueue,
     world: ^physics.PhysicsWorld,
+    renderer: ^renderer.Renderer,
     dt: f32
 }
 SCRIPT_FUNCTION           :: proc (data: ScriptData)

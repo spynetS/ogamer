@@ -9,6 +9,7 @@ RenderCommand :: union {
     EndDraw,
     Clear,
     Rectangle,
+    Line,
     Sprite,
     Text,
     UIText,
@@ -20,6 +21,7 @@ DeinitWindow :: struct { }
 Clear      :: struct { color: [4]u8 }
 
 Rectangle  :: struct { pos, size: [2]f32, rot: f32, color: [4]u8, lines: bool, layer: int}
+Line       :: struct { start, end : [2]f32, color:[4]u8 }
 Sprite     :: struct { pos, offset, size: [2]f32, rot: f32, inverted: bool, sprite: io.Sprite ,layer: int, repeated_x: bool, repeated_y: bool}
 UISprite   :: struct { using base: Sprite}
 Text       :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string, color: [4]u8, layer: int}
