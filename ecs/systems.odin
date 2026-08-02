@@ -357,7 +357,7 @@ collider_system :: proc(data: SystemData, dt: f32) {
         // if the entity doesnt have a body we check if it has a parent with a body
         if shape_id, has_shape := data.ecs.world.shapes[entity]; has_shape {
             // update shape if neceary
-            rn.add_command(data.renderer, rn.Rectangle({transform.pos,transform.size+collider.size,transform.rot, rn.get_color(0x00ff00ff), true, 0}))
+         //   rn.add_command(data.renderer, rn.Rectangle({transform.pos,transform.size+collider.size,transform.rot, rn.get_color(0x00ff00ff), true, 0}))
         }
         else {
             body_id, has_body := data.ecs.world.bodies[entity]; 

@@ -272,7 +272,6 @@ execute :: proc(renderer: ^rn.Renderer, eventQueue: ^es.EventQueue) {
         for command in renderer.draw_commands {
             #partial switch v in command {
                 case rn.UIText:
-                // FIXME memory leak?
                 rl.DrawText(fmt.ctprintf("%s", v.text),
                             i32(v.pos.x),
                             i32(v.pos.y),
@@ -283,7 +282,7 @@ execute :: proc(renderer: ^rn.Renderer, eventQueue: ^es.EventQueue) {
                 // TODO load this before rendering (make a sperate function to load tectures)
                 rl_texture, source, ok := load_sprite(v.sprite, v.inverted)
                 if !ok do break
-                dest : rl.Rectangle = {v.pos.x,-v.pos.y, v.size.x, v.size.y} // Y-up
+                dest : rl.Rectangle = {v.pos.x,v.pos.y, v.size.x, v.size.y} // Y-up
 
                 origin : rl.Vector2 = {
                     v.size.x / 2,

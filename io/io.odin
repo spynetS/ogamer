@@ -6,7 +6,38 @@ import "core:fmt"
 
 import "core:mem/virtual"
 
-load :: proc(handler: ^AssetsManager, file_path: string, uv: UV = {{0,0},{1,1}}) -> (Sprite, bool) #optional_ok {
+load :: proc {
+    load_vec,
+    load_uv
+}
+
+load_vec :: proc(handler: ^AssetsManager, file_path: string, pos, size: Vector2) -> (Sprite, bool) #optional_ok {
+    texture_id := Texture_ID(file_path);
+    texture, found := handler.textures[texture_id]
+    if !found {
+        fmt.println("INFO: didn't find texture in cache", file_path, ". Adding to cache")
+        ok : bool
+        texture, ok = load_path(handler, file_path)
+        if !ok do return Sprite({}), false
+        handler.textures[texture_id] = texture
+    }
+
+    tex_w := f32(texture.width)
+    tex_h := f32(texture.height)
+
+    x := pos.x * size.x
+    y := pos.y * size.y
+
+    return Sprite({
+        texture = texture_id,
+        uv = {
+            { x / tex_w,       y / tex_h       },
+            { (x+size.x) / tex_w,   (y+size.y) / tex_h   },
+        },
+    }), true
+}
+
+load_uv :: proc(handler: ^AssetsManager, file_path: string, uv: UV = {{0,0},{1,1}}) -> (Sprite, bool) #optional_ok {
 
     texture_id := Texture_ID(file_path);
     texture, found := handler.textures[texture_id]
