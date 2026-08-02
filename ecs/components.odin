@@ -118,13 +118,15 @@ Script :: struct {
     on_collision_left     : SCRIPT_COLLISION_FUNCTION,
     on_trigger_enter      : SCRIPT_COLLISION_FUNCTION,
     on_trigger_left       : SCRIPT_COLLISION_FUNCTION,
-    on_animation_finished : proc(data:ScriptData, animator: ^SpriteAnimator)
+    on_animation_finished : proc(data:ScriptData, animator: ^SpriteAnimator),
+    on_raycast_hit        : SCRIPT_FUNCTION
 }
 NewScript :: proc (
     data                  : rawptr = nil,
     start                 : SCRIPT_FUNCTION = nil,
     update                : SCRIPT_FUNCTION = nil,
     on_destroy            : SCRIPT_FUNCTION = nil,
+    on_raycast_hit        : SCRIPT_FUNCTION = nil,
     on_collision_enter    : SCRIPT_COLLISION_FUNCTION = nil,
     on_collision_left     : SCRIPT_COLLISION_FUNCTION = nil,
     on_trigger_enter      : SCRIPT_COLLISION_FUNCTION = nil,
@@ -134,6 +136,7 @@ NewScript :: proc (
                             start=start,
                             update=update,
                             on_destroy=on_destroy,
+                            on_raycast_hit=on_raycast_hit,
                             on_collision_enter = on_collision_enter,
                             on_collision_left = on_collision_left,
                             on_trigger_enter = on_trigger_enter,

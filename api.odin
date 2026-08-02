@@ -5,6 +5,9 @@ import "./input"
 import b2 "vendor:box2d"
 import rn "./renderer"
 import "./physics"
+import "./events"
+
+import "core:fmt"
 
 Entity  :: u32
 Vector2 :: [2]f32
@@ -52,13 +55,24 @@ is_mouse_pressed :: proc (btn: input.MouseButton) -> bool {
 
 // PHYSICS
 apply_force :: proc (entity: Entity, force: Vector2) {
-    b2.Body_ApplyForceToCenter(current_game.ecs.world.bodies[entity], force * physics.PIXELS_PER_METER, true)
+    if body, has := current_game.ecs.world.bodies[entity]; has {
+        fmt.println("FORCE:", force)
+        b2.Body_ApplyForceToCenter(body, force * physics.PIXELS_PER_METER, true)
+    }
+    else {
+        // return error
+    }
 }
 
 raycast :: proc(start, direction: [2]f32) -> b2.RayResult {
     filter := b2.DefaultQueryFilter()
     PIXELS_PER_METER :: 50
+
     
     result := b2.World_CastRayClosest(current_game.ecs.world.world_id, start / PIXELS_PER_METER, (direction) / PIXELS_PER_METER,  filter)
+    if result.hit {
+        entity := current_game.ecs.world.entites_by_shape[result.shapeId]
+        events.emit(current_game.eventQueue, events.RaycastHit({entity}))
+    }
     return result
 }

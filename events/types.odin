@@ -56,6 +56,11 @@ MouseEnteredEntity :: struct {
 MouseLeftEntity :: struct {
     entity: Entity
 }
+// Then an entity has been hit by a raycast
+// this event will be triggered
+RaycastHit :: struct {
+    entity: Entity
+}
 
 // The union of all possible events
 Event :: union {
@@ -76,6 +81,7 @@ Event :: union {
     MouseEnteredEntity,
     MouseLeftEntity,
     
+    RaycastHit,
 
     AnimationFinished,
     Should_Close_Window,

@@ -123,6 +123,10 @@ script_system :: proc(data: SystemData, dt: f32) {
                     if go_anim, has := get_component(go.ecs, go.entity, SpriteAnimator); has {
                         if script.on_animation_finished != nil do script.on_animation_finished(data, go_anim)
                     }
+                    case events.RaycastHit:
+                    if v.entity != go.entity do break
+                    if script.on_raycast_hit != nil do script.on_raycast_hit(data)
+
 
                 }
             }
