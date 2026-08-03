@@ -14,6 +14,7 @@ RenderCommand :: union {
     Text,
     UIText,
     UISprite,
+    UIPanel,
 }
 
 InitWindow :: struct { width, height: int, title: string }
@@ -26,6 +27,7 @@ Sprite     :: struct { pos, offset, size: [2]f32, rot: f32, inverted: bool, spri
 UISprite   :: struct { using base: Sprite}
 Text       :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string, color: [4]u8, layer: int}
 UIText     :: struct { pos: [2]f32, font_size: i32, rot: f32, text: string, color: [4]u8, layer: int}
+UIPanel    :: struct { using base: Rectangle }
 
 BeginDraw  :: struct {}
 EndDraw    :: struct {}

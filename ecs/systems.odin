@@ -214,8 +214,10 @@ parent_system :: proc(data: SystemData, dt: f32) {
     s_storage, ok3 := get_storage(data.ecs, SpriteRenderer)
     if !ok3 do return
 
+    panel_storage, ok4 := get_storage(data.ecs, UIPanel)
+    if !ok4 do return
 
-
+    ui_children := make(map[Entity]Vector2)
     for i in 0..<len(parent_storage.dense) {
         entity := parent_storage.entities[i]
         // t_idx, has_t := has_component(t_storage, entity)
@@ -224,12 +226,12 @@ parent_system :: proc(data: SystemData, dt: f32) {
         child_t  := &t_storage.dense[t_storage.sparse[int(entity)]]
         parent   := &parent_storage.dense[i]
 
-        
+
         if t_storage.sparse[int(parent.parent_entity)] == -1 do continue
         parent_t := &t_storage.dense[t_storage.sparse[int(parent.parent_entity)]]
-       
-        child_t.pos = parent_t.pos + rotate(child_t.local_pos * parent_t.size/100, parent_t.rot) // divide by 100 because default size is 100?
-        child_t.size = parent_t.size + child_t.local_size * parent_t.size/100
+
+        child_t.pos = parent_t.pos + rotate(child_t.local_pos, parent_t.rot) // divide by 100 because default size is 100?
+        child_t.size = parent_t.size + child_t.local_size// * parent_t.size/100
         child_t.rot = parent_t.rot
 
         if int(entity) >= len(s_storage.sparse) || s_storage.sparse[int(entity)] == -1 do continue
@@ -265,9 +267,25 @@ camera_system :: proc(data: SystemData, dt: f32) {
     }
 }
 
+
+get_children :: proc (ecs: ^EntityComponentSystem, me: Entity) -> [dynamic]Entity {
+    parent_storage, ok := get_storage(ecs, Parent);
+    children := make([dynamic]Entity)
+    if ok {
+        for i in 0..<len(parent_storage.dense) {
+            entity := parent_storage.entities[i]
+            if parent_storage.dense[i].parent_entity == me do append(&children, entity)
+        }
+    }
+    
+    return children
+}
+
+
 ui_system :: proc(data:SystemData, dt: f32){
     text_storage, ok := get_storage(data.ecs, UIText);
     sprite_storage, ok2 := get_storage(data.ecs, UISpriteRenderer);
+    panel_storage, ok4 := get_storage(data.ecs, UIPanel);
     t_storage, ok3 := get_storage(data.ecs, Transform)
     if !ok || !ok2 || !ok3 do return;
 
@@ -304,6 +322,49 @@ ui_system :: proc(data:SystemData, dt: f32){
         }))
     }
 
+    for i in 0..<len(panel_storage.dense) {
+        entity := panel_storage.entities[i]
+        panel := panel_storage.dense[i]
+        t := t_storage.dense[t_storage.sparse[entity]]
+        i := 0
+        children := get_children(data.ecs, entity)
+        for child in children {
+            child_t := &t_storage.dense[t_storage.sparse[child]]
+            offset_x : f32
+            offset_y : f32
+            switch panel.align_x {
+            case .CENTER: offset_x = t.size.x / 2 - (child_t.size.x) / 2 - panel.gap.x * 2
+            case .LEFT: offset_x = 0
+            case .RIGHT: offset_x = t.size.x - (child_t.size.x) - panel.gap.x * 2
+            }
+
+            switch panel.align_y {
+            case .TOP: offset_y = t.size.x / 2 - (child_t.size.x) / 2 - panel.gap.x * 2
+            case .CENTER: offset_y = 0
+            case .BOTTOM: offset_y = t.size.x - (child_t.size.x) - panel.gap.x * 2
+            }
+
+            
+            switch panel.align {
+            case .ROW:
+                child_t.local_pos.x = (child_t.size.x + panel.gap.x) * f32(i) + panel.margin[1] + offset_x 
+                child_t.local_pos.y = panel.margin[0]
+            case .COLUMN:
+                child_t.local_pos.y = (child_t.size.y + panel.gap.y) * f32(i) + panel.margin[1]
+                child_t.local_pos.x = panel.margin[1] + offset_x - child_t.size.x/2
+            }
+            i += 1
+        }
+
+        margin := panel.margin
+        rn.add_command(data.renderer, rn.UIPanel({
+            pos=t.pos + {margin[1], margin[0]},
+            size = t.size+{-margin[1]-margin[2],-margin[0]-margin[3]},
+            rot=t.rot,
+            color=panel.color,
+        }))
+
+    }
 }
 text_system :: proc(data: SystemData, dt: f32){
     text_storage, ok := get_storage(data.ecs, Text);

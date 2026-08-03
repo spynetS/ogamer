@@ -210,7 +210,7 @@ NewText :: proc(
 UIText :: struct {
     using text_base: Text,
 }
-NewUiText :: proc(
+NewUIText :: proc(
     text: string = "",
     font_size: i32 = 32,
     color: [4]u8 = {0x18,0x18,0x18,0xff},
@@ -246,6 +246,27 @@ NewUISpriteRenderer :: proc (
     layer      =     layer,
     repeated_x =     repeated_x,
     repeated_y =     repeated_y}) }
+
+UIPanel :: struct {
+    using base: Component,
+    margin: [4]f32,
+    gap: Vector2,
+    align: enum {
+        ROW,
+        COLUMN
+    },
+    align_x: enum {
+        LEFT,
+        RIGHT,
+        CENTER        
+    },
+    align_y: enum {
+        TOP,
+        CENTER,
+        BOTTOM
+    },
+    color: [4]u8
+}
 
 BodyType :: enum {
     staticBody = 0,

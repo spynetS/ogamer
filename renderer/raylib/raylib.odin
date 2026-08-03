@@ -20,8 +20,8 @@ assets :^io.AssetsManager = nil
 texture_cache: map[^io.Image]rl.Texture2D
 camera := rl.Camera2D({{1240/2,720/2},{0,0},0,1});
 
-width :: 1920/1.2
-height :: 1080/1.2
+width :: 1920
+height :: 1080
 
 target : rl.RenderTexture
 uitarget : rl.RenderTexture
@@ -271,6 +271,12 @@ execute :: proc(renderer: ^rn.Renderer, eventQueue: ^es.EventQueue) {
         })
         for command in renderer.draw_commands {
             #partial switch v in command {
+                case rn.UIPanel:
+                rl.DrawRectangleV(
+                    v.pos,
+                    v.size,
+                    rl.Color(v.color))
+                
                 case rn.UIText:
                 rl.DrawText(fmt.ctprintf("%s", v.text),
                             i32(v.pos.x),

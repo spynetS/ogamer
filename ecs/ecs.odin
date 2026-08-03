@@ -14,6 +14,7 @@ add_systems :: proc(ECS : ^EntityComponentSystem) {
     add_storage(ECS, Parent, parent_system)
     add_storage(ECS, UIText, ui_system)
     add_storage(ECS, UISpriteRenderer, ui_system)
+    add_storage(ECS, UIPanel, ui_system)
     add_storage(ECS, Text, text_system)
     add_storage(ECS, Tag, nil)
     add_storage(ECS, MouseOverComponent, mouse_over_system)
