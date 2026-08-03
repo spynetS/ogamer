@@ -32,11 +32,11 @@ add_systems :: proc(ECS : ^EntityComponentSystem) {
                 script_system,
                 before_destroy_entity = proc(raw: rawptr, data: SystemData, entity: Entity) {
                     stor := cast(^ComponentStorage(ScriptComponent))raw
-                    for i in 0..<len(stor.dense) {
-                        for script in stor.dense[i].scripts{
-                            if script.on_destroy != nil do script.on_destroy(ScriptData({script.data, get_gameobject(data.ecs, entity), data.ecs, data.eventQueue, data.ecs.world, data.renderer,0}))
-                        }
-                    } 
+                    comp := stor.dense[stor.sparse[entity]]
+                    for script in comp.scripts{
+                        if script.on_destroy != nil do script.on_destroy(ScriptData({script.data, get_gameobject(data.ecs, entity), data.ecs, data.eventQueue, data.ecs.world, data.renderer,0}))
+                    }
+
                 },
                 before_destroy = proc (raw: rawptr, ecs: ^EntityComponentSystem) {
                     stor := cast(^ComponentStorage(ScriptComponent))raw
