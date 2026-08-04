@@ -231,7 +231,7 @@ parent_system :: proc(data: SystemData, dt: f32) {
         parent_t := &t_storage.dense[t_storage.sparse[int(parent.parent_entity)]]
 
         // if parent is panel we want to do differently
-        if panel_storage.sparse[int(parent.parent_entity)] != -1 {
+        if int(parent.parent_entity) < len(panel_storage.sparse) && panel_storage.sparse[int(parent.parent_entity)] != -1 {
             child_t.pos = parent_t.pos + child_t.local_pos
             continue
         }
