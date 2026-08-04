@@ -222,13 +222,20 @@ parent_system :: proc(data: SystemData, dt: f32) {
         entity := parent_storage.entities[i]
         // t_idx, has_t := has_component(t_storage, entity)
         // if !has_t do continue
-        
+
+
         child_t  := &t_storage.dense[t_storage.sparse[int(entity)]]
         parent   := &parent_storage.dense[i]
-
-
+        
         if t_storage.sparse[int(parent.parent_entity)] == -1 do continue
         parent_t := &t_storage.dense[t_storage.sparse[int(parent.parent_entity)]]
+
+        // if parent is panel we want to do differently
+        if panel_storage.sparse[int(parent.parent_entity)] != -1 {
+            child_t.pos = parent_t.pos + child_t.local_pos
+            continue
+        }
+
 
         child_t.pos = parent_t.pos + rotate(child_t.local_pos, parent_t.rot) // divide by 100 because default size is 100?
         child_t.size = parent_t.size + child_t.local_size// * parent_t.size/100
@@ -281,6 +288,129 @@ get_children :: proc (ecs: ^EntityComponentSystem, me: Entity) -> [dynamic]Entit
     return children
 }
 
+place_row :: proc (ecs: ^EntityComponentSystem, children: [dynamic]Entity, panel: UIPanel, c_w, c_h : int) {
+    t_storage,_ := get_storage(ecs, Transform)
+    // generate rows
+    rows := make([dynamic][dynamic]^Transform)
+    row_lengths := make([dynamic]f32)
+    append(&row_lengths, 0)
+    append(&rows, make([dynamic]^Transform))
+    x := 0
+    for i in 0..<len(children) {
+        // TODO check for error
+        child_t := &t_storage.dense[t_storage.sparse[children[i]]]
+        if len(rows[len(rows)-1]) == 0 || int(child_t.size.x + panel.gap.x) * x < c_w-int(child_t.size.x) {
+            row_lengths[len(row_lengths)-1] += child_t.size.x + panel.gap.x
+            append(&rows[len(rows)-1], child_t)
+            x+=1
+        }
+        else {
+            append(&rows, make([dynamic]^Transform))
+            append(&rows[len(rows)-1], child_t)
+            // we don't want gap on the last item
+            row_lengths[len(row_lengths)-1] -= panel.gap.x
+            // because we added child above we need to init with some size
+            append(&row_lengths,child_t.size.x + panel.gap.x) 
+            x = 1 // +1 because we added a child above
+        }
+    }
+    // we don't want gap on the last item
+    row_lengths[len(row_lengths)-1] -= panel.gap.x
+
+    x = 0
+    y := 0
+    row_index := 0
+    for row in rows {
+        for trans in row {
+            incrementer := (trans.size + panel.gap) * {f32(x),f32(y)}
+            switch panel.justify_content{
+            case .START:
+                start := Vector2({panel.margin[0]+panel.padding[0], panel.margin[0]+panel.padding[3]})
+                trans.local_pos = start + incrementer
+                x += 1
+            case .END:
+                start := Vector2({f32(c_w) - trans.size.x + panel.padding[1], panel.margin[3]+panel.padding[3]})
+                trans.local_pos = start + incrementer
+                x -= 1
+            case .CENTER:
+                row_length := row_lengths[row_index]
+                start := Vector2({f32(c_w/2)-row_length/2 + panel.padding[1], panel.margin[0]+panel.padding[3]})
+                trans.local_pos = start + incrementer
+                x += 1
+            }
+
+        }
+        row_index+=1
+        delete(row)
+        y += 1
+        x = 0
+    }
+    delete(rows)
+    delete(row_lengths)
+    //if true do panic("asd")
+}
+
+place_column :: proc (ecs: ^EntityComponentSystem, children: [dynamic]Entity, panel: UIPanel, c_w, c_h : int) {
+    t_storage,_ := get_storage(ecs, Transform)
+    // generate columns
+    columns := make([dynamic][dynamic]^Transform)
+    column_lengths := make([dynamic]f32)
+    append(&column_lengths, 0)
+    append(&columns, make([dynamic]^Transform))
+    y := 0
+    for i in 0..<len(children) {
+        // TODO check for error
+        child_t := &t_storage.dense[t_storage.sparse[children[i]]]
+        if len(columns[len(columns)-1]) == 0 || int(child_t.size.y + panel.gap.y) * y < c_h-int(child_t.size.y) {
+            column_lengths[len(column_lengths)-1] += child_t.size.y + panel.gap.y
+            append(&columns[len(columns)-1], child_t)
+            y+=1
+        }
+        else {
+            append(&columns, make([dynamic]^Transform))
+            append(&columns[len(columns)-1], child_t)
+            // we don't want gap on the last item
+            column_lengths[len(column_lengths)-1] -= panel.gap.y
+            // because we added child above we need to init with some size
+            append(&column_lengths,child_t.size.y + panel.gap.y) 
+            y = 1 // +1 because we added a child above
+        }
+    }
+    column_lengths[len(column_lengths)-1] -= panel.gap.y
+
+    x := 0
+    y = 0
+    column_index := 0
+    for column in columns {
+        for trans in column {
+            incrementer := (trans.size + panel.gap) * {f32(x), f32(y)}
+            switch panel.justify_content{
+            case .START:
+                start := Vector2({panel.margin[1]+panel.padding[1], panel.margin[0]+panel.padding[3]})
+                trans.local_pos = start + incrementer
+                y += 1
+            case .END:
+                start := Vector2({panel.margin[2]+panel.padding[2], f32(c_h)-trans.size.y+panel.padding[3]})
+                trans.local_pos = start + incrementer
+                y -= 1
+            case .CENTER:
+                column_length := column_lengths[column_index]
+                start := Vector2({panel.margin[1]+panel.padding[1], f32(c_h/2)-column_length/2+panel.padding[0]})
+                trans.local_pos = start + incrementer
+                y += 1
+            }
+
+        }
+        column_index+=1
+        delete(column)
+        x += 1
+        y = 0
+    }
+    delete(columns)
+    delete(column_lengths)
+    //if true do panic("asd")
+}
+
 
 ui_system :: proc(data:SystemData, dt: f32){
     text_storage, ok := get_storage(data.ecs, UIText);
@@ -326,34 +456,22 @@ ui_system :: proc(data:SystemData, dt: f32){
         entity := panel_storage.entities[i]
         panel := panel_storage.dense[i]
         t := t_storage.dense[t_storage.sparse[entity]]
-        i := 0
+        
         children := get_children(data.ecs, entity)
-        for child in children {
-            child_t := &t_storage.dense[t_storage.sparse[child]]
-            offset_x : f32
-            offset_y : f32
-            switch panel.align_x {
-            case .CENTER: offset_x = t.size.x / 2 - (child_t.size.x) / 2 - panel.gap.x * 2
-            case .LEFT: offset_x = 0
-            case .RIGHT: offset_x = t.size.x - (child_t.size.x) - panel.gap.x * 2
-            }
 
-            switch panel.align_y {
-            case .TOP: offset_y = t.size.x / 2 - (child_t.size.x) / 2 - panel.gap.x * 2
-            case .CENTER: offset_y = 0
-            case .BOTTOM: offset_y = t.size.x - (child_t.size.x) - panel.gap.x * 2
-            }
-
-            
-            switch panel.align {
-            case .ROW:
-                child_t.local_pos.x = (child_t.size.x + panel.gap.x) * f32(i) + panel.margin[1] + offset_x 
-                child_t.local_pos.y = panel.margin[0]
-            case .COLUMN:
-                child_t.local_pos.y = (child_t.size.y + panel.gap.y) * f32(i) + panel.margin[1]
-                child_t.local_pos.x = panel.margin[1] + offset_x - child_t.size.x/2
-            }
-            i += 1
+        switch panel.align {
+        case .ROW:
+            place_row(data.ecs,
+                      children,
+                      panel,
+                      int(t.size.x - panel.margin[1] - panel.padding[1] - panel.padding[2]),
+                      int(t.size.y - panel.margin[3] - panel.padding[3] - panel.padding[0]))
+        case .COLUMN:
+            place_column(data.ecs,
+                      children,
+                      panel,
+                      int(t.size.x - panel.margin[1] - panel.padding[1] - panel.padding[2]),
+                      int(t.size.y - panel.margin[3] - panel.padding[3] - panel.padding[0]))
         }
 
         margin := panel.margin

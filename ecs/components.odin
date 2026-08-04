@@ -249,18 +249,20 @@ NewUISpriteRenderer :: proc (
 
 UIPanel :: struct {
     using base: Component,
-    margin: [4]f32,
+    margin:  [4]f32,
+    padding: [4]f32,
+    wrap: bool,
     gap: Vector2,
     align: enum {
         ROW,
         COLUMN
     },
-    align_x: enum {
-        LEFT,
-        RIGHT,
+    justify_content: enum {
+        START,
+        END,
         CENTER        
     },
-    align_y: enum {
+    justify_content_y: enum {
         TOP,
         CENTER,
         BOTTOM
