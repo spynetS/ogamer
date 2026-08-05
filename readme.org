@@ -5,12 +5,12 @@ Example
 #+begin_src odin
 package main;
 
-import "../src/core"
-import "../src/types"
-import "../src/io"
-import "../src/ecs"
-import sc "../src/scripting"
-import rn "../src/renderer"
+import "../core"
+import "../types"
+import "../io"
+import "../ecs"
+import sc "../scripting"
+import rn "../renderer"
 
 import "core:fmt"
 
@@ -52,7 +52,7 @@ level := core.Scene({
         defer sc.free_gameobject(ob1)
         ob1.transform.pos = {100,0}
         sc.add_component(ob1, types.Camera2D({zoom=1}))
-        tilesheet := io.new_tilesheet("./game/assets/Idle (78x58).png",{78,58}) // Memory leak 
+        tilesheet := io.new_tilesheet("./assets/Idle (78x58).png",{78,58}) // Memory leak 
         sc.add_component(ob1, types.SpriteRenderable({size={50,50}}))
         sc.add_component(ob1, types.SpriteAnimator({sprites=tilesheet.images, time=0.1}))
         
@@ -83,7 +83,7 @@ level := core.Scene({
         ob2,_ := sc.new_gameobject(&game.ecs)
         defer sc.free_gameobject(ob2)
         ob2.transform.local_pos = {-100,0}
-        image,_ := io.load("./game/assets/box.png") // Memory leak
+        image,_ := io.load("./assets/box.png") // Memory leak
         sc.add_component(ob2, types.SpriteRenderable({image=image}))
 
         // add the sprite as child to our player

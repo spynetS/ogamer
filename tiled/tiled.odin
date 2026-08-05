@@ -1,0 +1,390 @@
+package ogamer_tiled;
+import "../io"
+import "core:os"
+
+import "core:strings"
+import "core:strconv"
+import "core:path/filepath"
+
+import "core:fmt"
+import "core:encoding/xml"
+import "core:encoding/json"
+
+Value :: union {
+	  i32, 
+	  f32, 
+	  bool, 
+	  string, 
+}
+
+Property :: struct {
+    name, type: string,
+    value: Value
+}
+
+Image :: struct {
+    source: string,
+    width, height: int
+}
+Animation :: struct {
+    frames: [dynamic]Frame
+}
+// Add objects in future
+Tile :: union {
+    Animation
+}
+TileSet :: struct {
+    name, source: string,
+    firstgid, tilewidth, tileheight, tilecount, columns, margin, spacing: int,
+    image: Image,
+    tilesheet: ^io.TileSheet,
+    tiles: map[int]Tile
+}
+Object :: struct {
+    id, gid: int,
+    x, y, width, height: f32,
+    visible: bool,
+    name: string,
+    class: string, // or type?
+    layer_depth: int,
+    properties: [dynamic]Property,
+    point: bool
+}
+
+LayerBase :: struct {
+    id: int,
+    name: string,
+
+    visible: bool,
+    parallax: Vector2,
+    layer_depth: int,
+}
+
+ObjectGroup :: struct {
+    using base: LayerBase,
+
+    width, height: int,
+    draworder: string,
+    objects: [dynamic]Object,
+    
+}
+ImageLayer :: struct {
+    using base: LayerBase, 
+    image: string,
+    width, height: int,
+    imagewidth, imageheight, x, y, offsetx, offsety: f32,
+    repeatx, repeaty: bool,
+}
+Layer :: struct {
+    using base: LayerBase,
+    width, height: int,
+    data: [dynamic]int,
+}
+Map :: struct {
+    orientation, renderorder: string, // TODO implement
+    tilewidth, tileheight, infinite, nextlayerid, nextobjectid: int, // TODO implement
+    width, height: f32,
+    tilesets: [dynamic]TileSet,
+    layers: [dynamic]Layer,
+    objectgroups: [dynamic]ObjectGroup,
+    imagelayers: [dynamic]ImageLayer
+}
+
+Frame :: struct {
+    tileid: int,
+    duration: int
+}
+
+load_tileset_file :: proc(handler: ^io.AssetsManager, tileset: ^TileSet, path: string) {
+    data, read_err := os.read_entire_file(path, context.allocator)
+	  if read_err != nil {
+		    fmt.eprintfln("Failed to load the file: %v", read_err)
+		    return
+	  }
+	  defer delete(data)
+    // gives "Conditional jump or move depends on uninitialised value(s)" from valgrind
+    value, error := json.parse(data)
+    if error != .None {
+        fmt.println("WARNING: file", path, "is not a json file")
+    }
+    
+    #partial switch type in value{
+    case json.Object:
+        if v, ok := type["columns"].(json.Float); ok do tileset.columns = int(v);
+        if v, ok := type["tilewidth"].(json.Float); ok do tileset.tilewidth = int(v);
+        if v, ok := type["tileheight"].(json.Float); ok do tileset.tileheight = int(v);
+        if v, ok := type["margin"].(json.Float); ok do tileset.margin = int(v);
+        if v, ok := type["spacing"].(json.Float); ok do tileset.spacing = int(v);
+        if v, ok := type["tilecount"].(json.Float); ok do tileset.tilecount = int(v);
+        if v, ok := type["tileheight"].(json.Float); ok do tileset.tileheight = int(v);
+        if v, ok := type["name"].(json.String); ok do tileset.name = fmt.tprintf(v);
+        if v, ok := type["tiles"].(json.Array); ok {
+            for tile in v {
+                if id, ok := tile.(json.Object)["id"].(json.Float); ok {
+                    id := cast(int) id
+                    if frames, ok := tile.(json.Object)["animation"].(json.Array); ok {
+                        anim := Animation({}) 
+                        for frame in frames {
+
+                            #partial switch f in frame {
+                                case json.Object:
+                                append(&anim.frames, Frame({tileid=cast(int)f["tileid"].(json.Float), duration=cast(int)f["duration"].(json.Float)}))
+                            }
+
+                        }
+                        tileset.tiles[id] = anim
+                    }
+                }
+            }
+        }
+        if v, ok := type["image"].(json.String); ok {
+            here := filepath.dir(path)
+            src,_ := filepath.join({here, v})
+            defer delete(src)
+            tileset.image.source = fmt.tprintf(src)
+            tileset.tilesheet = io.new_tilesheet(handler, tileset.image.source, {cast(i32)tileset.tilewidth, cast(i32)tileset.tileheight})
+        }
+    }
+    json.destroy_value(value)
+
+}
+
+load_layer :: proc(layer: json.Object, layer_depth: int) -> Layer {
+
+    _layer := Layer({visible=true, layer_depth=layer_depth, parallax={1,1}});
+    if v,ok := layer["width"].(json.Float); ok do _layer.width = cast(int)v
+    if v,ok := layer["height"].(json.Float); ok do _layer.height = cast(int)v
+    if v,ok := layer["name"].(json.String); ok do _layer.name = fmt.tprintf(v)
+    if v,ok := layer["visible"].(json.Boolean); ok do _layer.visible = v
+    if v,ok := layer["parallaxx"].(json.Float); ok do _layer.parallax.x = cast(f32)v
+    if v,ok := layer["parallaxy"].(json.Float); ok do _layer.parallax.y = cast(f32)v
+    if v,ok := layer["data"].(json.Array); ok {
+        data := make([dynamic]int)
+        for value in v {
+            append(&data, cast(int)value.(json.Float))
+        }
+        _layer.data = data
+    } 
+
+    return _layer
+}
+load_imagelayer :: proc(layer: json.Object, path: string, layer_depth: int) -> ImageLayer {
+
+    _layer := ImageLayer({visible=true,layer_depth = layer_depth,parallax={1,1}});
+    if v,ok := layer["width"].(json.Float); ok do _layer.width = cast(int)v
+    if v,ok := layer["height"].(json.Float); ok do _layer.height = cast(int)v
+    if v,ok := layer["id"].(json.String); ok do _layer.name = fmt.tprintf(v)
+    if v,ok := layer["name"].(json.String); ok do _layer.name = fmt.tprintf(v)
+    if v,ok := layer["image"].(json.String); ok {
+        here := filepath.dir(path)
+        _path,_ := filepath.join({here, v})
+        _layer.image = fmt.tprintf(_path)
+        delete(_path)
+    }
+    if v,ok := layer["visible"].(json.Boolean); ok do _layer.visible = v
+    if v,ok := layer["repeatx"].(json.Boolean); ok do _layer.repeatx = v
+    if v,ok := layer["repeaty"].(json.Boolean); ok do _layer.repeaty = v
+    if v,ok := layer["parallaxx"].(json.Float); ok do _layer.parallax.x = cast(f32)v
+    if v,ok := layer["parallaxy"].(json.Float); ok do _layer.parallax.y = cast(f32)v
+    if v,ok := layer["x"].(json.Float); ok do _layer.x = cast(f32)v
+    if v,ok := layer["y"].(json.Float); ok do _layer.y = cast(f32)v
+    if v,ok := layer["offsetx"].(json.Float); ok do _layer.offsetx = cast(f32)v
+    if v,ok := layer["offsety"].(json.Float); ok do _layer.offsety = cast(f32)v
+    if v,ok := layer["imagewidth"].(json.Float); ok do _layer.imagewidth = cast(f32)v
+    if v,ok := layer["imageheight"].(json.Float); ok do _layer.imageheight = cast(f32)v
+
+
+    return _layer
+}
+
+load_template :: proc (value: json.Object, obj: ^Object, path: string, tilesets: [dynamic]TileSet) {
+    fmt.println("TEMPLATE:", value)
+
+    if v,ok := value["object"].(json.Object); ok {
+        template_object := load_object(v, obj.layer_depth, "", tilesets)
+        obj.class       = template_object.class
+        obj.id          = template_object.id
+        obj.gid         = template_object.gid
+        obj.x           = template_object.x
+        obj.y           = template_object.y
+        obj.width       = template_object.width
+        obj.height      = template_object.height
+        obj.visible     = template_object.visible
+        obj.name        = template_object.name
+        obj.layer_depth = template_object.layer_depth
+        obj.point       = template_object.point
+        obj.properties  = template_object.properties
+        fmt.println("OBJ:", obj)
+    }
+    if tileset_val,ok := value["tileset"].(json.Object); ok {
+        if v,ok := tileset_val["source"].(json.String); ok {
+            here := filepath.dir(path)
+            _path,_ := filepath.join({here, v})
+            defer delete(_path)
+
+            for tileset in tilesets {
+                fmt.println("TILESETS:", tileset.source, _path)
+                if tileset.source == _path do obj.gid += tileset.firstgid-1
+            }
+        }
+    }
+
+    
+}
+
+load_object :: proc (value: json.Object, layer_depth: int, path: string, tilesets: [dynamic]TileSet) -> Object {
+    object := Object({gid=-1, visible=true, layer_depth = layer_depth})
+
+    if v,ok := value["template"].(json.String); ok {
+        here := filepath.dir(path)
+        _path,_ := filepath.join({here, v})
+        defer delete(_path)
+        fmt.println("TEMPLATE PATH:", _path)
+        data, read_err := os.read_entire_file(_path, context.allocator)
+	      if read_err != nil {
+		        fmt.eprintfln("Failed to load the file: %v", read_err)
+		        return Object({})
+	      }
+	      defer delete(data)
+        value, error := json.parse(data)
+        load_template(value.(json.Object), &object, path, tilesets)
+        fmt.println("OBJ:", object)
+        
+
+    }
+    if v,ok := value["name"].(json.String); ok do object.name  = fmt.tprintf(v)
+    if v,ok := value["type"].(json.String); ok do object.class = fmt.tprintf(v)
+    if v,ok := value["gid"].(json.Float); ok do object.gid = cast(int)v
+    if v,ok := value["id"].(json.Float); ok do object.id = cast(int)v
+    if v,ok := value["width"].(json.Float); ok do object.width = cast(f32)v
+    if v,ok := value["height"].(json.Float); ok do object.height = cast(f32)v
+    if v,ok := value["visible"].(json.Boolean); ok do object.visible = v
+    if v,ok := value["point"].(json.Boolean); ok do object.point = v
+    if v,ok := value["x"].(json.Float); ok do object.x = cast(f32)v
+    if v,ok := value["y"].(json.Float); ok do object.y = cast(f32)v
+    if v,ok := value["properties"].(json.Array); ok {
+        for el in v {
+            prop := Property({})
+            #partial switch val in el {
+                case json.Object:
+                #partial switch type in val["value"] {
+                    case json.Integer : prop.value=i32(type)
+                    case json.Float   : prop.value=f32(type)
+                    case json.Boolean : prop.value=type
+                    case json.String  : prop.value=type
+                }
+                prop.name = fmt.tprintf("%s",val["name"].(json.String))
+                prop.type = fmt.tprintf("%s",val["type"].(json.String))
+            }
+            append(&object.properties, prop)
+        }
+    }
+    return object
+}
+
+load_objectgroup :: proc(layer: json.Object, layer_depth: int, path: string, tilesets: [dynamic]TileSet) -> ObjectGroup {
+
+    objectgroup := ObjectGroup({visible=true, layer_depth = layer_depth});
+    if v,ok := layer["draworder"].(json.String); ok do objectgroup.draworder = fmt.tprintf(v)
+    if v,ok := layer["name"].(json.String); ok do objectgroup.name = fmt.tprintf(v)
+    if v,ok := layer["id"].(json.Float); ok do objectgroup.id = cast(int)v
+    if v,ok := layer["visible"].(json.Boolean); ok do objectgroup.visible = v
+    if v,ok := layer["parallaxx"].(json.Float); ok do objectgroup.parallax.x = cast(f32)v
+    if v,ok := layer["parallaxy"].(json.Float); ok do objectgroup.parallax.y = cast(f32)v
+    if v,ok := layer["objects"].(json.Array); ok {
+        objects := make([dynamic]Object)
+        for value in v {
+            append(&objects, load_object(value.(json.Object), layer_depth, path, tilesets))
+        }
+        objectgroup.objects = objects
+    } 
+
+    return objectgroup
+}
+
+load_tileset :: proc(handler: ^io.AssetsManager, tileset: json.Object, path: string) -> TileSet {
+
+    _tileset := TileSet({})
+    if v,ok := tileset["firstgid"].(json.Float); ok do _tileset.firstgid = cast(int)v
+    if v,ok := tileset["source"].(json.String); ok {
+        here := filepath.dir(path)
+        _path,_ := filepath.join({here, v})
+        _tileset.source = fmt.tprintf("%s",_path)
+        load_tileset_file(handler, &_tileset, _path)
+        delete(_path)
+    } 
+    return _tileset
+}
+
+load_map :: proc(handler: ^io.AssetsManager, path: string) -> ^Map {
+    data, read_err := os.read_entire_file(path, context.allocator)
+	  if read_err != nil {
+		    fmt.eprintfln("Failed to load the file: %v", read_err)
+		    return nil
+	  }
+	  defer delete(data)
+    _map:= new(Map)
+    // gives "Conditional jump or move depends on uninitialised value(s)" from valgrind
+    value, error := json.parse(data)
+
+    #partial switch v in value {
+        case json.Object:
+        _map.width = cast(f32)v["width"].(json.Float)
+        _map.height = cast(f32)v["height"].(json.Float)
+        _map.nextlayerid = cast(int)v["nextlayerid"].(json.Float)
+        _map.nextobjectid = cast(int)v["nextobjectid"].(json.Float)
+        _map.orientation = v["orientation"].(json.String)
+        _map.renderorder = v["renderorder"].(json.String)
+        //_map.tiledversion =v["tiledversion"].(json.String)
+        _map.tilewidth = cast(int)v["tilewidth"].(json.Float)
+        _map.tileheight = cast(int)v["tileheight"].(json.Float)
+
+        layer_depth := -len(v["layers"].(json.Array))
+        for tileset in v["tilesets"].(json.Array) {
+            append(&_map.tilesets, load_tileset(handler, tileset.(json.Object), path))
+        }
+
+        for layer in v["layers"].(json.Array) {
+            switch layer.(json.Object)["type"].(json.String)  {
+            case "tilelayer": append(&_map.layers,load_layer(layer.(json.Object), layer_depth))
+            case "objectgroup": append(&_map.objectgroups,load_objectgroup(layer.(json.Object), layer_depth, path, _map.tilesets))
+            case "imagelayer": append(&_map.imagelayers,load_imagelayer(layer.(json.Object), path, layer_depth))
+            }
+            layer_depth += 1
+        }
+
+        case:
+        fmt.println("WARNING: no real map")
+    }
+    json.destroy_value(value)
+    return _map
+}
+
+
+destroy_map :: proc(_map: ^Map) {
+    if _map == nil do return
+    for layer in _map.layers {
+        delete(layer.data)
+    }
+    for objectgroup in _map.objectgroups {
+        for object in objectgroup.objects {
+            delete(object.properties)
+        }
+        delete(objectgroup.objects)
+    }
+
+    for tileset in _map.tilesets {
+        for _, tile in tileset.tiles {
+            #partial switch t in tile {
+                case Animation: delete(t.frames)
+            }
+        }
+        delete(tileset.tiles)
+    }
+    delete(_map.tilesets)
+    delete(_map.layers)
+    delete(_map.objectgroups)
+    delete(_map.imagelayers)
+    free(_map)
+}
+
