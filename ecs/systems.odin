@@ -23,7 +23,17 @@ shape_render_system :: proc(data: SystemData, dt: f32) {
     }
 }
 
-transform_in_view :: proc(camera: ^Camera2D, transform: ^Transform, screen_size: Vector2) -> bool {
+transform_in_view :: proc(renderer: ^rn.Renderer, transform: ^Transform) -> bool {
+    if renderer.active_camera == nil do return true
+    camera := Camera2D({
+        offset=renderer.active_camera.offset,
+        target=renderer.active_camera.target,
+        rotation=renderer.active_camera.rotation,
+        zoom=renderer.active_camera.zoom
+    })
+
+    screen_size := Vector2({1920, 1080})
+
     view_size := screen_size / camera.zoom
 
     left   := camera.target.x - view_size.x * 0.5
@@ -31,11 +41,12 @@ transform_in_view :: proc(camera: ^Camera2D, transform: ^Transform, screen_size:
     top    := camera.target.y - view_size.y * 0.5
     bottom := camera.target.y + view_size.y * 0.5
 
-    obj_left   := transform.pos.x
-    obj_right  := transform.pos.x + transform.size.x
-    obj_top    := transform.pos.y
-    obj_bottom := transform.pos.y + transform.size.y
+    half := transform.size * 0.5
 
+    obj_left   := transform.pos.x - half.x
+    obj_right  := transform.pos.x + half.x
+    obj_top    := transform.pos.y - half.y
+    obj_bottom := transform.pos.y + half.y
     return !(obj_right < left ||
              obj_left > right ||
              obj_bottom < top ||
@@ -55,15 +66,8 @@ sprite_render_system :: proc(data: SystemData, dt: f32) {
         
         if data.renderer == nil do continue
         // occlution culling
-        if data.renderer.active_camera != nil {
-            camera := Camera2D({
-                offset=data.renderer.active_camera.offset,
-                target=data.renderer.active_camera.target,
-                rotation=data.renderer.active_camera.rotation,
-                zoom=data.renderer.active_camera.zoom
-            })
-            if !transform_in_view(&camera, t, {1920+100,1080+100})  do continue 
-        }
+        if !transform_in_view(data.renderer, t)  do continue 
+
 
         if data.renderer.active_camera != nil && s.parallax != {1,1} {
             s.offset = data.renderer.active_camera.target * (s.parallax)
@@ -176,6 +180,7 @@ animation_length :: proc(animator: ^SpriteAnimator) -> int {
 sprite_animator_system :: proc(data: SystemData, dt: f32) {
     storage,        ok  := get_storage(data.ecs, SpriteAnimator)
     sprite_storage, ok2 := get_storage(data.ecs, SpriteRenderer)
+    t_storage,      ok3 := get_storage(data.ecs, Transform)
     if !ok || !ok2 do return
     
     for i in 0..<len(storage.dense) {
@@ -183,6 +188,10 @@ sprite_animator_system :: proc(data: SystemData, dt: f32) {
         entity   := storage.entities[i]
         if animator.disabled  do continue
 
+        transform := &t_storage.dense[t_storage.sparse[entity]]
+
+        // occlution culling
+        if !transform_in_view(data.renderer, transform)  do continue 
 
         
         //Switch to a newly requested animation.
