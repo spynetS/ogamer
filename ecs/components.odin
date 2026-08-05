@@ -166,7 +166,8 @@ SpriteAnimator :: struct {
     _time_counter     : f32,               // internal counter
     _frame_counter    : int,               // internal counter
     _first_run        : bool,              // internal first_run holder
-    active_index      : int                // active frame in animation
+    active_index      : int,               // active frame in animation,
+    manual            : bool
 }
 
 NewSpriteAnimator :: proc (
@@ -174,12 +175,14 @@ NewSpriteAnimator :: proc (
     sprites_length    : []int = nil,
     active_animation  : int = 0,
     time              : f32 = 0.1,
+    manual            : bool = false,
     active_index      : int = 0) -> SpriteAnimator {
     return SpriteAnimator({
         sprites = sprites,
         sprites_length = sprites_length,
         active_animation = active_animation,
         time = time,
+        manual = manual,
         active_index = active_index,
     })
 }

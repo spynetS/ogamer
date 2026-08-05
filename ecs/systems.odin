@@ -152,10 +152,10 @@ sprite_animator_system :: proc(data: SystemData, dt: f32) {
     for i in 0..<len(storage.dense) {
         animator := &storage.dense[i]
         entity   := storage.entities[i]
-        if animator.disabled do continue
+        if animator.disabled  do continue
 
 
-
+        
         //Switch to a newly requested animation.
         if animator.active_animation != animator._active_animation {
             if animator.active_animation < 0 || animator.active_animation >= len(animator.sprites) {
@@ -171,11 +171,25 @@ sprite_animator_system :: proc(data: SystemData, dt: f32) {
         length := animation_length(animator)
         if length <= 0 do continue // nothing to play; guards the modulo below
 
+
+
         // End-of-cycle bookkeeping.
         if animator._frame_counter <= 0 {
             animator._frame_counter = length
             if animator._first_run do events.emit(data.eventQueue, events.AnimationFinished({entity}))
             else                   do animator._first_run = true
+        }
+
+        if animator.manual {
+            sprite_comp, has := get_component(data.ecs, entity, SpriteRenderer)
+            if !has {
+                sprite_comp = add_component(data.ecs, entity, NewSpriteRenderer())
+            }
+            if animator._active_animation < len(animator.sprites) && animator.active_index < len(animator.sprites[animator._active_animation]) {
+                sprite_comp.sprite = animator.sprites[animator._active_animation][animator.active_index]
+            }
+
+            continue
         }
 
         // Advance the frame timer.
@@ -237,8 +251,8 @@ parent_system :: proc(data: SystemData, dt: f32) {
         }
 
 
-        child_t.pos = parent_t.pos + rotate(child_t.local_pos, parent_t.rot) // divide by 100 because default size is 100?
-        child_t.size = parent_t.size + child_t.local_size// * parent_t.size/100
+        child_t.pos = parent_t.pos + rotate(child_t.local_pos/100, parent_t.rot) // divide by 100 because default size is 100?
+        child_t.size = parent_t.size + child_t.local_size * parent_t.size/100
         child_t.rot = parent_t.rot
 
         if int(entity) >= len(s_storage.sparse) || s_storage.sparse[int(entity)] == -1 do continue
