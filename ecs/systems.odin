@@ -23,6 +23,25 @@ shape_render_system :: proc(data: SystemData, dt: f32) {
     }
 }
 
+transform_in_view :: proc(camera: ^Camera2D, transform: ^Transform, screen_size: Vector2) -> bool {
+    view_size := screen_size / camera.zoom
+
+    left   := camera.target.x - view_size.x * 0.5
+    right  := camera.target.x + view_size.x * 0.5
+    top    := camera.target.y - view_size.y * 0.5
+    bottom := camera.target.y + view_size.y * 0.5
+
+    obj_left   := transform.pos.x
+    obj_right  := transform.pos.x + transform.size.x
+    obj_top    := transform.pos.y
+    obj_bottom := transform.pos.y + transform.size.y
+
+    return !(obj_right < left ||
+             obj_left > right ||
+             obj_bottom < top ||
+             obj_top > bottom)
+}
+
 sprite_render_system :: proc(data: SystemData, dt: f32) {
     t_storage, ok := get_storage(data.ecs, Transform)
     s_storage, ok2 := get_storage(data.ecs, SpriteRenderer)
@@ -32,9 +51,19 @@ sprite_render_system :: proc(data: SystemData, dt: f32) {
         s := s_storage.dense[i]
         entity := s_storage.entities[i]
         if int(entity) > len(t_storage.sparse) do continue
-        t := t_storage.dense[t_storage.sparse[entity]]
+        t := &t_storage.dense[t_storage.sparse[entity]]
         
         if data.renderer == nil do continue
+        // occlution culling
+        if data.renderer.active_camera != nil {
+            camera := Camera2D({
+                offset=data.renderer.active_camera.offset,
+                target=data.renderer.active_camera.target,
+                rotation=data.renderer.active_camera.rotation,
+                zoom=data.renderer.active_camera.zoom
+            })
+            if !transform_in_view(&camera, t, {1920+100,1080+100})  do continue 
+        }
 
         if data.renderer.active_camera != nil && s.parallax != {1,1} {
             s.offset = data.renderer.active_camera.target * (s.parallax)
