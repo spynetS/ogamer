@@ -263,12 +263,12 @@ UIPanel :: struct {
     justify_content: enum {
         START,
         END,
-        CENTER        
+        CENTER
     },
-    justify_content_y: enum {
-        TOP,
-        CENTER,
-        BOTTOM
+    align_items: enum {
+        START,
+        END,
+        CENTER
     },
     color: [4]u8
 }

@@ -54,13 +54,14 @@ is_mouse_pressed :: proc (btn: input.MouseButton) -> bool {
 
 
 // PHYSICS
-apply_force :: proc (entity: Entity, force: Vector2) {
+apply_force :: proc (entity: Entity, force: Vector2) -> bool {
     if body, has := current_game.ecs.world.bodies[entity]; has {
         fmt.println("FORCE:", force)
         b2.Body_ApplyForceToCenter(body, force * physics.PIXELS_PER_METER, true)
+        return true
     }
     else {
-        // return error
+        return false
     }
 }
 

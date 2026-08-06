@@ -107,7 +107,7 @@ execute_command :: proc(renderer : ^rn.Renderer ,command: rn.RenderCommand) {
                     i32(v.pos.x),
                     i32(-v.pos.y), // Y-up
                     v.font_size,
-                    rl.BLACK)
+                    rl.Color(v.color))
 
         case rn.Line:
         rl.DrawLineV(v.start*{1,-1}, v.end*{1,-1}, rl.Color(v.color));
@@ -263,13 +263,12 @@ execute :: proc(renderer: ^rn.Renderer, eventQueue: ^es.EventQueue) {
         rl.BeginTextureMode(uitarget);
         rl.ClearBackground(rl.Color(rn.get_color(0))) // clear the ui texture
 
-        // TODO make them also scale with monitor
-        // TODO flip the y coordninate
         // DRAW UI ELEMENTS
-        slice.sort_by(renderer.draw_commands[:], proc(a, b: rn.RenderCommand) -> bool {
+        commands := renderer.draw_commands[:]
+        slice.sort_by(commands, proc(a, b: rn.RenderCommand) -> bool {
             return layer_of(a) < layer_of(b)
         })
-        for command in renderer.draw_commands {
+        for command in commands {
             #partial switch v in command {
                 case rn.UIPanel:
                 rl.DrawRectangleV(
@@ -288,7 +287,7 @@ execute :: proc(renderer: ^rn.Renderer, eventQueue: ^es.EventQueue) {
                 // TODO load this before rendering (make a sperate function to load tectures)
                 rl_texture, source, ok := load_sprite(v.sprite, v.inverted)
                 if !ok do break
-                dest : rl.Rectangle = {v.pos.x,v.pos.y, v.size.x, v.size.y} // Y-up
+                dest : rl.Rectangle = {v.pos.x+v.offset.x,v.pos.y+v.offset.y, v.size.x, v.size.y} // Y-up
 
                 origin : rl.Vector2 = {
                     v.size.x / 2,
