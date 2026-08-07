@@ -9,6 +9,10 @@ import "./io"
 import "core:time"
 
 
+// TODO have a get gameobject at point
+
+
+
 // TO JUST RUN ONE GAME LOOP ITERATION
 DEBUG :: false
 

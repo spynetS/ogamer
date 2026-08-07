@@ -602,7 +602,7 @@ collider_system :: proc(data: SystemData, dt: f32) {
         // if the entity doesnt have a body we check if it has a parent with a body
         if shape_id, has_shape := data.ecs.world.shapes[entity]; has_shape {
             // update shape if neceary
-         //   rn.add_command(data.renderer, rn.Rectangle({transform.pos,transform.size+collider.size,transform.rot, rn.get_color(0x00ff00ff), true, 0}))
+            //rn.add_command(data.renderer, rn.Rectangle({transform.pos,transform.size+collider.size,transform.rot, rn.get_color(0x00ff00ff), true, 0}))
         }
         else {
             body_id, has_body := data.ecs.world.bodies[entity]; 
@@ -702,13 +702,32 @@ physics_system :: proc(data: SystemData, dt: f32) {
 
                 // Check if the transforms position has changed
                 // we check axies independently to not destrurb unchanged axies
+
+                if rb._rot != transform.rot {
+                    angle_rad := transform.rot * math.RAD_PER_DEG
+                    b2.Body_SetTransform(
+                        body_id,
+                        body_t.p,
+                        b2.Rot{
+                            c = math.cos(angle_rad),
+                            s = math.sin(angle_rad),
+                        },
+                    )
+
+                    rb._rot = b2.Rot_GetAngle(body_t.q) * math.DEG_PER_RAD
+                    rb._rot = math.mod(rb._rot + 360.0, 360.0)
+
+                    body_t = b2.Body_GetTransform(body_id)
+                }
+
+                transform.rot = b2.Rot_GetAngle(body_t.q) * math.DEG_PER_RAD
+                transform.rot = math.mod(transform.rot + 360.0, 360.0)
+                
                 if transform._pos.x != transform.pos.x {
                     body_t.p= b2.Vec2({
                         transform.pos.x/physics.PIXELS_PER_METER,
                         body_t.p.y})
                     b2.Body_SetTransform(body_id,body_t.p,body_t.q)
-
-                    
                 }
                 if transform._pos.y != transform.pos.y {
                     b2.Body_SetTransform(body_id,b2.Vec2({
@@ -720,7 +739,6 @@ physics_system :: proc(data: SystemData, dt: f32) {
                 transform.pos = world_center
                 transform._pos = world_center // save old pos so we can use it later to compare
 
-                transform.rot = b2.Rot_GetAngle(body_t.q) * math.DEG_PER_RAD
 
                 body_vel := b2.Body_GetLinearVelocity(body_id)
 
@@ -758,7 +776,8 @@ physics_system :: proc(data: SystemData, dt: f32) {
                                 transform.rot,
                                 rb.linear_damping,
                                 rb.disabled_gravity,
-                                rb.disabled_rotation)
+                                rb.disabled_rotation,
+                                rb.vel)
         }
     }
 

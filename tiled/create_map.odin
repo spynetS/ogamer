@@ -40,8 +40,8 @@ create_objectgroup :: proc(game: ^og.Game, _map: ^Map, tile_scale: Vector2 = {1,
             // FIXME maybe not create a entity if not necceary
             go :=  og.new_gameobject(game.ecs)
             
-            x := object.x * tile_scale.x
-            y := object.y * tile_scale.y
+            x := object.x * tile_scale.x - 50
+            y := object.y * tile_scale.y + 50
 
             go.transform.size = {object.width, object.height}*tile_scale
             go.transform.pos = {x-map_w/2, -y+map_h/2}
@@ -128,8 +128,8 @@ position_gameobject :: proc (
     go.transform.size = {tw, th}
 
     // Tiled = bottom-left cell anchor, Y-down. Ours = center anchor, Y-up.
-    go.transform.pos.x = fx*mtw - fw*mtw/2 + tw/2
-    go.transform.pos.y = fh*mth/2 - (fy+1)*mth + th/2
+    go.transform.pos.x = fx*mtw - fw*mtw/2 + tw/2 - 50
+    go.transform.pos.y = fh*mth/2 - (fy+1)*mth + th/2 - 50
 }
 
 // TODO make so instead of creating a bunch of entities create 1 entity with multiple sprites

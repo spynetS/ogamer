@@ -8,6 +8,7 @@ import "./physics"
 import "./events"
 
 import "core:fmt"
+import "base:runtime"
 
 Entity  :: u32
 Vector2 :: [2]f32
@@ -65,15 +66,70 @@ apply_force :: proc (entity: Entity, force: Vector2) -> bool {
     }
 }
 
-raycast :: proc(start, direction: [2]f32) -> b2.RayResult {
+RayHit :: struct {
+    using base: b2.RayResult,
+    entity: Entity,
+}
+
+RayCtx :: struct {
+    hits:[dynamic]RayHit
+}
+
+raycast :: proc(start, direction: [2]f32) -> [dynamic]RayHit {
+
     filter := b2.DefaultQueryFilter()
     PIXELS_PER_METER :: 50
+    // FIXME memory leak the array
+    rayctx := RayCtx({})
 
-    
+    callback := proc "c" (shapeId: b2.ShapeId, point: [2]f32, normal: [2]f32, fraction: f32, ctx: rawptr) -> f32 {
+        context = runtime.default_context()
+        entity := current_game.ecs.world.entites_by_shape[shapeId]
+        rayctx := cast(^RayCtx) ctx
+        fmt.println("HEREHE")
+        events.emit(current_game.eventQueue, events.RaycastHit({entity}))
+        append(&rayctx.hits, RayHit {
+            entity = entity,
+            hit = true,
+            shapeId = shapeId,
+            point = point,
+            normal = normal,
+            fraction = fraction,
+
+        })
+
+        // Return fraction to continue.
+        // Return 0.0 to stop immediately.
+        return fraction
+    }
+
+    result := b2.World_CastRay(
+        current_game.ecs.world.world_id,
+        start / PIXELS_PER_METER,
+        direction / PIXELS_PER_METER,
+        filter,
+        callback,
+        &rayctx
+    )
+
+    return rayctx.hits
+}
+
+raycast_closest :: proc(start, direction: [2]f32) -> RayHit {
+    filter := b2.DefaultQueryFilter()
+    PIXELS_PER_METER :: 50
     result := b2.World_CastRayClosest(current_game.ecs.world.world_id, start / PIXELS_PER_METER, (direction) / PIXELS_PER_METER,  filter)
+    entity :Entity = 4294967295; // max
     if result.hit {
-        entity := current_game.ecs.world.entites_by_shape[result.shapeId]
+        entity = current_game.ecs.world.entites_by_shape[result.shapeId]
         events.emit(current_game.eventQueue, events.RaycastHit({entity}))
     }
-    return result
+    return RayHit ({
+        entity = entity,
+        hit = result.hit,
+        shapeId = result.shapeId,
+        point = result.point,
+        normal = result.normal,
+        fraction = result.fraction,
+    })
 }

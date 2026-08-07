@@ -1,5 +1,7 @@
 package ogamer_ecs;
 
+import "vendor:box2d"
+import "../physics"
 import "core:fmt"
 
 
@@ -43,9 +45,36 @@ add_child :: proc(parent, child: GameObject){
     gameobject_add_component(child, NewParent(parent.entity))
     parent, has_parent := get_component(parent.ecs, child.entity, Parent);
     fmt.println(parent)
+}
+/* Need collider */
+
+point_in_gameobject :: proc(ecs: ^EntityComponentSystem, entity: Entity, pos: Vector2) -> (bool) {
+    if shape, has := ecs.world.shapes[entity]; has {
+        body, _ := ecs.world.bodies[entity]
+        transform := box2d.Body_GetTransform(body)
+        localPoint := box2d.InvTransformPoint(transform, pos/physics.PIXELS_PER_METER);
+        if box2d.PointInPolygon(localPoint, box2d.Shape_GetPolygon(shape)) {
+            return true
+        }
+    }
+    return false
 
 }
 
+
+get_gameobject_pos_all :: proc(ecs: ^EntityComponentSystem, pos: Vector2) -> (GameObject, bool) {
+    c_storage,ok := get_storage(ecs, Collider)
+
+    for i in 0..<len(c_storage.dense) {
+        entity   := c_storage.entities[i]
+        collider := c_storage.dense[i]
+        if over := point_in_gameobject(ecs, entity, pos); over {
+            return get_gameobject(ecs, entity), over
+        }
+
+    }
+    return GameObject({}), false
+}
 
 get_gameobjects_tag :: proc(ecs: ^EntityComponentSystem, tag: string) -> [dynamic]GameObject{
     tag_storage, ok := get_storage(ecs, Tag)
