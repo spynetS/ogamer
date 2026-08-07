@@ -285,13 +285,12 @@ parent_system :: proc(data: SystemData, dt: f32) {
         // if parent is panel we want to do differently
         if int(parent.parent_entity) < len(panel_storage.sparse) && panel_storage.sparse[int(parent.parent_entity)] != -1 {
             child_t.pos = parent_t.pos + child_t.local_pos
-            continue
         }
-
-
-        child_t.pos = parent_t.pos + rotate(child_t.local_pos/100, parent_t.rot) // divide by 100 because default size is 100?
-        child_t.size = parent_t.size + child_t.local_size * parent_t.size/100
-        child_t.rot = parent_t.rot
+        else {
+            child_t.pos = parent_t.pos + rotate(child_t.local_pos/100, parent_t.rot) // divide by 100 because default size is 100?
+            child_t.size = parent_t.size + child_t.local_size * parent_t.size/100
+            child_t.rot = parent_t.rot
+        }
 
         if int(entity) >= len(s_storage.sparse) || s_storage.sparse[int(entity)] == -1 do continue
         if s_storage.sparse[int(parent.parent_entity)] == -1 do continue
@@ -369,6 +368,13 @@ place_row :: proc (ecs: ^EntityComponentSystem, children: [dynamic]Entity, panel
     // we don't want gap on the last item
     row_lengths[len(row_lengths)-1] -= panel.gap.x
 
+    pos :f32= 0
+    switch panel.align_items {
+    case .START: pos = 0
+    case .CENTER: pos = f32(c_h/2)
+    case .END: pos = f32(c_h)
+    }
+
     x = 0
     y := 0
     row_index := 0
@@ -381,12 +387,13 @@ place_row :: proc (ecs: ^EntityComponentSystem, children: [dynamic]Entity, panel
                 trans.local_pos = start + incrementer
                 x += 1
             case .END:
-                start := Vector2({f32(c_w) - trans.size.x + panel.padding[1], panel.margin[3]+panel.padding[3]})
+                start := Vector2({ f32(c_w) - panel.padding[2] - trans.size.x, panel.margin[3]+panel.padding[3]+pos})
                 trans.local_pos = start + incrementer
                 x -= 1
             case .CENTER:
                 row_length := row_lengths[row_index]
-                start := Vector2({f32(c_w/2)-row_length/2 + panel.padding[1], panel.margin[0]+panel.padding[3]})
+                // this is wrong
+                start := Vector2({panel.padding[1]*2 + (f32(c_w) - row_length) * 0.5, panel.margin[0]+panel.padding[3]+pos})
                 trans.local_pos = start + incrementer
                 x += 1
             }
@@ -429,6 +436,13 @@ place_column :: proc (ecs: ^EntityComponentSystem, children: [dynamic]Entity, pa
         }
     }
     column_lengths[len(column_lengths)-1] -= panel.gap.y
+    
+    pos :f32= 0
+    switch panel.align_items {
+    case .START: pos = 0
+    case .CENTER: pos = f32(c_w/2)
+    case .END: pos = f32(c_w)
+    }
 
     x := 0
     y = 0
@@ -442,12 +456,12 @@ place_column :: proc (ecs: ^EntityComponentSystem, children: [dynamic]Entity, pa
                 trans.local_pos = start + incrementer
                 y += 1
             case .END:
-                start := Vector2({panel.margin[2]+panel.padding[2], f32(c_h)-trans.size.y+panel.padding[3]})
+                start := Vector2({panel.margin[2]+panel.padding[2]+pos, f32(c_h)-trans.size.y+panel.padding[3]})
                 trans.local_pos = start + incrementer
                 y -= 1
             case .CENTER:
                 column_length := column_lengths[column_index]
-                start := Vector2({panel.margin[1]+panel.padding[1], f32(c_h/2)-column_length/2+panel.padding[0]})
+                start := Vector2({panel.margin[1]+panel.padding[1]+pos, f32(c_h/2)-column_length/2+panel.padding[0]})
                 trans.local_pos = start + incrementer
                 y += 1
             }
@@ -588,7 +602,7 @@ collider_system :: proc(data: SystemData, dt: f32) {
         // if the entity doesnt have a body we check if it has a parent with a body
         if shape_id, has_shape := data.ecs.world.shapes[entity]; has_shape {
             // update shape if neceary
-         //   rn.add_command(data.renderer, rn.Rectangle({transform.pos,transform.size+collider.size,transform.rot, rn.get_color(0x00ff00ff), true, 0}))
+            //rn.add_command(data.renderer, rn.Rectangle({transform.pos,transform.size+collider.size,transform.rot, rn.get_color(0x00ff00ff), true, 0}))
         }
         else {
             body_id, has_body := data.ecs.world.bodies[entity]; 
@@ -688,13 +702,32 @@ physics_system :: proc(data: SystemData, dt: f32) {
 
                 // Check if the transforms position has changed
                 // we check axies independently to not destrurb unchanged axies
+
+                if rb._rot != transform.rot {
+                    angle_rad := transform.rot * math.RAD_PER_DEG
+                    b2.Body_SetTransform(
+                        body_id,
+                        body_t.p,
+                        b2.Rot{
+                            c = math.cos(angle_rad),
+                            s = math.sin(angle_rad),
+                        },
+                    )
+
+                    rb._rot = b2.Rot_GetAngle(body_t.q) * math.DEG_PER_RAD
+                    rb._rot = math.mod(rb._rot + 360.0, 360.0)
+
+                    body_t = b2.Body_GetTransform(body_id)
+                }
+
+                transform.rot = b2.Rot_GetAngle(body_t.q) * math.DEG_PER_RAD
+                transform.rot = math.mod(transform.rot + 360.0, 360.0)
+                
                 if transform._pos.x != transform.pos.x {
                     body_t.p= b2.Vec2({
                         transform.pos.x/physics.PIXELS_PER_METER,
                         body_t.p.y})
                     b2.Body_SetTransform(body_id,body_t.p,body_t.q)
-
-                    
                 }
                 if transform._pos.y != transform.pos.y {
                     b2.Body_SetTransform(body_id,b2.Vec2({
@@ -706,7 +739,6 @@ physics_system :: proc(data: SystemData, dt: f32) {
                 transform.pos = world_center
                 transform._pos = world_center // save old pos so we can use it later to compare
 
-                transform.rot = b2.Rot_GetAngle(body_t.q) * math.DEG_PER_RAD
 
                 body_vel := b2.Body_GetLinearVelocity(body_id)
 
@@ -744,7 +776,8 @@ physics_system :: proc(data: SystemData, dt: f32) {
                                 transform.rot,
                                 rb.linear_damping,
                                 rb.disabled_gravity,
-                                rb.disabled_rotation)
+                                rb.disabled_rotation,
+                                rb.vel)
         }
     }
 

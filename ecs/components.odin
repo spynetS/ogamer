@@ -263,12 +263,12 @@ UIPanel :: struct {
     justify_content: enum {
         START,
         END,
-        CENTER        
+        CENTER
     },
-    justify_content_y: enum {
-        TOP,
-        CENTER,
-        BOTTOM
+    align_items: enum {
+        START,
+        END,
+        CENTER
     },
     color: [4]u8
 }
@@ -284,6 +284,7 @@ Rigidbody :: struct {
     using base: Component,
     vel: Vector2,
     _vel: Vector2, // holds past value
+    _rot: f32,
     acc: Vector2,
     linear_damping: f32,
     disabled_gravity: bool,
