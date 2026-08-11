@@ -268,12 +268,20 @@ execute :: proc(renderer: ^rn.Renderer, eventQueue: ^es.EventQueue) {
         slice.sort_by(commands, proc(a, b: rn.RenderCommand) -> bool {
             return layer_of(a) < layer_of(b)
         })
+        // FIXME maybe use origin in top corner instead of center?
         for command in commands {
             #partial switch v in command {
                 case rn.UIPanel:
-                rl.DrawRectangleV(
-                    v.pos,
-                    v.size,
+                rec : rl.Rectangle = {v.pos.x,v.pos.y, v.size.x, v.size.y} // Y-up
+                origin : rl.Vector2 = {
+                    0,
+                    0
+                };
+
+                rl.DrawRectanglePro(
+                    rec,
+                    origin,
+                    0,
                     rl.Color(v.color))
                 
                 case rn.UIText:
@@ -287,7 +295,7 @@ execute :: proc(renderer: ^rn.Renderer, eventQueue: ^es.EventQueue) {
                 // TODO load this before rendering (make a sperate function to load tectures)
                 rl_texture, source, ok := load_sprite(v.sprite, v.inverted)
                 if !ok do break
-                dest : rl.Rectangle = {v.pos.x+v.offset.x,v.pos.y+v.offset.y, v.size.x, v.size.y} // Y-up
+                dest : rl.Rectangle = {v.pos.x+v.offset.x,(v.pos.y+v.offset.y), v.size.x, v.size.y} // Y-up
 
                 origin : rl.Vector2 = {
                     v.size.x / 2,

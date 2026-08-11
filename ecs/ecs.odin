@@ -12,9 +12,9 @@ add_systems :: proc(ECS : ^EntityComponentSystem) {
     add_storage(ECS, SpriteRenderer, sprite_render_system)
     add_storage(ECS, SpriteAnimator, sprite_animator_system)
     add_storage(ECS, Parent, parent_system)
-    add_storage(ECS, UIText, ui_system)
-    add_storage(ECS, UISpriteRenderer, ui_system)
-    add_storage(ECS, UIPanel, ui_system)
+    add_storage(ECS, UIPanel, ui_panel_system)
+    add_storage(ECS, UIText, ui_text_system)
+    add_storage(ECS, UISpriteRenderer, ui_sprite_system)
     add_storage(ECS, Text, text_system)
     add_storage(ECS, Tag, nil)
     add_storage(ECS, MouseOverComponent, mouse_over_system)
@@ -135,11 +135,27 @@ add_storage :: proc(ecs: ^EntityComponentSystem, $T: typeid, update: SYSTEM_UPDA
             if storage == nil do return
             s := cast(^ComponentStorage(T))storage
             remove_component_storage(s, entity);
+        },
+        disable_entity = proc(storage: rawptr, entity:Entity, state: bool) {
+            if storage == nil do return
+            s := cast(^ComponentStorage(T))storage
+            if int(entity) >= len(s.sparse) || s.sparse[entity] == -1 do return
+            s.dense[s.sparse[entity]].disabled = state
         }
 
     })
-
 }
+
+remove_children :: proc (ecs: ^EntityComponentSystem, parent_entity: Entity) {
+    parent_storage, ok := get_storage(ecs, Parent)
+    for i in 0..<len(parent_storage.dense) {
+        parent := parent_storage.dense[i]
+        if parent.parent_entity == parent_entity {
+            destroy_entity(ecs, parent_storage.entities[i])
+        }
+    }
+}
+
 remove_component_storage :: proc (storage: ^ComponentStorage($T), entity: Entity) {
     id := int(entity)
 
@@ -162,8 +178,8 @@ remove_component_storage :: proc (storage: ^ComponentStorage($T), entity: Entity
     // point the moved entity's sparse entry at its new index
     storage.sparse[int(last_entity)] = index
     storage.sparse[id] = NO_ENTITY
-
 }
+
 remove_component_ecs :: proc (ecs: ^EntityComponentSystem, entity: Entity, $T: typeid) {
 
     storage, ok := get_storage(ecs, T);
@@ -172,12 +188,27 @@ remove_component_ecs :: proc (ecs: ^EntityComponentSystem, entity: Entity, $T: t
     remove_component_storage(storage, entity);
 }
 
+disable_entity :: proc(ecs: ^EntityComponentSystem, entity: Entity, state:bool) {
+    for type, holder in ecs.storages {
+        holder.disable_entity(holder.storage, entity, state)
+        parent_storage, ok := get_storage(ecs, Parent)
+        for i in 0..<len(parent_storage.dense) {
+            parent := parent_storage.dense[i]
+            if parent.parent_entity == entity {
+                disable_entity(ecs, parent_storage.entities[i], state)
+            }
+        }
+    }
+}
+
+
 update_systems :: proc(data: SystemData, dt: f32) {
     for type, &holder in data.ecs.storages {
         for destroy_entity in holder.destroy_queue {
             assert(holder.destroy_entity != nil)
             if holder.before_destroy_entity != nil do holder.before_destroy_entity(holder.storage, data, destroy_entity)
             holder.destroy_entity(holder.storage, destroy_entity)
+            remove_children(data.ecs, destroy_entity)
         }
         clear(&holder.destroy_queue)
         

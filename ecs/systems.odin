@@ -16,8 +16,13 @@ shape_render_system :: proc(data: SystemData, dt: f32) {
     
     for i in 0..<len(s_storage.dense) {
         s := s_storage.dense[i]
+        if s.disabled do continue
+        
         entity := s_storage.entities[i]
+        if int(entity) >= len(t_storage.sparse) || t_storage.sparse[entity] == -1 do continue
         t := t_storage.dense[t_storage.sparse[entity]]
+
+
         if data.renderer == nil do continue
         rn.add_command(data.renderer, rn.Rectangle({t.pos,t.size,0, rn.get_color(0xffffffff), false, 0}))
     }
@@ -60,6 +65,8 @@ sprite_render_system :: proc(data: SystemData, dt: f32) {
 
     for i in 0..<len(s_storage.dense) {
         s := s_storage.dense[i]
+        if s.disabled do continue
+        
         entity := s_storage.entities[i]
         if int(entity) > len(t_storage.sparse) do continue
         t := &t_storage.dense[t_storage.sparse[entity]]
@@ -88,6 +95,8 @@ script_system :: proc(data: SystemData, dt: f32) {
     len_before : int = len(s_storage.dense)
     for i in 0..<len(s_storage.dense) {
         s := s_storage.dense[i]
+        if s.disabled do continue
+        
         entity := s_storage.entities[i]
         // FIXME CRASHES SOMETIMES
         if int(entity) > len(t_storage.sparse) do continue
@@ -160,6 +169,13 @@ script_system :: proc(data: SystemData, dt: f32) {
                     if v.entity != go.entity do break
                     if script.on_raycast_hit != nil do script.on_raycast_hit(data)
 
+                    case events.MouseEnteredEntity:
+                    if v.entity != go.entity do break
+                    if script.on_mouse_enter != nil do script.on_mouse_enter(data)
+
+                    case events.MouseLeftEntity:
+                    if v.entity != go.entity do break
+                    if script.on_mouse_left != nil do script.on_mouse_left(data)
 
                 }
             }
@@ -278,13 +294,15 @@ parent_system :: proc(data: SystemData, dt: f32) {
 
         child_t  := &t_storage.dense[t_storage.sparse[int(entity)]]
         parent   := &parent_storage.dense[i]
+        if parent.disabled do continue
         
+
         if t_storage.sparse[int(parent.parent_entity)] == -1 do continue
         parent_t := &t_storage.dense[t_storage.sparse[int(parent.parent_entity)]]
 
         // if parent is panel we want to do differently
         if int(parent.parent_entity) < len(panel_storage.sparse) && panel_storage.sparse[int(parent.parent_entity)] != -1 {
-            child_t.pos = parent_t.pos + child_t.local_pos
+            child_t.pos = parent_t.pos + child_t.local_pos 
         }
         else {
             child_t.pos = parent_t.pos + rotate(child_t.local_pos/100, parent_t.rot) // divide by 100 because default size is 100?
@@ -313,8 +331,9 @@ camera_system :: proc(data: SystemData, dt: f32) {
     for i in 0..<len(storage.dense) {
         entity    := storage.entities[i]
         camera    := storage.dense[i];
+        if camera.disabled do continue
         transform := t_storage.dense[t_storage.sparse[entity]];
-
+        
         camera.target = transform.pos
         // FIXME
         if data.renderer.active_camera == nil do data.renderer.active_camera = new(rn.Camera2D)
@@ -341,32 +360,39 @@ get_children :: proc (ecs: ^EntityComponentSystem, me: Entity) -> [dynamic]Entit
 
 place_row :: proc (ecs: ^EntityComponentSystem, children: [dynamic]Entity, panel: UIPanel, c_w, c_h : int) {
     t_storage,_ := get_storage(ecs, Transform)
-    // generate rows
     rows := make([dynamic][dynamic]^Transform)
     row_lengths := make([dynamic]f32)
+    row_heights := make([dynamic]f32) // needed since rows can have different heights now
     append(&row_lengths, 0)
+    append(&row_heights, 0)
     append(&rows, make([dynamic]^Transform))
-    x := 0
+
+    running_width : f32 = 0
     for i in 0..<len(children) {
-        // TODO check for error
         child_t := &t_storage.dense[t_storage.sparse[children[i]]]
-        if len(rows[len(rows)-1]) == 0 || int(child_t.size.x + panel.gap.x) * x < c_w-int(child_t.size.x) {
-            row_lengths[len(row_lengths)-1] += child_t.size.x + panel.gap.x
-            append(&rows[len(rows)-1], child_t)
-            x+=1
+
+        // width this row would have if we add this child
+        projected := running_width
+        if len(rows[len(rows)-1]) > 0 {
+            projected += panel.gap.x
         }
-        else {
+        projected += child_t.size.x
+
+        if len(rows[len(rows)-1]) == 0 || projected <= f32(c_w) {
+            append(&rows[len(rows)-1], child_t)
+            running_width = projected
+            row_lengths[len(row_lengths)-1] = running_width
+            if child_t.size.y > row_heights[len(row_heights)-1] {
+                row_heights[len(row_heights)-1] = child_t.size.y
+            }
+        } else {
             append(&rows, make([dynamic]^Transform))
             append(&rows[len(rows)-1], child_t)
-            // we don't want gap on the last item
-            row_lengths[len(row_lengths)-1] -= panel.gap.x
-            // because we added child above we need to init with some size
-            append(&row_lengths,child_t.size.x + panel.gap.x) 
-            x = 1 // +1 because we added a child above
+            append(&row_lengths, child_t.size.x)
+            append(&row_heights, child_t.size.y)
+            running_width = child_t.size.x
         }
     }
-    // we don't want gap on the last item
-    row_lengths[len(row_lengths)-1] -= panel.gap.x
 
     pos :f32= 0
     switch panel.align_items {
@@ -375,38 +401,33 @@ place_row :: proc (ecs: ^EntityComponentSystem, children: [dynamic]Entity, panel
     case .END: pos = f32(c_h)
     }
 
-    x = 0
-    y := 0
+    y_offset : f32 = 0
     row_index := 0
     for row in rows {
+        x_offset : f32 = 0
         for trans in row {
-            incrementer := (trans.size + panel.gap) * {f32(x),f32(y)}
             switch panel.justify_content{
             case .START:
                 start := Vector2({panel.margin[0]+panel.padding[0], panel.margin[0]+panel.padding[3]})
-                trans.local_pos = start + incrementer
-                x += 1
+                trans.local_pos = start + Vector2{x_offset, y_offset}
             case .END:
-                start := Vector2({ f32(c_w) - panel.padding[2] - trans.size.x, panel.margin[3]+panel.padding[3]+pos})
-                trans.local_pos = start + incrementer
-                x -= 1
+                row_length := row_lengths[row_index]
+                start := Vector2({f32(c_w) - panel.padding[2] - row_length, panel.margin[3]+panel.padding[3]+pos})
+                trans.local_pos = start + Vector2{x_offset, y_offset}
             case .CENTER:
                 row_length := row_lengths[row_index]
-                // this is wrong
                 start := Vector2({panel.padding[1]*2 + (f32(c_w) - row_length) * 0.5, panel.margin[0]+panel.padding[3]+pos})
-                trans.local_pos = start + incrementer
-                x += 1
+                trans.local_pos = start + Vector2{x_offset, y_offset}
             }
-
+            x_offset += trans.size.x + panel.gap.x
         }
-        row_index+=1
+        y_offset += row_heights[row_index] + panel.gap.y
+        row_index += 1
         delete(row)
-        y += 1
-        x = 0
     }
     delete(rows)
     delete(row_lengths)
-    //if true do panic("asd")
+    delete(row_heights)
 }
 
 place_column :: proc (ecs: ^EntityComponentSystem, children: [dynamic]Entity, panel: UIPanel, c_w, c_h : int) {
@@ -478,49 +499,19 @@ place_column :: proc (ecs: ^EntityComponentSystem, children: [dynamic]Entity, pa
 }
 
 
-ui_system :: proc(data:SystemData, dt: f32){
+ui_panel_system :: proc(data:SystemData, dt: f32){
     text_storage, ok := get_storage(data.ecs, UIText);
     sprite_storage, ok2 := get_storage(data.ecs, UISpriteRenderer);
     panel_storage, ok4 := get_storage(data.ecs, UIPanel);
     t_storage, ok3 := get_storage(data.ecs, Transform)
     if !ok || !ok2 || !ok3 do return;
 
-    for i in 0..<len(text_storage.dense) {
-        entity := text_storage.entities[i]
-        text := text_storage.dense[i]
-        t := t_storage.dense[t_storage.sparse[entity]]
-
-        rn.add_command(data.renderer, rn.UIText({
-            pos=t.pos+text.offset,
-            font_size=text.font_size,
-            rot=t.rot,
-            text=text.text,
-            color=text.color,
-            layer=text.layer
-        }))
-    }
-
-     for i in 0..<len(sprite_storage.dense) {
-        entity := sprite_storage.entities[i]
-        sprite := sprite_storage.dense[i]
-        t := t_storage.dense[t_storage.sparse[entity]]
-
-        rn.add_command(data.renderer, rn.UISprite({
-            pos=t.pos,
-            offset = sprite.offset,
-            size = t.size + sprite.size,
-            rot=t.rot,
-            inverted=sprite.inverted,
-            sprite=sprite.sprite,
-            layer=sprite.layer,
-            repeated_x = sprite.repeated_x,
-            repeated_y = sprite.repeated_y
-        }))
-    }
-
     for i in 0..<len(panel_storage.dense) {
         entity := panel_storage.entities[i]
         panel := panel_storage.dense[i]
+        if panel.disabled do continue
+        
+        if int(entity) >= len(t_storage.sparse) || t_storage.sparse[entity] == -1 do continue
         t := t_storage.dense[t_storage.sparse[entity]]
         
         children := get_children(data.ecs, entity)
@@ -550,6 +541,56 @@ ui_system :: proc(data:SystemData, dt: f32){
 
     }
 }
+ui_text_system :: proc(data:SystemData, dt: f32){
+    text_storage, ok := get_storage(data.ecs, UIText);
+    t_storage, ok3 := get_storage(data.ecs, Transform)
+    if !ok || !ok3 do return;
+
+    for i in 0..<len(text_storage.dense) {
+        entity := text_storage.entities[i]
+        text := text_storage.dense[i]
+        if text.disabled do continue
+        
+        if int(entity) >= len(t_storage.sparse) || t_storage.sparse[entity] == -1 do continue
+        t := t_storage.dense[t_storage.sparse[entity]]
+
+        rn.add_command(data.renderer, rn.UIText({
+            pos=t.pos+text.offset,
+            font_size=text.font_size,
+            rot=t.rot,
+            text=text.text,
+            color=text.color,
+            layer=text.layer
+        }))
+    }
+}
+ui_sprite_system :: proc(data:SystemData, dt: f32){
+    sprite_storage, ok2 := get_storage(data.ecs, UISpriteRenderer);
+    t_storage, ok3 := get_storage(data.ecs, Transform)
+    if !ok2 || !ok3 do return;
+
+     for i in 0..<len(sprite_storage.dense) {
+        entity := sprite_storage.entities[i]
+         sprite := sprite_storage.dense[i]
+         if sprite.disabled do continue
+        
+         if int(entity) >= len(t_storage.sparse) || t_storage.sparse[entity] == -1 do continue
+         t := t_storage.dense[t_storage.sparse[entity]]
+
+        rn.add_command(data.renderer, rn.UISprite({
+            pos=t.pos,
+            offset = sprite.offset,
+            size = t.size + sprite.size,
+            rot=t.rot,
+            inverted=sprite.inverted,
+            sprite=sprite.sprite,
+            layer=sprite.layer,
+            repeated_x = sprite.repeated_x,
+            repeated_y = sprite.repeated_y
+        }))
+    }
+}
+
 text_system :: proc(data: SystemData, dt: f32){
     text_storage, ok := get_storage(data.ecs, Text);
     t_storage, ok2 := get_storage(data.ecs, Transform)
@@ -558,6 +599,9 @@ text_system :: proc(data: SystemData, dt: f32){
     for i in 0..<len(text_storage.dense) {
         entity := text_storage.entities[i]
         text := text_storage.dense[i]
+        if text.disabled do continue
+        
+        if int(entity) >= len(t_storage.sparse) || t_storage.sparse[entity] == -1 do continue
         t := t_storage.dense[t_storage.sparse[entity]]
 
         rn.add_command(data.renderer, rn.Text({
@@ -573,9 +617,7 @@ text_system :: proc(data: SystemData, dt: f32){
 }
 
 collider_check_parent_body :: proc(ecs: ^EntityComponentSystem, entity: Entity) -> (b2.BodyId, bool) {
-    fmt.println("INFO: checking for body in parent we are", entity)
     if parent, has_parent := get_component(ecs, entity, Parent); has_parent {
-        fmt.println("INFO: had parent", parent)
         if parent.parent_entity == entity do panic("WTF")
         if body_id, has_body := ecs.world.bodies[parent.parent_entity]; has_body {
             return body_id, true
@@ -790,10 +832,12 @@ mouse_over_system :: proc (data: SystemData, dt: f32) {
 
     for i in 0..<len(mouse_storage.dense) {
         entity := mouse_storage.entities[i];
-        mouse_over := mouse_storage.dense[i]
+        mouse_over := &mouse_storage.dense[i]
+        if mouse_over.disabled do continue
+        
         transform := transform_storage.dense[transform_storage.sparse[entity]]
         
-        mp := input.get_world_mouse_position()
+        mp := mouse_over.ui ? input.get_mouse_position() + {transform.size.x/2, transform.size.y/2} : input.get_world_mouse_position()
         px := mp.x
         py := mp.y
         x := transform.pos.x
@@ -827,6 +871,9 @@ depth_sort_system :: proc (data: SystemData, dt: f32) {
 
     for i in 0..<len(depth_storage.dense) {
         entity := depth_storage.entities[i]
+        depth := depth_storage.dense[i]
+        if depth.disabled do continue
+
 
         if int(entity) >= len(trans_storage.sparse) do continue
         if int(entity) >= len(sprite_storage.sparse) do continue
@@ -836,7 +883,8 @@ depth_sort_system :: proc (data: SystemData, dt: f32) {
 
         if trans_index == NO_ENTITY || sprite_index == NO_ENTITY do continue
 
-        depth := depth_storage.dense[i]
+        
+
         transform := trans_storage.dense[trans_index]
         sprite := &sprite_storage.dense[sprite_index]
 

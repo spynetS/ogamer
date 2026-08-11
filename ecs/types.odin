@@ -33,7 +33,8 @@ StorageHolder :: struct {
     before_destroy        : DESTROY_COMPONENT_STORAGE, // Will be run before destroying the storage
     before_destroy_entity : proc(raw: rawptr, data: SystemData, entity: Entity), // Will be run before destroying entityd
     destroy_entity        : proc(raw: rawptr, entity: Entity), // Will be run before destroying the storage
-    destroy_queue         : [dynamic]Entity
+    destroy_queue         : [dynamic]Entity,
+    disable_entity        : proc(storage: rawptr, entity:Entity, state: bool)
 }
 
 EntityComponentSystem :: struct {

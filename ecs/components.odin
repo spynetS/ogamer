@@ -114,6 +114,8 @@ Script :: struct {
     start                 : SCRIPT_FUNCTION,
     update                : SCRIPT_FUNCTION,
     on_destroy            : SCRIPT_FUNCTION,
+    on_mouse_enter        : SCRIPT_FUNCTION,
+    on_mouse_left         : SCRIPT_FUNCTION,
     on_collision_enter    : SCRIPT_COLLISION_FUNCTION,
     on_collision_left     : SCRIPT_COLLISION_FUNCTION,
     on_trigger_enter      : SCRIPT_COLLISION_FUNCTION,
@@ -127,6 +129,8 @@ NewScript :: proc (
     update                : SCRIPT_FUNCTION = nil,
     on_destroy            : SCRIPT_FUNCTION = nil,
     on_raycast_hit        : SCRIPT_FUNCTION = nil,
+    on_mouse_enter        : SCRIPT_FUNCTION = nil,
+    on_mouse_left         : SCRIPT_FUNCTION = nil,
     on_collision_enter    : SCRIPT_COLLISION_FUNCTION = nil,
     on_collision_left     : SCRIPT_COLLISION_FUNCTION = nil,
     on_trigger_enter      : SCRIPT_COLLISION_FUNCTION = nil,
@@ -137,6 +141,8 @@ NewScript :: proc (
                             update=update,
                             on_destroy=on_destroy,
                             on_raycast_hit=on_raycast_hit,
+                            on_mouse_enter=on_mouse_enter,
+                            on_mouse_left=on_mouse_left,
                             on_collision_enter = on_collision_enter,
                             on_collision_left = on_collision_left,
                             on_trigger_enter = on_trigger_enter,
@@ -145,6 +151,7 @@ NewScript :: proc (
                            })}
 
 ScriptComponent :: struct {
+    using base: Component,
     scripts: [dynamic]Script
 }
 
@@ -324,13 +331,15 @@ NewCollider :: proc (
 
 MouseOverComponent :: struct {
     using base: Component,
-    over: bool
+    over: bool,
+    ui: bool
 }
 
 NewMouseOverComponent :: proc (
-    over: bool = false
+    over: bool = false,
+    ui: bool = false
 ) -> MouseOverComponent {
-    return MouseOverComponent({over=over})
+    return MouseOverComponent({over=over, ui=ui})
 }
 
 
